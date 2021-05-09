@@ -32,9 +32,9 @@ def cumulative_trade_volume():
     return json.dumps(data)
 
 
-@route('/pools/hourlyVolume')
+@route('/pools/dailyVolume')
 def hourly_pool_volume():
-    data = v3data.hourly_volume_by_pair()
+    data = v3data.daily_volume_by_pair()
     return json.dumps(data)
 
 

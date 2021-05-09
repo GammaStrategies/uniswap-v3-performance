@@ -127,8 +127,8 @@ class UniV3Data(UniV3SubgraphClient):
 
         return data
 
-    def hourly_volume_by_pair(self):
-        """Hourly volume by pair"""
+    def daily_volume_by_pair(self):
+        """Daily volume by pair"""
         self.get_daily_pool_data()
         data = [
             {
