@@ -1,15 +1,23 @@
 import requests
+import numpy as np
+from pandas import DataFrame
 
 from v3data.utils import timestamp_to_date
+
+FACTORY_ADDRESS = "0x1F98431c8aD98523631AE4a59f267346ea31F984"
 
 
 class UniV3SubgraphClient:
     def __init__(self):
         self._url = "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt"
 
-    def query(self, query: str) -> dict:
+    def query(self, query: str, variables=None) -> dict:
         """Make graphql query to subgraph"""
-        response = requests.post(self._url, json={'query': query})
+        if variables:
+            params = {'query': query, 'variables': variables}
+        else:
+            params = {'query': query}
+        response = requests.post(self._url, json=params)
         return response.json()
 
 
@@ -17,8 +25,8 @@ class UniV3Data(UniV3SubgraphClient):
     def get_factory(self):
         """Get factory data."""
         query = """
-        {
-          factory(id: "0x1F98431c8aD98523631AE4a59f267346ea31F984") {
+        query factory($id: String!){
+          factory(id: $id) {
             id
             poolCount
             txCount
@@ -27,15 +35,16 @@ class UniV3Data(UniV3SubgraphClient):
           }
         }
         """
-
-        self.factory = self.query(query)['data']['factory']
+        variables = {"id": FACTORY_ADDRESS}
+        self.factory = self.query(query, variables)['data']['factory']
 
     def get_pools(self):
         """Get latest factory data."""
         query = """
-        {
+        query allPools($skip: Int!) {
           pools(
             first: 1000
+            skip: $skip
             orderBy: volumeUSD
             orderDirection: desc
           ){
@@ -50,7 +59,14 @@ class UniV3Data(UniV3SubgraphClient):
           }
         }
         """
-        self.pools = self.query(query)['data']['pools']
+
+        self.get_factory()
+        n_skips = int(self.factory['poolCount']) // 1000 + 1
+
+        self.pools = []
+        for i in range(n_skips):
+            variables = {'skip': i * 1000}
+            self.pools.extend(self.query(query, variables)['data']['pools'])
 
     def get_daily_uniswap_data(self):
         """Get aggregated daily data for uniswap v3."""
@@ -74,32 +90,40 @@ class UniV3Data(UniV3SubgraphClient):
 
     def get_daily_pool_data(self):
         """Get daily data for pools."""
+
+        query = """
+        query allDailyPoolData($date: Int!, $skip: Int!){
+          poolDayDatas(
+            first: 1000
+            skip: $skip
+            where: { date: $date }
+            orderBy: volumeUSD
+            orderDirection: desc
+          ){
+            id
+            date
+            pool{
+              id
+              token0{symbol}
+              token1{symbol}
+            }
+            tvlUSD
+            volumeUSD
+            txCount
+          }
+        }
+        """
+
         self.get_daily_uniswap_data()
+        self.get_factory()
+        n_skips = int(self.factory['poolCount']) // 1000 + 1
         # Loop through days
         self.daily_pool_data = []
         for day in self.daily_uniswap_data:
-            query = f"""
-            {{
-              poolDayDatas(
-                first: 1000
-                where: {{ date: {day['date']} }}
-                orderBy: volumeUSD
-                orderDirection: desc
-              ){{
-                id
-                date
-                pool{{
-                  id
-                  token0{{symbol}}
-                  token1{{symbol}}
-                }}
-                tvlUSD
-                volumeUSD
-                txCount
-              }}
-            }}
-            """
-            self.daily_pool_data.extend(self.query(query)['data']['poolDayDatas'])
+            for i in range(n_skips):
+                print(day['date'])
+                variables = {"date": day['date'], "skip": i * 1000}
+                self.daily_pool_data.extend((self.query(query, variables))['data']['poolDayDatas'])
 
     def uniswap_data(self):
         """Current TVL, volume, transaction count."""
@@ -157,3 +181,44 @@ class UniV3Data(UniV3SubgraphClient):
             )
 
         return cumulative
+
+    def get_historical_pool_prices(self, pool_address):
+        query = """
+            query poolPrices($id: String!, $timestamp_start: Int!){
+                pool(
+                    id: $id
+                ){
+                    swaps(
+                        first: 1000
+                        orderBy: timestamp
+                        orderDirection: asc
+                        where: { timestamp_gte: $timestamp_start }
+                    ){
+                        id
+                        timestamp
+                        amount0
+                        amount1
+                    }
+                }
+            }
+        """
+        variables = {'id': pool_address, "timestamp_start": 0}
+        has_data = True
+        all_swaps = []
+        while has_data:
+            swaps = self.query(query, variables)['data']['pool']['swaps']
+
+            all_swaps.extend(swaps)
+            timestamps = set([int(swap['timestamp']) for swap in swaps])
+            variables['timestamp_start'] = max(timestamps)
+
+            if len(swaps) < 1000:
+                has_data = False
+
+        df_swaps = DataFrame(all_swaps, dtype=np.float64)
+        df_swaps.timestamp = df_swaps.timestamp.astype(np.int64)
+        df_swaps.drop_duplicates(inplace=True)
+        df_swaps['priceInToken0'] = abs(df_swaps.amount1 / df_swaps.amount0)
+        data = df_swaps.to_dict('records')
+
+        return data

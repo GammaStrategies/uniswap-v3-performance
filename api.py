@@ -44,4 +44,10 @@ def total_volume_pie_chart():
     return json.dumps(data)
 
 
+@route('/pools/historicalPrice/<address>')
+def pool_historical_price(address):
+    data = v3data.get_historical_pool_prices(address)
+    return json.dumps(data)
+
+
 run(host='localhost', port=8080)
