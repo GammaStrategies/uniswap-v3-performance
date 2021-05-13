@@ -1,6 +1,7 @@
 import requests
+import datetime
 import numpy as np
-from pandas import DataFrame
+import pandas as pd
 
 from v3data.utils import timestamp_to_date
 
@@ -182,7 +183,7 @@ class UniV3Data(UniV3SubgraphClient):
 
         return cumulative
 
-    def get_historical_pool_prices(self, pool_address):
+    def get_historical_pool_prices(self, pool_address, time_delta):
         query = """
             query poolPrices($id: String!, $timestamp_start: Int!){
                 pool(
@@ -202,7 +203,11 @@ class UniV3Data(UniV3SubgraphClient):
                 }
             }
         """
-        variables = {'id': pool_address, "timestamp_start": 0}
+        variables = {
+            'id': pool_address,
+            "timestamp_start": int((datetime.datetime.utcnow() - time_delta).replace(
+                tzinfo=datetime.timezone.utc).timestamp())
+        }
         has_data = True
         all_swaps = []
         while has_data:
@@ -215,10 +220,33 @@ class UniV3Data(UniV3SubgraphClient):
             if len(swaps) < 1000:
                 has_data = False
 
-        df_swaps = DataFrame(all_swaps, dtype=np.float64)
+        df_swaps = pd.DataFrame(all_swaps, dtype=np.float64)
         df_swaps.timestamp = df_swaps.timestamp.astype(np.int64)
         df_swaps.drop_duplicates(inplace=True)
-        df_swaps['priceInToken0'] = abs(df_swaps.amount1 / df_swaps.amount0)
+        df_swaps['priceInToken1'] = abs(df_swaps.amount1 / df_swaps.amount0)
         data = df_swaps.to_dict('records')
 
         return data
+
+    def bollinger_bands(self, pool_address, hours_ago):
+        data = self.get_historical_pool_prices(pool_address, datetime.timedelta(hours=hours_ago))
+        df = pd.DataFrame(data, dtype=np.float64)
+        df['datetime'] = pd.to_datetime(df.timestamp, unit='s')
+
+        interval = hours_ago / 20
+        df_closing_price = df.sort_values('datetime').resample(f"{interval}H", on='datetime').last()
+        mid = df_closing_price.priceInToken1.mean()
+        two_std = 2 * df_closing_price.priceInToken1.std()
+
+        results = {
+            'pool': pool_address,
+            'period_hours': hours_ago,
+            'interval_hours': interval,
+            'dt_latest': df.datetime.iat[-1].isoformat(),
+            'latest': df.priceInToken1.iat[-1],
+            'mid': mid,
+            'upper': mid + two_std,
+            'lower': mid - two_std
+        }
+
+        return results
