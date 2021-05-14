@@ -38,28 +38,62 @@ class UniV3Data(UniV3SubgraphClient):
 
         return token_addresses
 
-    def get_whitelist_pools(self, token_addresses):
-        query = """
-        query whitelistPools($ids: [String!]!){
-          tokens(
-            where: {id_in: $ids}
-          ){
+    def get_pools_by_tokens(self, token_addresses):
+        query0 = """
+        query whitelistPools($ids: [String!]!)
+        {
+          pools(
+            first: 1000
+            where: {
+              token0_in: $ids
+            }
+            orderBy: volumeUSD
+            orderDirection: desc
+          ) {
             id
-            whitelistPools {
+            feeTier
+            volumeUSD
+            token0{
               id
-              feeTier
-              token0{
-                symbol
-              }
-              token1{
-                symbol
-              }
+              symbol
+            }
+            token1{
+              id
+              symbol
+            }
+          }
+        }
+        """
+        query1 = """
+        query whitelistPools($ids: [String!]!)
+        {
+          pools(
+            first: 1000
+            where: {
+              token1_in: $ids
+            }
+            orderBy: volumeUSD
+            orderDirection: desc
+          ) {
+            id
+            feeTier
+            volumeUSD
+            token0{
+              id
+              symbol
+            }
+            token1{
+              id
+              symbol
             }
           }
         }
         """
         variables = {"ids": token_addresses}
-        return self.query(query, variables)['data']['tokens']
+        pool0 = self.query(query0, variables)['data']['pools']
+        pool1 = self.query(query1, variables)['data']['pools']
+
+        return pool0 + pool1
 
     def get_factory(self):
         """Get factory data."""

@@ -4,18 +4,17 @@ def pools_from_symbol(symbol):
     client = UniV3Data()
     token_list = client.get_token_list()
     token_addresses = token_list.get(symbol.upper())
-    whitelist = client.get_whitelist_pools(token_addresses)
+    pool_list = client.get_pools_by_tokens(token_addresses)
 
-    pools = []
-    for token in whitelist:
-        for pool in token['whitelistPools']:
-            pools.append(
-                {
-                    "tokenAddress": token['id'],
-                    "poolAddress": pool['id'],
-                    'feeTier': pool['feeTier'],
-                    'symbol': f"{pool['token0']['symbol']}-{pool['token1']['symbol']}"
-                }
-            )
+    pools = [ 
+        {
+            "token0Address": pool['token0']['id'],
+            "token1Address": pool['token1']['id'],
+            "poolAddress": pool['id'],
+            'symbol': f"{pool['token0']['symbol']}-{pool['token1']['symbol']}",
+            'feeTier': pool['feeTier'],
+            'volumeUSD': pool['volumeUSD']
+        }
+    for pool in pool_list]
 
     return pools
