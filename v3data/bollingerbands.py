@@ -37,7 +37,7 @@ class BollingerBand:
             'upper': 'max'
         }, inplace=True)
         df['group'] = 'Dataset 1'
-        df['date'] = df.datetime.dt.strftime('%Y-%m-%dT%H:%M%:%SZ')
+        df['date'] = df.datetime.dt.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         return df[['group', 'date', 'value', 'min', 'max']].to_dict('records')
 
