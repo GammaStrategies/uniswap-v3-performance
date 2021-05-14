@@ -1,3 +1,9 @@
+V3_FACTORY_ADDRESS = "0x1F98431c8aD98523631AE4a59f267346ea31F984"
+
+V3_SUBGRAPH_ADDRESS = "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-testing"
+
+TOKEN_LIST_URL = "https://tokens.coingecko.com/uniswap/all.json"
+
 POOL_ADDRESSES = {
     'WETH/USDT': '0x11b815efb8f581194ae79006d24e0d814b7697f6',
     'USDC/WETH': '0x7bea39867e4169dbe237d55c8242a8f2fcdcc387',

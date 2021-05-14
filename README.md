@@ -14,4 +14,11 @@ Endpoints available for testing:
 
 /pools/totalVolumePieChart
 
-/pools/historicalPrice/<address>
+To get the list of v3 pools for a specific symbol:
+/pools/<symbol>
+
+To get bollinger bands for a specific pool:
+/bollingerBandsChartData
+with these paramaters:
+poolAddress: address of pool
+periodHours: The total period in hours

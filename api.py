@@ -4,6 +4,8 @@ import json
 
 from bottle import get, request, abort, run
 from v3data.data import UniV3Data
+from v3data.pools import pools_from_symbol
+from v3data.bollingerbands import BollingerBand
 from v3data.config import POOL_ADDRESSES
 
 v3data = UniV3Data()
@@ -50,20 +52,20 @@ def pool_historical_price(address):
     data = v3data.get_historical_pool_prices(address)
     return json.dumps(data)
 
-@get('/bollingerBands')
-def pool_historical_price():
-    if not request.query.pool:
-        abort(400, "Missing pool parameter, e.g. ?pool=WETH/USDT")
+@get('/bollingerBandsChartData')
+def bollingerbands_chart():
+    if not request.query.poolAddress:
+        abort(400, "Missing poolAddress parameter, e.g. ?pool=0xfwfe...")
     if not request.query.periodHours:
         abort(400, "Missing periodHours parameter e.g. ?periodHours=24")
 
-    pool_address = POOL_ADDRESSES.get(request.query.pool)
-    if not pool_address:
-        abort(422, "Pool not supported")
+    bband = BollingerBand(request.query.poolAddress, int(request.query.periodHours))
 
-    period_hours = int(request.query.periodHours)
-    data = v3data.bollinger_bands(pool_address, period_hours)
-    return json.dumps(data)
+    return {'data': bband.chart_data()}
+
+@get('/pools/<token>')
+def whitelist_pools(token):
+    return {"pools": pools_from_symbol(token)}
 
 
 run(host='localhost', port=8080)

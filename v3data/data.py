@@ -4,13 +4,14 @@ import numpy as np
 import pandas as pd
 
 from v3data.utils import timestamp_to_date
+from v3data.config import V3_SUBGRAPH_ADDRESS, V3_FACTORY_ADDRESS, TOKEN_LIST_URL
 
-FACTORY_ADDRESS = "0x1F98431c8aD98523631AE4a59f267346ea31F984"
+
 
 
 class UniV3SubgraphClient:
     def __init__(self):
-        self._url = "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt"
+        self._url = V3_SUBGRAPH_ADDRESS
 
     def query(self, query: str, variables=None) -> dict:
         """Make graphql query to subgraph"""
@@ -23,6 +24,43 @@ class UniV3SubgraphClient:
 
 
 class UniV3Data(UniV3SubgraphClient):
+    def get_token_list(self):
+        response = requests.get(TOKEN_LIST_URL)
+        token_list = response.json()['tokens']
+
+        token_addresses = {}
+        for token in token_list:
+            symbol = token['symbol']
+            if token_addresses.get(symbol):
+                token_addresses[symbol].append(token['address'])
+            else:
+                token_addresses[symbol] = [token['address']]
+
+        return token_addresses
+
+    def get_whitelist_pools(self, token_addresses):
+        query = """
+        query whitelistPools($ids: [String!]!){
+          tokens(
+            where: {id_in: $ids}
+          ){
+            id
+            whitelistPools {
+              id
+              feeTier
+              token0{
+                symbol
+              }
+              token1{
+                symbol
+              }
+            }
+          }
+        }
+        """
+        variables = {"ids": token_addresses}
+        return self.query(query, variables)['data']['tokens']
+
     def get_factory(self):
         """Get factory data."""
         query = """
@@ -36,7 +74,7 @@ class UniV3Data(UniV3SubgraphClient):
           }
         }
         """
-        variables = {"id": FACTORY_ADDRESS}
+        variables = {"id": V3_FACTORY_ADDRESS}
         self.factory = self.query(query, variables)['data']['factory']
 
     def get_pools(self):
@@ -183,7 +221,7 @@ class UniV3Data(UniV3SubgraphClient):
 
         return cumulative
 
-    def get_historical_pool_prices(self, pool_address, time_delta):
+    def get_historical_pool_prices(self, pool_address, time_delta=None):
         query = """
             query poolPrices($id: String!, $timestamp_start: Int!){
                 pool(
@@ -203,10 +241,16 @@ class UniV3Data(UniV3SubgraphClient):
                 }
             }
         """
+
+        if time_delta:
+            timestamp_start = int((datetime.datetime.utcnow() - time_delta).replace(
+                tzinfo=datetime.timezone.utc).timestamp())
+        else:
+            timestamp_start = 0
+
         variables = {
             'id': pool_address,
-            "timestamp_start": int((datetime.datetime.utcnow() - time_delta).replace(
-                tzinfo=datetime.timezone.utc).timestamp())
+            "timestamp_start": timestamp_start
         }
         has_data = True
         all_swaps = []
@@ -228,25 +272,6 @@ class UniV3Data(UniV3SubgraphClient):
 
         return data
 
-    def bollinger_bands(self, pool_address, hours_ago):
-        data = self.get_historical_pool_prices(pool_address, datetime.timedelta(hours=hours_ago))
-        df = pd.DataFrame(data, dtype=np.float64)
-        df['datetime'] = pd.to_datetime(df.timestamp, unit='s')
+    
 
-        interval = hours_ago / 20
-        df_closing_price = df.sort_values('datetime').resample(f"{interval}H", on='datetime').last()
-        mid = df_closing_price.priceInToken1.mean()
-        two_std = 2 * df_closing_price.priceInToken1.std()
 
-        results = {
-            'pool': pool_address,
-            'period_hours': hours_ago,
-            'interval_hours': interval,
-            'dt_latest': df.datetime.iat[-1].isoformat(),
-            'latest': df.priceInToken1.iat[-1],
-            'mid': mid,
-            'upper': mid + two_std,
-            'lower': mid - two_std
-        }
-
-        return results
