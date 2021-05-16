@@ -111,6 +111,27 @@ class UniV3Data(UniV3SubgraphClient):
         variables = {"id": V3_FACTORY_ADDRESS}
         self.factory = self.query(query, variables)['data']['factory']
 
+    def get_pool(self, pool_address):
+        """Get metadata for pool"""
+        query = """
+        query poolData($id: String!) {
+          pool(
+            id: $id
+          ){
+            id
+            token0{
+              symbol
+            }
+            token1{
+              symbol
+            }
+          }
+        }
+        """
+
+        variables = {"id": pool_address}
+        return self.query(query, variables)['data']['pool']
+
     def get_pools(self):
         """Get latest factory data."""
         query = """

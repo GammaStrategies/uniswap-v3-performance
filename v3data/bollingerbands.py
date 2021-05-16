@@ -5,7 +5,7 @@ from v3data.data import UniV3Data
 
 
 class BollingerBand:
-    def __init__(self, pool_address, total_period_hours, n_intervals=50):
+    def __init__(self, pool_address, total_period_hours, n_intervals=20):
         self.pool_address = pool_address
         self.total_period_hours = total_period_hours # total_period_hours is how long we want to average over
         self.n_intervals = n_intervals
@@ -13,7 +13,7 @@ class BollingerBand:
 
     def get_data(self):
         data = self.client.get_historical_pool_prices(
-            self.pool_address, datetime.timedelta(hours=2 * self.total_period_hours))
+            self.pool_address, datetime.timedelta(hours=10 * self.total_period_hours))
         df = pd.DataFrame(data, dtype=np.float64)
         df['datetime'] = pd.to_datetime(df.timestamp, unit='s')
 
@@ -29,6 +29,7 @@ class BollingerBand:
         self.df_resampled = df_resampled[['mid', 'upper', 'lower']]
 
     def chart_data(self):
+        pool = self.client.get_pool(self.pool_address)
         self.get_data()
         df = self.df_resampled.reset_index()
         df.rename(columns={
@@ -36,7 +37,7 @@ class BollingerBand:
             'lower': 'min',
             'upper': 'max'
         }, inplace=True)
-        df['group'] = 'Dataset 1'
+        df['group'] = f"{pool['token0']['symbol']}-{pool['token1']['symbol']}"
         df['date'] = df.datetime.dt.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         return df[['group', 'date', 'value', 'min', 'max']].to_dict('records')

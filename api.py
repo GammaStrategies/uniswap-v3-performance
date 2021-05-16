@@ -84,4 +84,4 @@ def whitelist_pools(token):
     return {"pools": pools_from_symbol(token)}
 
 
-run(host='localhost', port=8080)
+run(host='0.0.0.0', port=8080)
