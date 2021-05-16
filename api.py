@@ -6,7 +6,6 @@ from bottle import get, request, abort, run, hook, response, route
 from v3data.data import UniV3Data
 from v3data.pools import pools_from_symbol
 from v3data.bollingerbands import BollingerBand
-from v3data.config import POOL_ADDRESSES
 
 _allow_origin = '*'
 _allow_methods = 'PUT, GET, POST, DELETE, OPTIONS'
