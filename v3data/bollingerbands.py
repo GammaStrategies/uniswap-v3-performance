@@ -13,7 +13,7 @@ class BollingerBand:
 
     def get_data(self):
         data = self.client.get_historical_pool_prices(
-            self.pool_address, datetime.timedelta(hours=14 * self.total_period_hours))
+            self.pool_address, datetime.timedelta(hours=2 * self.total_period_hours))
         df = pd.DataFrame(data, dtype=np.float64)
         df['datetime'] = pd.to_datetime(df.timestamp, unit='s')
 
@@ -40,8 +40,3 @@ class BollingerBand:
         df['date'] = df.datetime.dt.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         return df[['group', 'date', 'value', 'min', 'max']].to_dict('records')
-
-
-# def bollinger_bands(self, token, hours_ago):
-#     token_list = self.get_token_list()
-#     token_addresses = self.token_list.get(token.upper())
