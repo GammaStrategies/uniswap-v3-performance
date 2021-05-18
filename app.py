@@ -11,12 +11,11 @@ CORS(app)
 def main():
 	return "Visor Data"
 
-@app.route('/bollingerBandsChartData')
-def bollingerbands_chart():
-    pool_address = request.args.get("poolAddress")
+@app.route('/bollingerBandsChartData/<poolAddress>')
+def bollingerbands_chart(poolAddress):
     periodHours = int(request.args.get("periodHours", 24))
 
-    bband = BollingerBand(pool_address, periodHours)
+    bband = BollingerBand(poolAddress, periodHours)
 
     return {'data': bband.chart_data()}
 
