@@ -7,7 +7,7 @@ from v3data.data import UniV3Data
 class BollingerBand:
     def __init__(self, pool_address, total_period_hours, n_intervals=20):
         self.pool_address = pool_address
-        self.total_period_hours = total_period_hours # total_period_hours is how long we want to average over
+        self.total_period_hours = total_period_hours  # total_period_hours is how long we want to average over
         self.n_intervals = n_intervals
         self.client = UniV3Data()
 
@@ -25,15 +25,15 @@ class BollingerBand:
         df_resampled['upper'] = df_resampled['mid'] + 2 * df_resampled['std']
         df_resampled['lower'] = df_resampled['mid'] - 2 * df_resampled['std']
         df_resampled.dropna(inplace=True)
-        
-        self.df_resampled = df_resampled[['mid', 'upper', 'lower']]
+
+        self.df_resampled = df_resampled[['priceInToken1', 'mid', 'upper', 'lower']]
 
     def chart_data(self):
         pool = self.client.get_pool(self.pool_address)
         self.get_data()
         df = self.df_resampled.reset_index()
         df.rename(columns={
-            'mid': 'value',
+            'priceInToken1': 'value',
             'lower': 'min',
             'upper': 'max'
         }, inplace=True)
