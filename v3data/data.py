@@ -3,10 +3,8 @@ import datetime
 import numpy as np
 import pandas as pd
 
-from v3data.utils import timestamp_to_date
+from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal
 from v3data.config import V3_SUBGRAPH_ADDRESS, V3_FACTORY_ADDRESS, TOKEN_LIST_URL
-
-
 
 
 class UniV3SubgraphClient:
@@ -120,10 +118,14 @@ class UniV3Data(UniV3SubgraphClient):
           ){
             id
             token0{
+              id
               symbol
+              decimals
             }
             token1{
+              id
               symbol
+              decimals
             }
           }
         }
@@ -290,8 +292,7 @@ class UniV3Data(UniV3SubgraphClient):
                     ){
                         id
                         timestamp
-                        amount0
-                        amount1
+                        sqrtPriceX96
                     }
                 }
             }
@@ -310,7 +311,7 @@ class UniV3Data(UniV3SubgraphClient):
         has_data = True
         all_swaps = []
         while has_data:
-            swaps = self.query(query, variables)['data']['pool']['swaps']
+            swaps = (self.query(query, variables))['data']['pool']['swaps']
 
             all_swaps.extend(swaps)
             timestamps = set([int(swap['timestamp']) for swap in swaps])
@@ -319,14 +320,14 @@ class UniV3Data(UniV3SubgraphClient):
             if len(swaps) < 1000:
                 has_data = False
 
+        pool = self.get_pool(pool_address)
+
         df_swaps = pd.DataFrame(all_swaps, dtype=np.float64)
         df_swaps.timestamp = df_swaps.timestamp.astype(np.int64)
         df_swaps.drop_duplicates(inplace=True)
-        df_swaps['priceInToken1'] = abs(df_swaps.amount1 / df_swaps.amount0)
+        df_swaps['priceDecimal'] = df_swaps.sqrtPriceX96.apply(
+            sqrtPriceX96_to_priceDecimal, args=(int(pool['token0']['decimals']), int(pool['token1']['decimals']))
+        )
         data = df_swaps.to_dict('records')
 
         return data
-
-    
-
-
