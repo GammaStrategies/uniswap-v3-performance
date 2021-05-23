@@ -46,7 +46,8 @@ class BollingerBand:
         return df[['group', 'date', 'value', 'min', 'max']].to_dict('records')
 
     def latest_bands(self):
+        pool = self.client.get_pool(self.pool_address)
         self.get_data(report_hours=self.total_period_hours)
         bands = self.df_resampled.tail(1).reset_index().to_dict("records")[0]
         bands['datetime'] = bands['datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
-        return bands
+        return {"pool": pool, "bands": bands}
