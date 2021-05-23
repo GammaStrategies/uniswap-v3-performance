@@ -6,7 +6,7 @@ from v3data.data import UniV3Data
 
 class BollingerBand:
     def __init__(self, pool_address, total_period_hours, n_intervals=20):
-        self.pool_address = pool_address
+        self.pool_address = pool_address.lower()
         self.total_period_hours = total_period_hours  # total_period_hours is how long we want to average over
         self.n_intervals = n_intervals
         self.client = UniV3Data()
