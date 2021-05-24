@@ -16,7 +16,7 @@ class BollingerBand:
         if not report_hours:
             report_hours = 10 * self.total_period_hours
         data = self.client.get_historical_pool_prices(
-            self.pool_address, datetime.timedelta(hours=report_hours))
+            self.pool_address, datetime.timedelta(hours=1.1 * report_hours))  # 1.1 factor for buffer
         df = pd.DataFrame(data, dtype=np.float64)
         df['datetime'] = pd.to_datetime(df.timestamp, unit='s')
 
