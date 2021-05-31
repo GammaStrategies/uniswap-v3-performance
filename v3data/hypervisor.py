@@ -41,25 +41,25 @@ class Hypervisor(UniV3SubgraphClient):
         df['totalAmountInToken1'] = df.totalAmount0 * df.price + df.totalAmount1  # Current tokens are current price
         df['totalFeeInToken1'] = df.feeAmount0 * df.price + df.feeAmount1
 
-        # Calculate fee return rate for each rebalance event
-        df['feeRate'] = df.totalFeeInToken1 / df.totalAmountInToken1
+        df['totalInToken1'] = df.totalAmountInToken1 + df.totalFeeInToken1
 
         df.sort_values('timestamp', inplace=True)
+
+        # Calculate fee return rate for each rebalance event
+        df['feeRate'] = df.totalFeeInToken1 / df.totalInToken1.shift(1)
+        df['totalRate'] = df.totalInToken1 / df.totalInToken1.shift(1) - 1
+
         # Time since last rebalance
         df['periodSeconds'] = df.timestamp.diff()
-
-        # Calculation initial tokens at current price (Need to include fees as this is reinvested)
-        df['prevTokenAtCurrentPrice'] = (df.totalAmount0.shift(1) + df.feeAmount0.shift(1)) * df.price + df.totalAmount1.shift(1) + df.feeAmount1.shift(1)
-
-        df['changeDueToPrice'] = df.prevTokenAtCurrentPrice - df.totalAmountInToken1.shift(1) - df.totalFeeInToken1.shift(1)
 
         # Time since first reblance
         df['cumPeriodSeconds'] = df.periodSeconds.cumsum()
 
         # Compound fee return rate for each rebalance
         df['cumFeeReturn'] = (1 + df['feeRate']).cumprod() - 1
+        df['cumTotalReturn'] = (1 + df['totalRate']).cumprod() - 1
 
         # Extrapolate linearly to annual rate
-        df['apy'] = df.cumFeeReturn * (YEAR_SECONDS / df.cumPeriodSeconds)
+        df['apyFee'] = df.cumFeeReturn * (YEAR_SECONDS / df.cumPeriodSeconds)
 
-        return df[['cumPeriodSeconds', 'cumFeeReturn', 'apy']].tail(1).to_dict('records')[0]
+        return df[['cumPeriodSeconds', 'cumFeeReturn', 'cumTotalReturn', 'apyFee']].tail(1).to_dict('records')[0]
