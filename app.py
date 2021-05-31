@@ -3,6 +3,7 @@ from flask_cors import CORS
 
 from v3data.pools import pools_from_symbol
 from v3data.bollingerbands import BollingerBand
+from v3data.hypervisor import Hypervisor
 
 app = Flask(__name__)
 CORS(app)
@@ -34,3 +35,9 @@ def bollingerbands_latest(poolAddress):
 @app.route('/pools/<token>')
 def uniswap_pools(token):
     return {"pools": pools_from_symbol(token)}
+
+
+@app.route('/hypervisor/WETHUSDT/apy')
+def weth_usdt_apy():
+    hypervisor = Hypervisor()
+    return hypervisor.calculate_apy()

@@ -1,0 +1,65 @@
+import numpy as np
+from pandas import DataFrame
+
+from v3data.data import UniV3SubgraphClient
+
+HYPERVISOR_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/l0c4t0r/visor"
+YEAR_SECONDS = 60 * 60 * 24 * 365
+
+
+class Hypervisor(UniV3SubgraphClient):
+    def __init__(self):
+        super().__init__("https://api.thegraph.com/subgraphs/name/l0c4t0r/visor")
+
+    def get_rebalance_data(self):
+        query = """
+            {
+                uniV3Rebalances(
+                    first: 1000
+                ) {
+                    id
+                    timestamp
+                    tick
+                    totalAmount0
+                    totalAmount1
+                    feeAmount0
+                    feeAmount1
+                    totalSupply
+                }
+            }
+        """
+        return self.query(query)['data']['uniV3Rebalances']
+
+    def calculate_apy(self):
+        data = self.get_rebalance_data()
+        df = DataFrame(data, dtype=np.float64)
+
+        # Convert tick to price
+        df['price'] = 1.0001 ** df.tick
+
+        # Calculate total amounts and fees in Token1
+        df['totalAmountInToken1'] = df.totalAmount0 * df.price + df.totalAmount1  # Current tokens are current price
+        df['totalFeeInToken1'] = df.feeAmount0 * df.price + df.feeAmount1
+
+        # Calculate fee return rate for each rebalance event
+        df['feeRate'] = df.totalFeeInToken1 / df.totalAmountInToken1
+
+        df.sort_values('timestamp', inplace=True)
+        # Time since last rebalance
+        df['periodSeconds'] = df.timestamp.diff()
+
+        # Calculation initial tokens at current price (Need to include fees as this is reinvested)
+        df['prevTokenAtCurrentPrice'] = (df.totalAmount0.shift(1) + df.feeAmount0.shift(1)) * df.price + df.totalAmount1.shift(1) + df.feeAmount1.shift(1)
+
+        df['changeDueToPrice'] = df.prevTokenAtCurrentPrice - df.totalAmountInToken1.shift(1) - df.totalFeeInToken1.shift(1)
+
+        # Time since first reblance
+        df['cumPeriodSeconds'] = df.periodSeconds.cumsum()
+
+        # Compound fee return rate for each rebalance
+        df['cumFeeReturn'] = (1 + df['feeRate']).cumprod() - 1
+
+        # Extrapolate linearly to annual rate
+        df['apy'] = df.cumFeeReturn * (YEAR_SECONDS / df.cumPeriodSeconds)
+
+        return df[['cumPeriodSeconds', 'cumFeeReturn', 'apy']].tail(1).to_dict('records')[0]

@@ -8,8 +8,8 @@ from v3data.config import V3_SUBGRAPH_ADDRESS, V3_FACTORY_ADDRESS, TOKEN_LIST_UR
 
 
 class UniV3SubgraphClient:
-    def __init__(self):
-        self._url = V3_SUBGRAPH_ADDRESS
+    def __init__(self, url):
+        self._url = url
 
     def query(self, query: str, variables=None) -> dict:
         """Make graphql query to subgraph"""
@@ -22,6 +22,9 @@ class UniV3SubgraphClient:
 
 
 class UniV3Data(UniV3SubgraphClient):
+    def __init__(self):
+        super().__init__(V3_SUBGRAPH_ADDRESS)
+        
     def get_token_list(self):
         response = requests.get(TOKEN_LIST_URL)
         token_list = response.json()['tokens']
