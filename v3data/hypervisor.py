@@ -14,7 +14,7 @@ class Hypervisor(UniV3SubgraphClient):
     def get_rebalance_data(self):
         query = """
             {
-                uniV3Rebalances(
+                uniswapV3Rebalances(
                     first: 1000
                 ) {
                     id
