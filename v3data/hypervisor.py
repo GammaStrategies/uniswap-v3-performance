@@ -9,13 +9,16 @@ YEAR_SECONDS = 60 * 60 * 24 * 365
 
 class Hypervisor(UniV3SubgraphClient):
     def __init__(self):
-        super().__init__("https://api.thegraph.com/subgraphs/name/l0c4t0r/visor")
+        super().__init__(HYPERVISOR_SUBGRAPH_URL)
 
     def get_rebalance_data(self):
         query = """
             {
                 uniswapV3Rebalances(
                     first: 1000
+                    where: {
+                        hypervisor: "0x99d84469e9188d2f719f05eb15df85220c1891d2"
+                    }
                 ) {
                     id
                     timestamp
