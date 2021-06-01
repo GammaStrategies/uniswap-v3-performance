@@ -28,7 +28,7 @@ class Hypervisor(UniV3SubgraphClient):
                 }
             }
         """
-        return self.query(query)['data']['uniV3Rebalances']
+        return self.query(query)['data']['uniswapV3Rebalances']
 
     def calculate_apy(self):
         data = self.get_rebalance_data()
