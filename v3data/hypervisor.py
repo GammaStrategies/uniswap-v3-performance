@@ -25,8 +25,8 @@ class Hypervisor(UniV3SubgraphClient):
                     tick
                     totalAmount0
                     totalAmount1
-                    feeAmount0
-                    feeAmount1
+                    grossFees0
+                    grossFees1
                     totalSupply
                 }
             }
@@ -42,7 +42,7 @@ class Hypervisor(UniV3SubgraphClient):
 
         # Calculate total amounts and fees in Token1
         df['totalAmountInToken1'] = df.totalAmount0 * df.price + df.totalAmount1  # Current tokens are current price
-        df['totalFeeInToken1'] = df.feeAmount0 * df.price + df.feeAmount1
+        df['totalFeeInToken1'] = df.grossFees0 * df.price + df.grossFees1
 
         df['totalInToken1'] = df.totalAmountInToken1 + df.totalFeeInToken1
 
