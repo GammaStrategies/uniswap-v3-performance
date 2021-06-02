@@ -17,7 +17,7 @@ class Hypervisor(UniV3SubgraphClient):
                 uniswapV3Rebalances(
                     first: 1000
                     where: {
-                        hypervisor: "0x99d84469e9188d2f719f05eb15df85220c1891d2"
+                        hypervisor: "0xa08583b36a809934e019574695392b516be9354f"
                     }
                 ) {
                     id
