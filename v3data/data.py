@@ -334,3 +334,43 @@ class UniV3Data(UniV3SubgraphClient):
         data = df_swaps.to_dict('records')
 
         return data
+
+    def get_visr_price_usd(self):
+        """Get VISR price from ETH/VISR 0.3% pool"""
+        WETH_VISR_03_POOL = "0x9a9cf34c3892acdb61fb7ff17941d8d81d279c75"
+
+        query = """
+        query visrPrice($id: String!){
+            pool(
+                id: $id
+            ){
+                sqrtPrice
+                token0{
+                    symbol
+                    decimals
+                }
+                token1{
+                    symbol
+                    decimals
+                }
+            }
+            bundle(id:1){
+            ethPriceUSD
+            }
+        }
+        """
+        variables = {"id": WETH_VISR_03_POOL}
+        data = self.query(query, variables)['data']
+
+        sqrt_priceX96 = float(data['pool']['sqrtPrice'])
+        decimal0 = int(data['pool']['token0']['decimals'])
+        decimal1 = int(data['pool']['token1']['decimals'])
+        eth_price = float(data['bundle']['ethPriceUSD'])
+
+        visr_price_eth = sqrtPriceX96_to_priceDecimal(
+            sqrt_priceX96,
+            decimal0,
+            decimal1
+        )
+
+        return (1 / visr_price_eth) * eth_price

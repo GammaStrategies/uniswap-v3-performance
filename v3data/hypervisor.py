@@ -1,56 +1,74 @@
 import numpy as np
+from  datetime import timedelta
 from pandas import DataFrame
 
 from v3data.data import UniV3SubgraphClient
+from v3data.utils import timestamp_ago
+from v3data.config import VISOR_SUBGRAPH_URL
 
-HYPERVISOR_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/l0c4t0r/visor"
 YEAR_SECONDS = 60 * 60 * 24 * 365
 
 
 class Hypervisor(UniV3SubgraphClient):
     def __init__(self):
-        super().__init__(HYPERVISOR_SUBGRAPH_URL)
+        super().__init__(VISOR_SUBGRAPH_URL)
 
-    def get_rebalance_data(self):
+    def get_rebalance_data(self, hypervisor_address):
         query = """
-            {
-                uniswapV3Rebalances(
-                    first: 1000
-                    where: {
-                        hypervisor: "0xa08583b36a809934e019574695392b516be9354f"
-                    }
-                ) {
-                    id
-                    timestamp
-                    tick
-                    totalAmount0
-                    totalAmount1
-                    grossFees0
-                    grossFees1
-                    totalSupply
+        query rebalances($hypervisor: String!, $timestamp_start: Int!){
+            uniswapV3Rebalances(
+                first: 1000
+                where: {
+                    hypervisor: $hypervisor
+                    timestamp_gte: $timestamp_start
                 }
+            ) {
+                id
+                timestamp
+                tick
+                totalAmountUSD
+                grossFeesUSD
             }
+        }
         """
-        return self.query(query)['data']['uniswapV3Rebalances']
+        timestamp_start = timestamp_ago(timedelta(days=30))
+        variables = {
+            "hypervisor": hypervisor_address,
+            "timestamp_start": timestamp_start
+        }
+        return self.query(query, variables)['data']['uniswapV3Rebalances']
 
-    def calculate_apy(self):
-        data = self.get_rebalance_data()
+    def get_hypervisor_data(self):
+        query = """
+        {
+            uniswapV3Hypervisors(
+                first: 1000
+            ) {
+                id
+                pool
+                grossFeesClaimedUSD
+                protocolFeesCollectedUSD
+                feesReinvestedUSD
+                tvlUSD
+            }
+        }
+        """
+        return self.query(query)['data']['uniswapV3Hypervisors']
+    
+    def calculate_apy(self, hypervisor_address):
+        data = self.get_rebalance_data(hypervisor_address)
+
+        if not data:
+            # Empty data usually means hypervisor address could not be found
+            return False
+
         df = DataFrame(data, dtype=np.float64)
-
-        # Convert tick to price
-        df['price'] = 1.0001 ** df.tick
-
-        # Calculate total amounts and fees in Token1
-        df['totalAmountInToken1'] = df.totalAmount0 * df.price + df.totalAmount1  # Current tokens are current price
-        df['totalFeeInToken1'] = df.grossFees0 * df.price + df.grossFees1
-
-        df['totalInToken1'] = df.totalAmountInToken1 + df.totalFeeInToken1
 
         df.sort_values('timestamp', inplace=True)
 
         # Calculate fee return rate for each rebalance event
-        df['feeRate'] = df.totalFeeInToken1 / df.totalInToken1.shift(1)
-        df['totalRate'] = df.totalInToken1 / df.totalInToken1.shift(1) - 1
+        df['feeRate'] = df.grossFeesUSD / df.totalAmountUSD.shift(1)
+        df['totalRate'] = df.totalAmountUSD / df.totalAmountUSD.shift(1) - 1
 
         # Time since last rebalance
         df['periodSeconds'] = df.timestamp.diff()
@@ -66,3 +84,5 @@ class Hypervisor(UniV3SubgraphClient):
         df['apyFee'] = df.cumFeeReturn * (YEAR_SECONDS / df.cumPeriodSeconds)
 
         return df[['cumPeriodSeconds', 'cumFeeReturn', 'cumTotalReturn', 'apyFee']].tail(1).to_dict('records')[0]
+
+
