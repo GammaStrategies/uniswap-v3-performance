@@ -47,6 +47,7 @@ class Hypervisor(UniV3SubgraphClient):
                 grossFeesUSD
                 protocolFeesUSD
                 netFeesUSD
+                totalAmountUSD
             }
         }
         """
@@ -101,8 +102,6 @@ class Hypervisor(UniV3SubgraphClient):
 
         # Extrapolate linearly to annual rate
         df['apyFee'] = df.cumFeeReturn * (YEAR_SECONDS / df.cumPeriodSeconds)
-
-        return df
 
         return df[['cumPeriodSeconds', 'cumFeeReturn', 'cumTotalReturn', 'apyFee']].tail(1).to_dict('records')[0]
 
