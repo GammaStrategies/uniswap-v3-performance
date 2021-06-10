@@ -13,7 +13,26 @@ class Hypervisor(UniV3SubgraphClient):
     def __init__(self):
         super().__init__(VISOR_SUBGRAPH_URL)
 
-    def get_rebalance_data(self, hypervisor_address):
+    def get_24hrs_rebalance_data(self):
+        query = """
+        query rebalances($timestamp_start: Int!){
+            uniswapV3Rebalances(
+                first: 1000
+                where: {
+                    timestamp_gte: $timestamp_start
+                }
+            ) {
+                grossFeesUSD
+                protocolFeesUSD
+                netFeesUSD
+            }
+        }
+        """
+        timestamp_start = timestamp_ago(timedelta(hours=24))
+        variables = {"timestamp_start": timestamp_start}
+        return self.query(query, variables)['data']['uniswapV3Rebalances']
+
+    def get_rebalance_data(self, hypervisor_address, time_delta):
         query = """
         query rebalances($hypervisor: String!, $timestamp_start: Int!){
             uniswapV3Rebalances(
@@ -25,13 +44,13 @@ class Hypervisor(UniV3SubgraphClient):
             ) {
                 id
                 timestamp
-                tick
-                totalAmountUSD
                 grossFeesUSD
+                protocolFeesUSD
+                netFeesUSD
             }
         }
         """
-        timestamp_start = timestamp_ago(timedelta(days=30))
+        timestamp_start = timestamp_ago(time_delta)
         variables = {
             "hypervisor": hypervisor_address,
             "timestamp_start": timestamp_start
@@ -54,9 +73,9 @@ class Hypervisor(UniV3SubgraphClient):
         }
         """
         return self.query(query)['data']['uniswapV3Hypervisors']
-    
+
     def calculate_apy(self, hypervisor_address):
-        data = self.get_rebalance_data(hypervisor_address)
+        data = self.get_rebalance_data(hypervisor_address, timedelta(days=30))
 
         if not data:
             # Empty data usually means hypervisor address could not be found
@@ -83,6 +102,13 @@ class Hypervisor(UniV3SubgraphClient):
         # Extrapolate linearly to annual rate
         df['apyFee'] = df.cumFeeReturn * (YEAR_SECONDS / df.cumPeriodSeconds)
 
+        return df
+
         return df[['cumPeriodSeconds', 'cumFeeReturn', 'cumTotalReturn', 'apyFee']].tail(1).to_dict('records')[0]
 
 
+    def fees_24hr(self):
+        data = self.get_24hrs_rebalance_data()
+        df_fees = DataFrame(data, dtype=np.float64)
+
+        return df_fees.sum().to_dict()

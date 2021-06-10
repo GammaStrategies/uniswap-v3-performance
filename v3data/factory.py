@@ -17,6 +17,7 @@ class Factory(UniV3SubgraphClient):
                 first: 1000
             ){
                 id
+                grossFeesClaimedUSD
                 tvlUSD
             }
         }
@@ -26,5 +27,9 @@ class Factory(UniV3SubgraphClient):
     def tvl(self):
         data = self.get_factory_data()
         return sum([float(factory['tvlUSD']) for factory in data])
+
+    def fees_generated(self):
+        data = self.get_factory_data()
+        return sum([float(factory['grossFeesClaimedUSD']) for factory in data])
     
 

@@ -51,40 +51,44 @@ def hypervisor_apy(hypervisorAddress):
         return Response("Invalid hypervisor address", status=422)
 
 
-# @app.route('/dashboard')
-# def dashboard():
-#     period = request.args.get("period", "daily").lowercase()
+@app.route('/dashboard')
+def dashboard():
+    period = request.args.get("period", "daily").lower()
 
-#     visr = Visr()
-#     visr_data = visr.token_data()
-#     period_estimates = visr.period_estimates()
+    visr = Visr()
+    visr_data = visr.token_data()
+    period_estimates = visr.period_estimates()
 
-#     pool = Pool()
-#     factory = Factory()
-#     v3data = UniV3Data()
-#     visr_price_usd = v3data.get_visr_price_usd()
+    pool = Pool()
+    factory = Factory()
+    v3data = UniV3Data()
+    visr_price_usd = v3data.get_visr_price_usd()
+    hypervisor = Hypervisor()
+    fees_24hr = hypervisor.fees_24hr()
 
-#     dashboard_stats = {
-#         "stakedUsdAmount": visr_data['staked'] * visr_price_usd,
-#         "stakedAmount": visr_data['staked'],
-#         "feeStatsFeeAccural": "$9.5k",
-#         "feeStatsAmountVisr": "72.k",
-#         "feeStatsStakingApy": period_estimates[period]['apy'],
-#         "feeStatsStakingDailyYield": period_estimates[period]['yield'],
-#         "feeCumulativeFeeUsd": "$129k",
-#         "feeCumulativeFeeUsdAnnual": "$3M",
-#         "feeCumulativeFeeDistributed": visr_data['distributed'],
-#         "feeCumulativeFeeDistributedAnnual": period_estimates[period]['visrDistributedAnnual'],
-#         "uniswapPairTotalValueLocked": factory.tvl(),
-#         "uniswapPairAmountPairs": pool.count(),
-#         "uniswapFeesGenerated": "$129k",
-#         "uniswapFeesBasedApr": 3.29,
-#         "visrPrice": visr_price_usd,  # End point for price
-#         "id": 2 # What is this?
-#     }
+    dashboard_stats = {
+        "stakedUsdAmount": visr_data['staked'] * visr_price_usd,
+        "stakedAmount": visr_data['staked'],
+        "feeStatsFeeAccural": fees_24hr['protocolFeesUSD'],
+        "feeStatsAmountVisr": "NA",
+        "feeStatsStakingApy": period_estimates[period]['apy'],
+        "feeStatsStakingDailyYield": period_estimates[period]['yield'],
+        "feeCumulativeFeeUsd": visr_data['totalDistributedUSD'],
+        "feeCumulativeFeeUsdAnnual": period_estimates[period]['visrDistributedAnnualUSD'],
+        "feeCumulativeFeeDistributed": visr_data['totalDistributed'],
+        "feeCumulativeFeeDistributedAnnual": period_estimates[period]['visrDistributedAnnual'],
+        "uniswapPairTotalValueLocked": factory.tvl(),
+        "uniswapPairAmountPairs": pool.count(),
+        "uniswapFeesGenerated": factory.fees_generated(),
+        "uniswapFeesBasedApr": 3.29,
+        "visrPrice": visr_price_usd,  # End point for price
+        "id": 2 # What is this?
+    }
 
-# @app.route('/dashboard/visrDistributions')
-# def visr_distributions():
-#     days = int(request.args.get("days", 5))
-#     visr = Visr()
-#     return visr.recent_distributions(days)
+    return dashboard_stats
+
+@app.route('/dashboard/visrDistributions')
+def visr_distributions():
+    days = int(request.args.get("days", 5))
+    visr = Visr()
+    return visr.recent_distributions(days)

@@ -18,6 +18,7 @@ class Visr(UniV3SubgraphClient):
             ){
                 totalSupply
                 totalDistributed
+                totalDistributedUSD
                 totalStaked
             }
         }
@@ -38,6 +39,7 @@ class Visr(UniV3SubgraphClient):
             ){
                 date
                 distributed
+                distributedUSD
                 totalStaked
             }
         }
@@ -48,7 +50,8 @@ class Visr(UniV3SubgraphClient):
         data = self.get_token_data()
 
         return {
-            "distributed": int(data['totalDistributed']) / self.decimal_factor,
+            "totalDistributed": int(data['totalDistributed']) / self.decimal_factor,
+            "totalDistributedUSD": float(data['totalDistributedUSD']),
             "staked": int(data['totalStaked']) / self.decimal_factor,
             "total": int(data['totalSupply']) / self.decimal_factor
         }
@@ -76,6 +79,7 @@ class Visr(UniV3SubgraphClient):
             results[period]['yield'] = period_yield
             results[period]['apy'] = period_yield * 365 / n_days
             results[period]['visrDistributedAnnual'] = (df_period.distributed.sum() / self.decimal_factor) * 365 / n_days
+            results[period]['visrDistributedAnnualUSD'] = df_period.distributedUSD.sum() * 365 / n_days
 
         return results
 
