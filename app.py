@@ -80,7 +80,7 @@ def dashboard():
         "uniswapPairTotalValueLocked": factory.tvl(),
         "uniswapPairAmountPairs": pool.count(),
         "uniswapFeesGenerated": factory.fees_generated(),
-        "uniswapFeesBasedApr": 3.29,
+        "uniswapFeesBasedApr": "Todo",
         "visrPrice": visr_price_usd,  # End point for price
         "id": 2 # What is this?
     }
