@@ -2,7 +2,7 @@ import os
 
 V3_FACTORY_ADDRESS = "0x1F98431c8aD98523631AE4a59f267346ea31F984"
 
-V3_SUBGRAPH_ADDRESS = "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-testing"
+UNI_V3_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-testing"
 
 
 visor_subgraphs = {

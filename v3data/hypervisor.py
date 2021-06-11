@@ -1,36 +1,17 @@
 import numpy as np
-from  datetime import timedelta
+from datetime import timedelta
 from pandas import DataFrame
 
-from v3data.data import UniV3SubgraphClient
+from v3data import SubgraphClient
 from v3data.utils import timestamp_ago
 from v3data.config import VISOR_SUBGRAPH_URL
 
 YEAR_SECONDS = 60 * 60 * 24 * 365
 
 
-class Hypervisor(UniV3SubgraphClient):
+class Hypervisor(SubgraphClient):
     def __init__(self):
         super().__init__(VISOR_SUBGRAPH_URL)
-
-    def get_24hrs_rebalance_data(self):
-        query = """
-        query rebalances($timestamp_start: Int!){
-            uniswapV3Rebalances(
-                first: 1000
-                where: {
-                    timestamp_gte: $timestamp_start
-                }
-            ) {
-                grossFeesUSD
-                protocolFeesUSD
-                netFeesUSD
-            }
-        }
-        """
-        timestamp_start = timestamp_ago(timedelta(hours=24))
-        variables = {"timestamp_start": timestamp_start}
-        return self.query(query, variables)['data']['uniswapV3Rebalances']
 
     def get_rebalance_data(self, hypervisor_address, time_delta):
         query = """
@@ -104,10 +85,3 @@ class Hypervisor(UniV3SubgraphClient):
         df['apyFee'] = df.cumFeeReturn * (YEAR_SECONDS / df.cumPeriodSeconds)
 
         return df[['cumPeriodSeconds', 'cumFeeReturn', 'cumTotalReturn', 'apyFee']].tail(1).to_dict('records')[0]
-
-
-    def fees_24hr(self):
-        data = self.get_24hrs_rebalance_data()
-        df_fees = DataFrame(data, dtype=np.float64)
-
-        return df_fees.sum().to_dict()

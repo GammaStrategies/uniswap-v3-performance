@@ -3,28 +3,15 @@ import datetime
 import numpy as np
 import pandas as pd
 
+from v3data import SubgraphClient
 from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal
-from v3data.config import V3_SUBGRAPH_ADDRESS, V3_FACTORY_ADDRESS, TOKEN_LIST_URL
+from v3data.config import UNI_V3_SUBGRAPH_URL, V3_FACTORY_ADDRESS, TOKEN_LIST_URL
 
 
-class UniV3SubgraphClient:
-    def __init__(self, url):
-        self._url = url
-
-    def query(self, query: str, variables=None) -> dict:
-        """Make graphql query to subgraph"""
-        if variables:
-            params = {'query': query, 'variables': variables}
-        else:
-            params = {'query': query}
-        response = requests.post(self._url, json=params)
-        return response.json()
-
-
-class UniV3Data(UniV3SubgraphClient):
+class UniV3Data(SubgraphClient):
     def __init__(self):
-        super().__init__(V3_SUBGRAPH_ADDRESS)
-        
+        super().__init__(UNI_V3_SUBGRAPH_URL)
+
     def get_token_list(self):
         response = requests.get(TOKEN_LIST_URL)
         token_list = response.json()['tokens']
@@ -334,43 +321,3 @@ class UniV3Data(UniV3SubgraphClient):
         data = df_swaps.to_dict('records')
 
         return data
-
-    def get_visr_price_usd(self):
-        """Get VISR price from ETH/VISR 0.3% pool"""
-        WETH_VISR_03_POOL = "0x9a9cf34c3892acdb61fb7ff17941d8d81d279c75"
-
-        query = """
-        query visrPrice($id: String!){
-            pool(
-                id: $id
-            ){
-                sqrtPrice
-                token0{
-                    symbol
-                    decimals
-                }
-                token1{
-                    symbol
-                    decimals
-                }
-            }
-            bundle(id:1){
-            ethPriceUSD
-            }
-        }
-        """
-        variables = {"id": WETH_VISR_03_POOL}
-        data = self.query(query, variables)['data']
-
-        sqrt_priceX96 = float(data['pool']['sqrtPrice'])
-        decimal0 = int(data['pool']['token0']['decimals'])
-        decimal1 = int(data['pool']['token1']['decimals'])
-        eth_price = float(data['bundle']['ethPriceUSD'])
-
-        visr_price_eth = sqrtPriceX96_to_priceDecimal(
-            sqrt_priceX96,
-            decimal0,
-            decimal1
-        )
-
-        return (1 / visr_price_eth) * eth_price
