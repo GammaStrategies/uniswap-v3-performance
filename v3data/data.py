@@ -3,26 +3,86 @@ import datetime
 import numpy as np
 import pandas as pd
 
-from v3data.utils import timestamp_to_date
+from v3data import SubgraphClient
+from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal
+from v3data.config import UNI_V3_SUBGRAPH_URL, V3_FACTORY_ADDRESS, TOKEN_LIST_URL
 
-FACTORY_ADDRESS = "0x1F98431c8aD98523631AE4a59f267346ea31F984"
 
-
-class UniV3SubgraphClient:
+class UniV3Data(SubgraphClient):
     def __init__(self):
-        self._url = "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt"
+        super().__init__(UNI_V3_SUBGRAPH_URL)
 
-    def query(self, query: str, variables=None) -> dict:
-        """Make graphql query to subgraph"""
-        if variables:
-            params = {'query': query, 'variables': variables}
-        else:
-            params = {'query': query}
-        response = requests.post(self._url, json=params)
-        return response.json()
+    def get_token_list(self):
+        response = requests.get(TOKEN_LIST_URL)
+        token_list = response.json()['tokens']
 
+        token_addresses = {}
+        for token in token_list:
+            symbol = token['symbol']
+            if token_addresses.get(symbol):
+                token_addresses[symbol].append(token['address'])
+            else:
+                token_addresses[symbol] = [token['address']]
 
-class UniV3Data(UniV3SubgraphClient):
+        return token_addresses
+
+    def get_pools_by_tokens(self, token_addresses):
+        query0 = """
+        query whitelistPools($ids: [String!]!)
+        {
+          pools(
+            first: 1000
+            where: {
+              token0_in: $ids
+            }
+            orderBy: volumeUSD
+            orderDirection: desc
+          ) {
+            id
+            feeTier
+            volumeUSD
+            token0{
+              id
+              symbol
+            }
+            token1{
+              id
+              symbol
+            }
+          }
+        }
+        """
+        query1 = """
+        query whitelistPools($ids: [String!]!)
+        {
+          pools(
+            first: 1000
+            where: {
+              token1_in: $ids
+            }
+            orderBy: volumeUSD
+            orderDirection: desc
+          ) {
+            id
+            feeTier
+            volumeUSD
+            token0{
+              id
+              symbol
+            }
+            token1{
+              id
+              symbol
+            }
+          }
+        }
+        """
+        variables = {"ids": token_addresses}
+        pool0 = self.query(query0, variables)['data']['pools']
+        pool1 = self.query(query1, variables)['data']['pools']
+
+        return pool0 + pool1
+
     def get_factory(self):
         """Get factory data."""
         query = """
@@ -36,8 +96,33 @@ class UniV3Data(UniV3SubgraphClient):
           }
         }
         """
-        variables = {"id": FACTORY_ADDRESS}
+        variables = {"id": V3_FACTORY_ADDRESS}
         self.factory = self.query(query, variables)['data']['factory']
+
+    def get_pool(self, pool_address):
+        """Get metadata for pool"""
+        query = """
+        query poolData($id: String!) {
+          pool(
+            id: $id
+          ){
+            id
+            token0{
+              id
+              symbol
+              decimals
+            }
+            token1{
+              id
+              symbol
+              decimals
+            }
+          }
+        }
+        """
+
+        variables = {"id": pool_address}
+        return self.query(query, variables)['data']['pool']
 
     def get_pools(self):
         """Get latest factory data."""
@@ -183,7 +268,7 @@ class UniV3Data(UniV3SubgraphClient):
 
         return cumulative
 
-    def get_historical_pool_prices(self, pool_address, time_delta):
+    def get_historical_pool_prices(self, pool_address, time_delta=None):
         query = """
             query poolPrices($id: String!, $timestamp_start: Int!){
                 pool(
@@ -197,21 +282,26 @@ class UniV3Data(UniV3SubgraphClient):
                     ){
                         id
                         timestamp
-                        amount0
-                        amount1
+                        sqrtPriceX96
                     }
                 }
             }
         """
+
+        if time_delta:
+            timestamp_start = int((datetime.datetime.utcnow() - time_delta).replace(
+                tzinfo=datetime.timezone.utc).timestamp())
+        else:
+            timestamp_start = 0
+
         variables = {
             'id': pool_address,
-            "timestamp_start": int((datetime.datetime.utcnow() - time_delta).replace(
-                tzinfo=datetime.timezone.utc).timestamp())
+            "timestamp_start": timestamp_start
         }
         has_data = True
         all_swaps = []
         while has_data:
-            swaps = self.query(query, variables)['data']['pool']['swaps']
+            swaps = (self.query(query, variables))['data']['pool']['swaps']
 
             all_swaps.extend(swaps)
             timestamps = set([int(swap['timestamp']) for swap in swaps])
@@ -220,33 +310,14 @@ class UniV3Data(UniV3SubgraphClient):
             if len(swaps) < 1000:
                 has_data = False
 
+        pool = self.get_pool(pool_address)
+
         df_swaps = pd.DataFrame(all_swaps, dtype=np.float64)
         df_swaps.timestamp = df_swaps.timestamp.astype(np.int64)
         df_swaps.drop_duplicates(inplace=True)
-        df_swaps['priceInToken1'] = abs(df_swaps.amount1 / df_swaps.amount0)
+        df_swaps['priceDecimal'] = df_swaps.sqrtPriceX96.apply(
+            sqrtPriceX96_to_priceDecimal, args=(int(pool['token0']['decimals']), int(pool['token1']['decimals']))
+        )
         data = df_swaps.to_dict('records')
 
         return data
-
-    def bollinger_bands(self, pool_address, hours_ago):
-        data = self.get_historical_pool_prices(pool_address, datetime.timedelta(hours=hours_ago))
-        df = pd.DataFrame(data, dtype=np.float64)
-        df['datetime'] = pd.to_datetime(df.timestamp, unit='s')
-
-        interval = hours_ago / 20
-        df_closing_price = df.sort_values('datetime').resample(f"{interval}H", on='datetime').last()
-        mid = df_closing_price.priceInToken1.mean()
-        two_std = 2 * df_closing_price.priceInToken1.std()
-
-        results = {
-            'pool': pool_address,
-            'period_hours': hours_ago,
-            'interval_hours': interval,
-            'dt_latest': df.datetime.iat[-1].isoformat(),
-            'latest': df.priceInToken1.iat[-1],
-            'mid': mid,
-            'upper': mid + two_std,
-            'lower': mid - two_std
-        }
-
-        return results
