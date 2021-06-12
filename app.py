@@ -39,13 +39,16 @@ def uniswap_pools(token):
     return {"pools": pools_from_symbol(token)}
 
 
-@app.route('/hypervisor/<hypervisorAddress>/apy')
-def hypervisor_apy(hypervisorAddress):
+@app.route('/hypervisor/<hypervisor_address>/returns')
+def hypervisor_apy(hypervisor_address):
     hypervisor = Hypervisor()
-    apy = hypervisor.calculate_apy(hypervisorAddress)
+    returns = hypervisor.calculate_returns(hypervisor_address)
 
-    if apy:
-        return apy
+    if returns:
+        return {
+            "hypervisor": hypervisor_address,
+            "returns": returns
+        }
     else:
         return Response("Invalid hypervisor address", status=400)
 
@@ -80,7 +83,7 @@ def visr_distributions():
     }
 
 
-@app.route('/uniswapV3Hypervisors/aggregateStats')
+@app.route('/hypervisors/aggregateStats')
 def aggregate_stats():
     top_level = TopLevelData()
     top_level_data = top_level.all_stats()
@@ -94,7 +97,7 @@ def aggregate_stats():
     }
 
 
-@app.route('/uniswapV3Hypervisors/recentFees')
+@app.route('/hypervisors/recentFees')
 def recent_fees():
     hours = int(request.args.get("hours", 24))
     top_level = TopLevelData()
@@ -104,13 +107,3 @@ def recent_fees():
         "periodHours": hours,
         "fees": recent_fees
     }
-
-
-@app.route('/dashboard')
-def dashboard():
-
-    dashboard_stats = {
-        "uniswapFeesBasedApr": "Todo",
-    }
-
-    return None

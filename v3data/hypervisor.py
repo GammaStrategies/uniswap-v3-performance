@@ -6,7 +6,9 @@ from v3data import SubgraphClient
 from v3data.utils import timestamp_ago
 from v3data.config import VISOR_SUBGRAPH_URL
 
-YEAR_SECONDS = 60 * 60 * 24 * 365
+
+DAY_SECONDS = 24 * 60 * 60
+YEAR_SECONDS = 365 * DAY_SECONDS
 
 
 class Hypervisor(SubgraphClient):
@@ -56,32 +58,52 @@ class Hypervisor(SubgraphClient):
         """
         return self.query(query)['data']['uniswapV3Hypervisors']
 
-    def calculate_apy(self, hypervisor_address):
+    def calculate_returns(self, hypervisor_address):
         data = self.get_rebalance_data(hypervisor_address, timedelta(days=30))
 
         if not data:
             # Empty data usually means hypervisor address could not be found
             return False
 
-        df = DataFrame(data, dtype=np.float64)
+        df_rebalances = DataFrame(data, dtype=np.float64)
 
-        df.sort_values('timestamp', inplace=True)
+        df_rebalances.sort_values('timestamp', inplace=True)
 
         # Calculate fee return rate for each rebalance event
-        df['feeRate'] = df.grossFeesUSD / df.totalAmountUSD.shift(1)
-        df['totalRate'] = df.totalAmountUSD / df.totalAmountUSD.shift(1) - 1
+        df_rebalances['feeRate'] = df_rebalances.grossFeesUSD / df_rebalances.totalAmountUSD.shift(1)
+        df_rebalances['totalRate'] = df_rebalances.totalAmountUSD / df_rebalances.totalAmountUSD.shift(1) - 1
 
         # Time since last rebalance
-        df['periodSeconds'] = df.timestamp.diff()
+        df_rebalances['periodSeconds'] = df_rebalances.timestamp.diff()
 
-        # Time since first reblance
-        df['cumPeriodSeconds'] = df.periodSeconds.cumsum()
+        periods = {
+            "daily": 1,
+            "weekly": 7,
+            "monthly": 30
+        }
 
-        # Compound fee return rate for each rebalance
-        df['cumFeeReturn'] = (1 + df['feeRate']).cumprod() - 1
-        df['cumTotalReturn'] = (1 + df['totalRate']).cumprod() - 1
+        # Calculate returns for using last 1, 7, and 30 days data
+        results = {}
+        for period, days in periods.items():
+            timestamp_start = timestamp_ago(timedelta(days=days))
+            df_period = df_rebalances.loc[df_rebalances.timestamp > timestamp_start].copy()
 
-        # Extrapolate linearly to annual rate
-        df['apyFee'] = df.cumFeeReturn * (YEAR_SECONDS / df.cumPeriodSeconds)
+            # Time since first reblance
+            df_period['totalPeriodSeconds'] = df_period.periodSeconds.cumsum()
 
-        return df[['cumPeriodSeconds', 'cumFeeReturn', 'cumTotalReturn', 'apyFee']].tail(1).to_dict('records')[0]
+            # Compound fee return rate for each rebalance
+            df_period['cumFeeReturn'] = (1 + df_period.feeRate).cumprod() - 1
+            df_period['cumTotalReturn'] = (1 + df_period.totalRate).cumprod() - 1
+
+            # Last row is the cumulative results
+            returns = df_period[['totalPeriodSeconds', 'cumFeeReturn']].tail(1)  # , 'cumTotalReturn'
+
+            # Extrapolate linearly to annual rate
+            returns['feeApr'] = returns.cumFeeReturn * (YEAR_SECONDS / returns.totalPeriodSeconds)
+
+            # Extrapolate by compounding
+            returns['feeApy'] = (1 + returns.cumFeeReturn * (DAY_SECONDS / returns.totalPeriodSeconds)) ** 365
+
+            results[period] = returns.to_dict('records')[0]
+
+        return results
