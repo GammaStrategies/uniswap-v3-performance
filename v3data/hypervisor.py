@@ -106,7 +106,7 @@ class Hypervisor(SubgraphClient):
             returns['feeApr'] = returns.cumFeeReturn * (YEAR_SECONDS / returns.totalPeriodSeconds)
 
             # Extrapolate by compounding
-            returns['feeApy'] = (1 + returns.cumFeeReturn * (DAY_SECONDS / returns.totalPeriodSeconds)) ** 365
+            returns['feeApy'] = (1 + returns.cumFeeReturn * (DAY_SECONDS / returns.totalPeriodSeconds)) ** 365 - 1
 
             results[period] = returns.to_dict('records')[0]
 

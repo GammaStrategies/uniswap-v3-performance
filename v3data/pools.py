@@ -1,7 +1,4 @@
 from v3data.data import UniV3Data
-from v3data import SubgraphClient
-from v3data.config import VISOR_SUBGRAPH_URL
-
 
 def pools_from_symbol(symbol):
     client = UniV3Data()
