@@ -39,6 +39,17 @@ def uniswap_pools(token):
     return {"pools": pools_from_symbol(token)}
 
 
+@app.route('/hypervisor/<hypervisor_address>/basicStats')
+def hypervisor_basic_stats(hypervisor_address):
+    hypervisor = Hypervisor()
+    basic_stats = hypervisor.basic_stats(hypervisor_address)
+
+    if basic_stats:
+        return basic_stats
+    else:
+        return Response("Invalid hypervisor address", status=400)
+
+
 @app.route('/hypervisor/<hypervisor_address>/returns')
 def hypervisor_apy(hypervisor_address):
     hypervisor = Hypervisor()
@@ -54,7 +65,7 @@ def hypervisor_apy(hypervisor_address):
 
 
 @app.route('/visr/basicStats')
-def basic_stats():
+def visr_basic_stats():
     visr = VisrData()
     token_data = visr.token_data()
     visr_price_usd = visr.price_usd()

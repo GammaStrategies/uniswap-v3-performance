@@ -41,14 +41,13 @@ class Hypervisor(SubgraphClient):
         }
         return self.query(query, variables)['data']['uniswapV3Rebalances']
 
-    def get_hypervisor_data(self):
+    def get_hypervisor_data(self, hypervisor_address):
         query = """
-        {
-            uniswapV3Hypervisors(
-                first: 1000
+        query hypervisor($id: String!){
+            uniswapV3Hypervisor(
+                id: $id
             ) {
                 id
-                pool
                 grossFeesClaimedUSD
                 protocolFeesCollectedUSD
                 feesReinvestedUSD
@@ -56,7 +55,12 @@ class Hypervisor(SubgraphClient):
             }
         }
         """
-        return self.query(query)['data']['uniswapV3Hypervisors']
+        variables = {"id": hypervisor_address}
+        return self.query(query, variables)['data']['uniswapV3Hypervisor']
+
+    def basic_stats(self, hypervisor_address):
+        data = self.get_hypervisor_data(hypervisor_address)
+        return data
 
     def calculate_returns(self, hypervisor_address):
         data = self.get_rebalance_data(hypervisor_address, timedelta(days=30))
