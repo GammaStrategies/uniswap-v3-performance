@@ -1,7 +1,9 @@
 # Analytics
 
 ## VISR Token Endpoints
-### GET /visr/basicStats
+### VISR token basic stats
+`GET /visr/basicStats`
+
 Returns basic stats about the VISR token
 
 Response:
@@ -14,7 +16,9 @@ Response:
 	"totalSupply": 100000000.0
 }
 ```
-### Get /visr/yield
+### VISR token staking yields
+`GET /visr/yield`
+
 Returns yield related data for the VISR token
 
 Daily is calculated using the most recent day data.
@@ -46,7 +50,9 @@ Response:
 	}
 }
 ```
-### GET /visr/dailyDistribution
+### Daily VISR distribution
+`GET /visr/dailyDistribution`
+
 Returns the amount of VISR distributed per day.
 
 5 days by default, this can be adjusted by sending the days parameter
@@ -87,7 +93,8 @@ Response:
 
 ## Uniswap V3 Hypervisor endpoints
 
-### GET /hypervisors/aggregateStats
+### Top level aggregated stats
+`GET /hypervisors/aggregateStats`
 totalFeesClaimedUSD is USD
 
 TVL has a 400k buffer at the moment to take into account closed beta positions
@@ -101,7 +108,9 @@ Response:
 }
 ```
 
-### GET /hypervisors/recentFees
+### Recently collected fees
+`GET /hypervisors/recentFees`
+
 Returns  fees collected in the last 24 hours.  The period can be modified by sending the hours parameter.
 
 Response:
@@ -119,7 +128,9 @@ Response:
 }
 ```
 
-### GET /hypervisor/<hypervisorAddress>/returns
+### Hypervisor returns
+`GET /hypervisor/<hypervisorAddress>/returns`
+
 Get stats related to returns calculated using the most recent daily/weekly/monthly data
 
 Response:
@@ -151,7 +162,8 @@ Response:
 
 ## Bollinger Bands
 
-### GET /bollingerBandsChartData
+### Chart data for bollinger bands
+`GET /bollingerBandsChartData`
 To get bollinger bands for a specific pool
 with these paramaters:
 poolAddress: address of pool
