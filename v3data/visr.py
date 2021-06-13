@@ -101,7 +101,7 @@ class VisrData:
         results = [
             {
                 "timestamp": day['date'],
-                "date": timestamp_to_date(day['date']),
+                "date": timestamp_to_date(day['date'], '%B %d, %Y'),
                 "distributed": float(day['distributed']) / self.decimal_factor
             }
             for day in data
