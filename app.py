@@ -10,6 +10,7 @@ from v3data.toplevel import TopLevelData
 app = Flask(__name__)
 CORS(app)
 
+PRIVATE_BETA_TVL = 400000
 
 @app.route('/')
 def main():
@@ -109,10 +110,8 @@ def aggregate_stats():
     top_level = TopLevelData()
     top_level_data = top_level.all_stats()
 
-    private_beta_tvl = 400000
-
     return {
-        'totalValueLockedUSD': top_level_data['tvl'] + private_beta_tvl,
+        'totalValueLockedUSD': top_level_data['tvl'] + PRIVATE_BETA_TVL,
         'pairCount': top_level_data['pool_count'],
         'totalFeesClaimedUSD': top_level_data['fees_claimed']
     }
@@ -157,7 +156,7 @@ def dashboard():
         "feeCumulativeFeeUsdAnnual": visr_yield[period]['estimatedAnnualDistributionUSD'],
         "feeCumulativeFeeDistributed": token_data['totalDistributed'],
         "feeCumulativeFeeDistributedAnnual": visr_yield[period]['estimatedAnnualDistribution'],
-        "uniswapPairTotalValueLocked": top_level_data['tvl'],
+        "uniswapPairTotalValueLocked": top_level_data['tvl'] + PRIVATE_BETA_TVL,
         "uniswapPairAmountPairs": top_level_data['pool_count'],
         "uniswapFeesGenerated": top_level_data['fees_claimed'],
         "uniswapFeesBasedApr": f"{top_level_returns[period]['feeApr']:.0%}",
