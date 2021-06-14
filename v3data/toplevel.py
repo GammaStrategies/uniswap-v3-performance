@@ -124,8 +124,9 @@ class TopLevelData:
         for hypervisor in hypervisors:
             tvl_share = float(hypervisor['tvlUSD']) / tvl
             results = hypervisor_client.calculate_returns(hypervisor['id'])
-            for period, values in results.items():
-                returns[period]['feeApr'] += values['feeApr'] * tvl_share
-                returns[period]['feeApy'] += values['feeApy'] * tvl_share
+            if results:
+                for period, values in results.items():
+                    returns[period]['feeApr'] += values['feeApr'] * tvl_share
+                    returns[period]['feeApy'] += values['feeApy'] * tvl_share
 
         return returns

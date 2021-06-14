@@ -88,9 +88,19 @@ def visr_distributions():
     days = int(request.args.get("days", 5))
     visr = VisrData()
     distributions = visr.daily_distribution(days)
+
+    fee_distributions = []
+    for i, distribution in enumerate(distributions):
+        fee_distributions.append(
+            {
+                'title': distribution['date'],
+                'desc': f"{int(distribution['distributed']):,} VISR Distributed",
+                'id': i + 2
+            }
+        )
+
     return {
-        'nDays': len(distributions),
-        'dailyDistribution': distributions
+        'feeDistribution': fee_distributions
     }
 
 
@@ -135,7 +145,6 @@ def dashboard():
     top_level = TopLevelData()
     top_level_data = top_level.all_stats()
     top_level_returns = top_level.calculate_returns()
-    recent_fees = top_level.recent_fees(24)
 
     dashboard_stats = {
         "stakedUsdAmount": token_data['totalStaked'] * visr_price_usd,
