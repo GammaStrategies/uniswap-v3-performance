@@ -36,7 +36,7 @@ class Hypervisor(SubgraphClient):
         """
         timestamp_start = timestamp_ago(time_delta)
         variables = {
-            "hypervisor": hypervisor_address,
+            "hypervisor": hypervisor_address.lower(),
             "timestamp_start": timestamp_start
         }
         return self.query(query, variables)['data']['uniswapV3Rebalances']
@@ -55,7 +55,7 @@ class Hypervisor(SubgraphClient):
             }
         }
         """
-        variables = {"id": hypervisor_address}
+        variables = {"id": hypervisor_address.lower()}
         return self.query(query, variables)['data']['uniswapV3Hypervisor']
 
     def basic_stats(self, hypervisor_address):

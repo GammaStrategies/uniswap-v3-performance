@@ -28,7 +28,7 @@ class VisrData:
             }
         }
         """
-        variables = {"id": self.address}
+        variables = {"id": self.address.lower()}
         return self.visor_client.query(query, variables)['data']['visrToken']
 
     def get_token_day_data(self, days=30):

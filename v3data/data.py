@@ -77,7 +77,7 @@ class UniV3Data(SubgraphClient):
           }
         }
         """
-        variables = {"ids": token_addresses}
+        variables = {"ids": [address.lower() for address in token_addresses]}
         pool0 = self.query(query0, variables)['data']['pools']
         pool1 = self.query(query1, variables)['data']['pools']
 
@@ -121,7 +121,7 @@ class UniV3Data(SubgraphClient):
         }
         """
 
-        variables = {"id": pool_address}
+        variables = {"id": pool_address.lower()}
         return self.query(query, variables)['data']['pool']
 
     def get_pools(self):
@@ -269,6 +269,7 @@ class UniV3Data(SubgraphClient):
         return cumulative
 
     def get_historical_pool_prices(self, pool_address, time_delta=None):
+        pool_address = pool_address.lower()
         query = """
             query poolPrices($id: String!, $timestamp_start: Int!){
                 pool(
