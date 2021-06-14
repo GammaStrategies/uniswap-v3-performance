@@ -3,7 +3,7 @@ from flask_cors import CORS
 
 from v3data.pools import pools_from_symbol
 from v3data.bollingerbands import BollingerBand
-from v3data.hypervisor import Hypervisor
+from v3data.hypervisor import HypervisorData
 from v3data.visr import VisrData
 from v3data.toplevel import TopLevelData
 
@@ -41,7 +41,7 @@ def uniswap_pools(token):
 
 @app.route('/hypervisor/<hypervisor_address>/basicStats')
 def hypervisor_basic_stats(hypervisor_address):
-    hypervisor = Hypervisor()
+    hypervisor = HypervisorData()
     basic_stats = hypervisor.basic_stats(hypervisor_address)
 
     if basic_stats:
@@ -52,7 +52,7 @@ def hypervisor_basic_stats(hypervisor_address):
 
 @app.route('/hypervisor/<hypervisor_address>/returns')
 def hypervisor_apy(hypervisor_address):
-    hypervisor = Hypervisor()
+    hypervisor = HypervisorData()
     returns = hypervisor.calculate_returns(hypervisor_address)
 
     if returns:
@@ -118,3 +118,39 @@ def recent_fees():
         "periodHours": hours,
         "fees": recent_fees
     }
+
+
+@app.route('/dashboard')
+def dashboard():
+    period = request.args.get("period", "daily").lower()
+
+    visr = VisrData()
+    token_data = visr.token_data()
+    visr_price_usd = visr.price_usd()
+    visr_yield = visr.token_yield()
+
+    top_level = TopLevelData()
+    top_level_data = top_level.all_stats()
+    top_level_returns = top_level.calculate_returns()
+    recent_fees = top_level.recent_fees(24)
+
+    dashboard_stats = {
+        "stakedUsdAmount": token_data['totalStaked'] * visr_price_usd,
+        "stakedAmount": token_data['totalStaked'],
+        "feeStatsFeeAccural": recent_fees['protocolFeesUSD'],
+        "feeStatsAmountVisr": recent_fees['protocolFeesVISR'],
+        "feeStatsStakingApy": visr_yield[period]['apy'],
+        "feeStatsStakingDailyYield": visr_yield[period]['yield'],
+        "feeCumulativeFeeUsd": token_data['totalDistributedUSD'],
+        "feeCumulativeFeeUsdAnnual": visr_yield[period]['estimatedAnnualDistributionUSD'],
+        "feeCumulativeFeeDistributed": token_data['totalDistributed'],
+        "feeCumulativeFeeDistributedAnnual": visr_yield[period]['estimatedAnnualDistribution'],
+        "uniswapPairTotalValueLocked": top_level_data['tvl'],
+        "uniswapPairAmountPairs": top_level_data['pool_count'],
+        "uniswapFeesGenerated": top_level_data['fees_claimed'],
+        "uniswapFeesBasedApr": top_level_returns[period]['feeApr'],
+        "visrPrice": visr_price_usd,  # End point for price
+        "id": 2  # What is this?
+    }
+
+    return dashboard_stats
