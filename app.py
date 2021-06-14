@@ -128,6 +128,9 @@ def dashboard():
     token_data = visr.token_data()
     visr_price_usd = visr.price_usd()
     visr_yield = visr.token_yield()
+    distributions = visr.daily_distribution(1)
+
+    last_day_distribution = float(distributions[0]['distributed'])
 
     top_level = TopLevelData()
     top_level_data = top_level.all_stats()
@@ -137,8 +140,8 @@ def dashboard():
     dashboard_stats = {
         "stakedUsdAmount": token_data['totalStaked'] * visr_price_usd,
         "stakedAmount": token_data['totalStaked'],
-        "feeStatsFeeAccural": recent_fees['protocolFeesUSD'],
-        "feeStatsAmountVisr": recent_fees['protocolFeesVISR'],
+        "feeStatsFeeAccural": last_day_distribution * visr_price_usd,
+        "feeStatsAmountVisr": last_day_distribution,
         "feeStatsStakingApy": visr_yield[period]['apy'],
         "feeStatsStakingDailyYield": visr_yield[period]['yield'],
         "feeCumulativeFeeUsd": token_data['totalDistributedUSD'],
@@ -148,7 +151,7 @@ def dashboard():
         "uniswapPairTotalValueLocked": top_level_data['tvl'],
         "uniswapPairAmountPairs": top_level_data['pool_count'],
         "uniswapFeesGenerated": top_level_data['fees_claimed'],
-        "uniswapFeesBasedApr": top_level_returns[period]['feeApr'],
+        "uniswapFeesBasedApr": f"{top_level_returns[period]['feeApr']:.0%}",
         "visrPrice": visr_price_usd,  # End point for price
         "id": 2  # What is this?
     }
