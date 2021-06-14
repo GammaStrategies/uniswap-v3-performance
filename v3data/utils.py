@@ -1,9 +1,15 @@
 import datetime
 
 
-def timestamp_to_date(timestamp):
+def timestamp_to_date(timestamp, format=None):
     """Converts UNIX timestamp to ISO date"""
-    return datetime.datetime.utcfromtimestamp(timestamp).isoformat()
+    dt = datetime.datetime.utcfromtimestamp(timestamp)
+
+    if not format:
+        # Returns isoformat by default
+        return dt.isoformat()
+    else:
+        return dt.strftime(format)
 
 
 def timestamp_ago(time_delta):

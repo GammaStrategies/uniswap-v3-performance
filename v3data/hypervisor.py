@@ -2,18 +2,16 @@ import numpy as np
 from datetime import timedelta
 from pandas import DataFrame
 
-from v3data import SubgraphClient
+from v3data import VisorClient
 from v3data.utils import timestamp_ago
-from v3data.config import VISOR_SUBGRAPH_URL
-
 
 DAY_SECONDS = 24 * 60 * 60
 YEAR_SECONDS = 365 * DAY_SECONDS
 
 
-class Hypervisor(SubgraphClient):
+class HypervisorData:
     def __init__(self):
-        super().__init__(VISOR_SUBGRAPH_URL)
+        self.visor_client = VisorClient()
 
     def get_rebalance_data(self, hypervisor_address, time_delta):
         query = """
@@ -36,10 +34,10 @@ class Hypervisor(SubgraphClient):
         """
         timestamp_start = timestamp_ago(time_delta)
         variables = {
-            "hypervisor": hypervisor_address,
+            "hypervisor": hypervisor_address.lower(),
             "timestamp_start": timestamp_start
         }
-        return self.query(query, variables)['data']['uniswapV3Rebalances']
+        return self.visor_client.query(query, variables)['data']['uniswapV3Rebalances']
 
     def get_hypervisor_data(self, hypervisor_address):
         query = """
@@ -55,8 +53,8 @@ class Hypervisor(SubgraphClient):
             }
         }
         """
-        variables = {"id": hypervisor_address}
-        return self.query(query, variables)['data']['uniswapV3Hypervisor']
+        variables = {"id": hypervisor_address.lower()}
+        return self.visor_client.query(query, variables)['data']['uniswapV3Hypervisor']
 
     def basic_stats(self, hypervisor_address):
         data = self.get_hypervisor_data(hypervisor_address)
@@ -106,7 +104,7 @@ class Hypervisor(SubgraphClient):
             returns['feeApr'] = returns.cumFeeReturn * (YEAR_SECONDS / returns.totalPeriodSeconds)
 
             # Extrapolate by compounding
-            returns['feeApy'] = (1 + returns.cumFeeReturn * (DAY_SECONDS / returns.totalPeriodSeconds)) ** 365
+            returns['feeApy'] = (1 + returns.cumFeeReturn * (DAY_SECONDS / returns.totalPeriodSeconds)) ** 365 - 1
 
             results[period] = returns.to_dict('records')[0]
 

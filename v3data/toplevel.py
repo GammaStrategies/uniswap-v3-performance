@@ -4,6 +4,7 @@ from pandas import DataFrame
 
 from v3data import VisorClient
 from v3data.visr import VisrData
+from v3data.hypervisor import HypervisorData
 from v3data.utils import timestamp_ago
 
 
@@ -27,6 +28,21 @@ class TopLevelData:
         }
         """
         return self.visor_client.query(query)['data']['uniswapV3HypervisorFactories']
+
+    def get_hypervisor_data(self):
+        """Get hypervisor IDs"""
+        query = """
+        {
+            uniswapV3Hypervisors(
+                first: 1000
+            ){
+                id
+                grossFeesClaimedUSD
+                tvlUSD
+            }
+        }
+        """
+        return self.visor_client.query(query)['data']['uniswapV3Hypervisors']
 
     def get_pool_data(self):
         query = """
@@ -83,3 +99,33 @@ class TopLevelData:
         df_fees['netFeesVISR'] = df_fees.netFeesUSD / visr_price
 
         return df_fees.sum().to_dict()
+
+    def calculate_returns(self):
+        hypervisors = self.get_hypervisor_data()
+
+        tvl = sum([float(hypervisor['tvlUSD']) for hypervisor in hypervisors])
+
+        hypervisor_client = HypervisorData()
+
+        returns = {
+            "daily": {
+                "feeApr": 0,
+                "feeApy": 0
+            },
+            "weekly": {
+                "feeApr": 0,
+                "feeApy": 0
+            },
+            "monthly": {
+                "feeApr": 0,
+                "feeApy": 0
+            }
+        }
+        for hypervisor in hypervisors:
+            tvl_share = float(hypervisor['tvlUSD']) / tvl
+            results = hypervisor_client.calculate_returns(hypervisor['id'])
+            for period, values in results.items():
+                returns[period]['feeApr'] += values['feeApr'] * tvl_share
+                returns[period]['feeApy'] += values['feeApy'] * tvl_share
+
+        return returns

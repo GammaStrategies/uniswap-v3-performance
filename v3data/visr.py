@@ -28,7 +28,7 @@ class VisrData:
             }
         }
         """
-        variables = {"id": self.address}
+        variables = {"id": self.address.lower()}
         return self.visor_client.query(query, variables)['data']['visrToken']
 
     def get_token_day_data(self, days=30):
@@ -101,7 +101,7 @@ class VisrData:
         results = [
             {
                 "timestamp": day['date'],
-                "date": timestamp_to_date(day['date']),
+                "date": timestamp_to_date(day['date'], '%B %d, %Y'),
                 "distributed": float(day['distributed']) / self.decimal_factor
             }
             for day in data
