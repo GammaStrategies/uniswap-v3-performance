@@ -15,7 +15,7 @@ class HypervisorData:
 
     def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
         query = """
-        query rebalances($hypervisor: String!, $timestamp_start: Int!, $limit:Int!){
+        query rebalances($hypervisor: String!, $timestamp_start: Int!, $limit: Int!){
             uniswapV3Rebalances(
                 first: $limit
                 where: {
@@ -92,7 +92,8 @@ class HypervisorData:
             df_period = df_rebalances.loc[df_rebalances.timestamp > timestamp_start].copy()
 
             if df_period.empty:
-                return False
+                timestamp_start = timestamp_ago(timedelta(days=days + 1))
+                df_period = df_rebalances.loc[df_rebalances.timestamp > timestamp_start].copy()
 
             # Time since first reblance
             df_period['totalPeriodSeconds'] = df_period.periodSeconds.cumsum()
