@@ -13,11 +13,11 @@ class HypervisorData:
     def __init__(self):
         self.visor_client = VisorClient()
 
-    def get_rebalance_data(self, hypervisor_address, time_delta):
+    def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
         query = """
-        query rebalances($hypervisor: String!, $timestamp_start: Int!){
+        query rebalances($hypervisor: String!, $timestamp_start: Int!, $limit:Int!){
             uniswapV3Rebalances(
-                first: 1000
+                first: $limit
                 where: {
                     hypervisor: $hypervisor
                     timestamp_gte: $timestamp_start
@@ -35,7 +35,8 @@ class HypervisorData:
         timestamp_start = timestamp_ago(time_delta)
         variables = {
             "hypervisor": hypervisor_address.lower(),
-            "timestamp_start": timestamp_start
+            "timestamp_start": timestamp_start,
+            "limit": limit
         }
         return self.visor_client.query(query, variables)['data']['uniswapV3Rebalances']
 
@@ -89,6 +90,9 @@ class HypervisorData:
         for period, days in periods.items():
             timestamp_start = timestamp_ago(timedelta(days=days))
             df_period = df_rebalances.loc[df_rebalances.timestamp > timestamp_start].copy()
+
+            if df_period.empty:
+                return False
 
             # Time since first reblance
             df_period['totalPeriodSeconds'] = df_period.periodSeconds.cumsum()
