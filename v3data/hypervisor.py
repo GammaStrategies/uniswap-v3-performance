@@ -92,7 +92,9 @@ class HypervisorData:
             df_period = df_rebalances.loc[df_rebalances.timestamp > timestamp_start].copy()
 
             if df_period.empty:
-                timestamp_start = timestamp_ago(timedelta(days=days + 1))
+                # if no rebalances in the last 24 hours, calculate using the 24 hours prior to the last rebalance
+                df_rebalances.timestamp.max() - DAY_SECONDS
+                timestamp_start = df_rebalances.timestamp.max() - DAY_SECONDS
                 df_period = df_rebalances.loc[df_rebalances.timestamp > timestamp_start].copy()
 
             # Time since first reblance
