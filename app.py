@@ -3,6 +3,7 @@ from flask_cors import CORS
 
 from v3data.pools import pools_from_symbol
 from v3data.bollingerbands import BollingerBand
+from v3data.strategies import BaseLimit
 from v3data.hypervisor import HypervisorData
 from v3data.visr import VisrData
 from v3data.toplevel import TopLevelData
@@ -11,6 +12,7 @@ app = Flask(__name__)
 CORS(app)
 
 PRIVATE_BETA_TVL = 400000
+
 
 @app.route('/')
 def main():
@@ -40,6 +42,16 @@ def uniswap_pools(token):
     return {"pools": pools_from_symbol(token)}
 
 
+@app.route('/baseRangeChartData/<hypervisor_address>')
+def base_range_chart(hypervisor_address):
+    baseLimitData = BaseLimit(hypervisor_address)
+    chart_data = baseLimitData.rebalance_ranges(hours=336)
+    if chart_data:
+        return {'data': chart_data}
+    else:
+        return Response("Invalid hypervisor address or not enough data", status=400)
+
+
 @app.route('/hypervisor/<hypervisor_address>/basicStats')
 def hypervisor_basic_stats(hypervisor_address):
     hypervisor = HypervisorData()
@@ -48,7 +60,7 @@ def hypervisor_basic_stats(hypervisor_address):
     if basic_stats:
         return basic_stats
     else:
-        return Response("Invalid hypervisor address", status=400)
+        return Response("Invalid hypervisor address or not enough data", status=400)
 
 
 @app.route('/hypervisor/<hypervisor_address>/returns')
@@ -62,7 +74,7 @@ def hypervisor_apy(hypervisor_address):
             "returns": returns
         }
     else:
-        return Response("Invalid hypervisor address", status=400)
+        return Response("Invalid hypervisor address or not enough data", status=400)
 
 
 @app.route('/visr/basicStats')

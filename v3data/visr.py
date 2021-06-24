@@ -1,8 +1,9 @@
+import datetime
 import numpy as np
 from pandas import DataFrame
 
-from v3data import VisorClient, UniswapV3Client
-from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal
+from v3data import VisorClient, UniswapV3Client, EthBlocksClient
+from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal, current_date_in_timezone, timestamp_ago
 
 
 class VisrData:
@@ -53,6 +54,22 @@ class VisrData:
         """
         variables = {"days": days}
         return self.visor_client.query(query, variables)['data']['visrTokenDayDatas']
+
+    def get_token_at_time(self, timestamp):
+        query = """
+        query distribution($block: Int!){
+            visrToken(
+                id: "0xf938424f7210f31df2aee3011291b658f872e91e"
+                block: {number: $block}
+            ){
+                totalDistributed
+                totalDistributedUSD
+            }
+        }
+        """
+        blocks_client = EthBlocksClient()
+        variables = {"block": blocks_client.block_from_timestamp(timestamp)}
+        return self.visor_client.query(query, variables)['data']['visrToken']
 
     def token_data(self):
         """Returns basic info in decimal"""
@@ -108,6 +125,33 @@ class VisrData:
         ]
 
         return results
+
+    def visr_distribution(self, days=5):
+        date_today_timestamp = current_date_in_timezone('US/Eastern')
+        time_ranges = []
+        time_ranges.append(
+            {
+                "start": date_today_timestamp,
+                "end": timestamp_ago(datetime.timedelta(minutes=5))  # some buffer for subgraph to index
+            }
+        )
+        for day in range(days - 1):
+            time_ranges.append(
+                {
+                    "start": time_ranges[-1]['start'] - 86400,
+                    "end": time_ranges[-1]['start']
+                }
+            )
+
+        for time_range in time_ranges:
+            start_data = self.get_token_at_time(time_range['start'])
+            end_data = self.get_token_at_time(time_range['end'])
+
+            distributed = (int(end_data['totalDistributed']) - int(start_data['totalDistributed'])) / self.decimal_factor
+            distributed_usd = float(end_data['totalDistributedUSD']) - float(start_data['totalDistributedUSD'])
+
+            print(distributed)
+            print(distributed_usd)
 
     def price_usd(self):
         """Get VISR price from ETH/VISR 0.3% pool"""
