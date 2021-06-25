@@ -20,6 +20,7 @@ def main():
     return "Visor Data"
 
 
+@app.route('/charts/bollingerbands/<poolAddress>')
 @app.route('/bollingerBandsChartData/<poolAddress>')
 def bollingerbands_chart(poolAddress):
     periodHours = int(request.args.get("periodHours", 24))
@@ -38,7 +39,7 @@ def bollingerbands_latest(poolAddress):
     return bband.latest_bands()
 
 
-@app.route('/dailyTvlChartData')
+@app.route('/charts/dailyTvl')
 def daily_tvl_chart_data():
     days = int(request.args.get("days", 20))
 
@@ -47,7 +48,7 @@ def daily_tvl_chart_data():
     return {'data': daily.tvl()}
 
 
-@app.route('/dailyFlowsChartData')
+@app.route('/charts/dailyFlows')
 def daily_flows_chart_data():
     days = int(request.args.get("days", 20))
 
@@ -56,7 +57,7 @@ def daily_flows_chart_data():
     return {'data': daily.asset_flows()}
 
 
-@app.route('/dailyHypervisorFlowsChartData/<hypervisor_address>')
+@app.route('/charts/dailyHypervisorFlows/<hypervisor_address>')
 def daily_hypervisor_flows_chart_data(hypervisor_address):
     days = int(request.args.get("days", 20))
 
@@ -70,7 +71,7 @@ def uniswap_pools(token):
     return {"pools": pools_from_symbol(token)}
 
 
-@app.route('/baseRangeChartData/<hypervisor_address>')
+@app.route('/charts/baseRange/<hypervisor_address>')
 def base_range_chart(hypervisor_address):
     baseLimitData = BaseLimit(hypervisor_address)
     chart_data = baseLimitData.rebalance_ranges(hours=336)
