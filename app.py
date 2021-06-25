@@ -7,6 +7,7 @@ from v3data.strategies import BaseLimit
 from v3data.hypervisor import HypervisorData
 from v3data.visr import VisrData
 from v3data.toplevel import TopLevelData
+from v3data.daily import DailyChart
 
 app = Flask(__name__)
 CORS(app)
@@ -35,6 +36,33 @@ def bollingerbands_latest(poolAddress):
     bband = BollingerBand(poolAddress, periodHours)
 
     return bband.latest_bands()
+
+
+@app.route('/dailyTvlChartData')
+def daily_tvl_chart_data():
+    days = int(request.args.get("days", 20))
+
+    daily = DailyChart(days)
+
+    return {'data': daily.tvl()}
+
+
+@app.route('/dailyFlowsChartData')
+def daily_flows_chart_data():
+    days = int(request.args.get("days", 20))
+
+    daily = DailyChart(days)
+
+    return {'data': daily.asset_flows()}
+
+
+@app.route('/dailyHypervisorFlowsChartData/<hypervisor_address>')
+def daily_hypervisor_flows_chart_data(hypervisor_address):
+    days = int(request.args.get("days", 20))
+
+    daily = DailyChart(days)
+
+    return {'data': daily.asset_flows(hypervisor_address)}
 
 
 @app.route('/pools/<token>')
