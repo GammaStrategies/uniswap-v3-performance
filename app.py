@@ -172,7 +172,7 @@ def recent_fees():
 
 @app.route('/dashboard')
 def dashboard():
-    period = request.args.get("period", "daily").lower()
+    period = request.args.get("period", "weekly").lower()
 
     visr = VisrData()
     token_data = visr.token_data()
