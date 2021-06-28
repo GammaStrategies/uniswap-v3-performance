@@ -106,7 +106,8 @@ class VisrData:
 
             results[period] = {}
             results[period]['yield'] = period_yield
-            results[period]['apy'] = period_yield * annual_scaling_factor
+            results[period]['apr'] = period_yield * annual_scaling_factor
+            results[period]['apy'] = (1 + period_yield / n_days) ** 365 - 1  # compounded daily
             results[period]['estimatedAnnualDistribution'] = (df_period.distributed.sum() / self.decimal_factor) * annual_scaling_factor
             results[period]['estimatedAnnualDistributionUSD'] = df_period.distributedUSD.sum() * annual_scaling_factor
 

@@ -191,6 +191,7 @@ def dashboard():
         "stakedAmount": token_data['totalStaked'],
         "feeStatsFeeAccural": last_day_distribution * visr_price_usd,
         "feeStatsAmountVisr": last_day_distribution,
+        "feeStatsStakingApr": visr_yield[period]['apr'],
         "feeStatsStakingApy": visr_yield[period]['apy'],
         "feeStatsStakingDailyYield": visr_yield[period]['yield'],
         "feeCumulativeFeeUsd": token_data['totalDistributedUSD'],
