@@ -68,6 +68,9 @@ class HypervisorData:
             # Empty data usually means hypervisor address could not be found
             return False
 
+        return self._calculate_returns(data)
+
+    def _calculate_returns(self, data):
         df_rebalances = DataFrame(data, dtype=np.float64)
 
         df_rebalances.sort_values('timestamp', inplace=True)
@@ -116,3 +119,40 @@ class HypervisorData:
             results[period] = returns.to_dict('records')[0]
 
         return results
+
+    def all_returns(self):
+        query = """
+        query hypervisorRebalances($timestampStart: Int!){
+            uniswapV3Hypervisors(
+                first:1000
+            ){
+                id
+                rebalances(
+                    first: 1000
+                    where:{
+                        timestamp_gte: $timestampStart
+                    }
+                    orderBy: timestamp
+                    orderDirection: desc
+                ){
+                    id
+                    timestamp
+                    grossFeesUSD
+                    protocolFeesUSD
+                    netFeesUSD
+                    totalAmountUSD
+                }
+            }
+        }
+        """
+        timestamp_start = timestamp_ago(timedelta(days=30))
+        variables = {"timestampStart": timestamp_start}
+        rebalances = self.visor_client.query(query, variables)['data']['uniswapV3Hypervisors']
+
+        results = {}
+        for hypervisor in rebalances:
+            if hypervisor['rebalances']:
+                results[hypervisor['id']] = self._calculate_returns(hypervisor['rebalances'])
+
+        return results
+

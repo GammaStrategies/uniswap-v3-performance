@@ -170,6 +170,13 @@ def recent_fees():
     }
 
 
+@app.route('/hypervisors/returns')
+def hypervisors_return():
+    hypervisor = HypervisorData()
+
+    return hypervisor.all_returns()
+
+
 @app.route('/dashboard')
 def dashboard():
     period = request.args.get("period", "weekly").lower()
