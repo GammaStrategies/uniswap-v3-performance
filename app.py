@@ -177,6 +177,13 @@ def hypervisors_return():
     return hypervisor.all_returns()
 
 
+@app.route('/hypervisors/allData')
+def hypervisors_all():
+    hypervisor = HypervisorData()
+
+    return hypervisor.all_data()
+
+
 @app.route('/dashboard')
 def dashboard():
     period = request.args.get("period", "weekly").lower()
