@@ -168,6 +168,9 @@ class HypervisorData:
                 maxTotalSupply
                 deposit0Max
                 deposit1Max
+                tvl0
+                tvl1
+                tvlUSD
                 pool{
                     id
                     token0{
@@ -211,14 +214,24 @@ class HypervisorData:
         for hypervisor in basics:
             hypervisor_id = hypervisor['id']
             pool_id = hypervisor['pool']['id']
+            decimals0 = hypervisor['pool']['token0']['decimals']
+            decimals1 = hypervisor['pool']['token1']['decimals']
+            totalSupply = int(hypervisor['totalSupply'])
+            maxTotalSupply = int(hypervisor['maxTotalSupply'])
+            capacityUsed = totalSupply / maxTotalSupply if maxTotalSupply > 0 else "No cap"
+
             results[hypervisor_id] = {
                 'poolAddress': pool_id,
-                'decimals0': hypervisor['pool']['token0']['decimals'],
-                'decimals1': hypervisor['pool']['token1']['decimals'],
-                'deposit0Max': hypervisor['deposit0Max'],
-                'deposit1Max': hypervisor['deposit1Max'],
-                'totalSupply': hypervisor['totalSupply'],
-                'maxTotalSupply': hypervisor['maxTotalSupply'],
+                'decimals0': decimals0,
+                'decimals1': decimals1,
+                'depositCap0': int(hypervisor['deposit0Max']) / 10 ** decimals0,
+                'depositCap1': int(hypervisor['deposit1Max']) / 10 ** decimals1,
+                'tvl0': int(hypervisor['tvl0']) / 10 ** decimals0,
+                'tvl1': int(hypervisor['tvl1']) / 10 ** decimals1,
+                'tvlUSD': hypervisor['tvlUSD'],
+                'totalSupply': totalSupply,
+                'maxTotalSupply': maxTotalSupply,
+                'capacityUsed': capacityUsed,
                 'sqrtPrice': pools[pool_id]['sqrtPrice'],
                 'tick': pools[pool_id]['tick'],
                 'observationIndex': pools[pool_id]['observationIndex'],
