@@ -2,7 +2,13 @@ import os
 
 V3_FACTORY_ADDRESS = "0x1F98431c8aD98523631AE4a59f267346ea31F984"
 
-UNI_V3_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt"
+uniswap_subgraphs = {
+    'prod': "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3",
+    'alt': "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt",
+    'test': "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-testing"
+}
+
+UNI_V3_SUBGRAPH_URL = uniswap_subgraphs[os.environ.get('UNISWAP_SUBGRAPH', 'alt')]
 
 ETH_BLOCKS_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/blocklytics/ethereum-blocks"
 
@@ -17,3 +23,4 @@ VISOR_SUBGRAPH_URL = visor_subgraphs[os.environ.get('VISOR_SUBGRAPH', 'prod')]
 TOKEN_LIST_URL = "https://tokens.coingecko.com/uniswap/all.json"
 
 DEFAULT_BBAND_INTERVALS = 20
+DEFAULT_TIMEZONE = 'UTC-5'
