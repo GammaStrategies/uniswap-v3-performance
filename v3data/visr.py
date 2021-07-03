@@ -3,6 +3,7 @@ import numpy as np
 from pandas import DataFrame
 
 from v3data import VisorClient, UniswapV3Client, EthBlocksClient
+from v3data.config import DEFAULT_TIMEZONE
 from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal, current_date_in_timezone, timestamp_ago
 
 
@@ -32,10 +33,10 @@ class VisrData:
         variables = {"id": self.address.lower()}
         return self.visor_client.query(query, variables)['data']['visrToken']
 
-    def get_token_day_data(self, days=30):
+    def get_token_day_data(self, timezone=DEFAULT_TIMEZONE, days=30):
         """Get daily data for VISR token"""
         query = """
-        query($days: Int!){
+        query($days: Int! $timezone: String!){
             visrTokenDayDatas(
                 orderBy: date
                 orderDirection: desc
@@ -43,6 +44,7 @@ class VisrData:
                 where: {
                     distributed_gt: 0
                     totalStaked_gt: 0
+                    timezone: $timezone
                 }
             ){
                 date
@@ -52,7 +54,7 @@ class VisrData:
             }
         }
         """
-        variables = {"days": days}
+        variables = {"days": days, "timezone": timezone}
         return self.visor_client.query(query, variables)['data']['visrTokenDayDatas']
 
     def get_token_at_time(self, timestamp):
@@ -82,9 +84,9 @@ class VisrData:
             "totalSupply": int(data['totalSupply']) / self.decimal_factor
         }
 
-    def token_yield(self):
+    def token_yield(self, timezone=DEFAULT_TIMEZONE):
         """Gets estimates such as APY, visor distributed"""
-        day_data = self.get_token_day_data()
+        day_data = self.get_token_day_data(timezone=timezone, days=30)
         df_day_data = DataFrame(day_data, dtype=np.float64)
         df_day_data['dailyYield'] = df_day_data.distributed / df_day_data.totalStaked
         df_day_data = df_day_data.sort_values('date')
@@ -113,46 +115,19 @@ class VisrData:
 
         return results
 
-    def daily_distribution(self, days=5):
+    def daily_distribution(self, timezone=DEFAULT_TIMEZONE, days=5):
         """Get most recent VISR distribution amounts"""
-        data = self.get_token_day_data(days)
+        data = self.get_token_day_data(timezone=timezone, days=days)
         results = [
             {
                 "timestamp": day['date'],
-                "date": timestamp_to_date(day['date'], '%B %d, %Y'),
+                "date": timestamp_to_date(int(day['date']), '%B %d, %Y'),
                 "distributed": float(day['distributed']) / self.decimal_factor
             }
             for day in data
         ]
 
         return results
-
-    def visr_distribution(self, days=5):
-        date_today_timestamp = current_date_in_timezone('US/Eastern')
-        time_ranges = []
-        time_ranges.append(
-            {
-                "start": date_today_timestamp,
-                "end": timestamp_ago(datetime.timedelta(minutes=5))  # some buffer for subgraph to index
-            }
-        )
-        for day in range(days - 1):
-            time_ranges.append(
-                {
-                    "start": time_ranges[-1]['start'] - 86400,
-                    "end": time_ranges[-1]['start']
-                }
-            )
-
-        for time_range in time_ranges:
-            start_data = self.get_token_at_time(time_range['start'])
-            end_data = self.get_token_at_time(time_range['end'])
-
-            distributed = (int(end_data['totalDistributed']) - int(start_data['totalDistributed'])) / self.decimal_factor
-            distributed_usd = float(end_data['totalDistributedUSD']) - float(start_data['totalDistributedUSD'])
-
-            print(distributed)
-            print(distributed_usd)
 
     def price_usd(self):
         """Get VISR price from ETH/VISR 0.3% pool"""

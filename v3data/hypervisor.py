@@ -2,7 +2,7 @@ import numpy as np
 from datetime import timedelta
 from pandas import DataFrame
 
-from v3data import VisorClient
+from v3data import VisorClient, UniswapV3Client
 from v3data.utils import timestamp_ago
 
 DAY_SECONDS = 24 * 60 * 60
@@ -12,6 +12,7 @@ YEAR_SECONDS = 365 * DAY_SECONDS
 class HypervisorData:
     def __init__(self):
         self.visor_client = VisorClient()
+        self.uniswap_client = UniswapV3Client()
 
     def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
         query = """
@@ -156,3 +157,85 @@ class HypervisorData:
 
         return results
 
+    def all_data(self):
+        query_basics = """
+        {
+            uniswapV3Hypervisors(
+                first:1000
+            ){
+                id
+                totalSupply
+                maxTotalSupply
+                deposit0Max
+                deposit1Max
+                tvl0
+                tvl1
+                tvlUSD
+                pool{
+                    id
+                    token0{
+                        symbol
+                        decimals
+                    }
+                    token1{
+                        symbol
+                        decimals
+                    }
+                }
+
+            }
+        }
+        """
+
+        basics = self.visor_client.query(query_basics)['data']['uniswapV3Hypervisors']
+        pool_addresses = [hypervisor['pool']['id'] for hypervisor in basics]
+
+        query_slot0 = """
+        query slot0($pools: [String!]!){
+            pools(
+                where: {
+                    id_in: $pools
+                }
+            ) {
+                id
+                sqrtPrice
+                tick
+                observationIndex
+            }
+        }
+        """
+        variables = {"pools": pool_addresses}
+        pools_data = self.uniswap_client.query(query_slot0, variables)['data']['pools']
+        pools = {pool.pop('id'): pool for pool in pools_data}
+
+        returns = self.all_returns()
+
+        results = {}
+        for hypervisor in basics:
+            hypervisor_id = hypervisor['id']
+            pool_id = hypervisor['pool']['id']
+            decimals0 = hypervisor['pool']['token0']['decimals']
+            decimals1 = hypervisor['pool']['token1']['decimals']
+            totalSupply = int(hypervisor['totalSupply'])
+            maxTotalSupply = int(hypervisor['maxTotalSupply'])
+            capacityUsed = totalSupply / maxTotalSupply if maxTotalSupply > 0 else "No cap"
+
+            results[hypervisor_id] = {
+                'poolAddress': pool_id,
+                'decimals0': decimals0,
+                'decimals1': decimals1,
+                'depositCap0': int(hypervisor['deposit0Max']) / 10 ** decimals0,
+                'depositCap1': int(hypervisor['deposit1Max']) / 10 ** decimals1,
+                'tvl0': int(hypervisor['tvl0']) / 10 ** decimals0,
+                'tvl1': int(hypervisor['tvl1']) / 10 ** decimals1,
+                'tvlUSD': hypervisor['tvlUSD'],
+                'totalSupply': totalSupply,
+                'maxTotalSupply': maxTotalSupply,
+                'capacityUsed': capacityUsed,
+                'sqrtPrice': pools[pool_id]['sqrtPrice'],
+                'tick': pools[pool_id]['tick'],
+                'observationIndex': pools[pool_id]['observationIndex'],
+                'returns': returns.get(hypervisor_id)
+            }
+
+        return results

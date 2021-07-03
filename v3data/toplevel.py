@@ -102,7 +102,6 @@ class TopLevelData:
 
     def calculate_returns(self):
         hypervisors = self.get_hypervisor_data()
-
         tvl = sum([float(hypervisor['tvlUSD']) for hypervisor in hypervisors])
 
         hypervisor_client = HypervisorData()
@@ -122,7 +121,10 @@ class TopLevelData:
             }
         }
         for hypervisor in hypervisors:
-            tvl_share = float(hypervisor['tvlUSD']) / tvl
+            if tvl > 0:
+                tvl_share = float(hypervisor['tvlUSD']) / tvl
+            else:
+                tvl_share = 0
             results = hypervisor_client.calculate_returns(hypervisor['id'])
             if results:
                 for period, values in results.items():
