@@ -2,7 +2,7 @@ import numpy as np
 from datetime import timedelta
 from pandas import DataFrame
 
-from v3data import VisorClient, UniswapV3Client
+from v3data import VisorClient, PricingClient, UniswapV3Client
 from v3data.utils import timestamp_ago
 
 DAY_SECONDS = 24 * 60 * 60
@@ -13,6 +13,7 @@ class HypervisorData:
     def __init__(self):
         self.visor_client = VisorClient()
         self.uniswap_client = UniswapV3Client()
+        self.pricing_client = PricingClient()
 
     def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
         query = """
@@ -65,13 +66,21 @@ class HypervisorData:
     def calculate_returns(self, hypervisor_address):
         data = self.get_rebalance_data(hypervisor_address, timedelta(days=30))
 
-        if not data:
-            # Empty data usually means hypervisor address could not be found
-            return False
-
         return self._calculate_returns(data)
 
     def _calculate_returns(self, data):
+
+        if not data:
+            return {
+                period: {
+                    "cumFeeReturn": 0.0,
+                    "feeApr": None,
+                    "feeApy": None,
+                    "totalPeriodSeconds": 0
+                }
+                for period in ['daily', 'weekly', 'monthly']
+            }
+
         df_rebalances = DataFrame(data, dtype=np.float64)
 
         df_rebalances.sort_values('timestamp', inplace=True)
@@ -152,8 +161,7 @@ class HypervisorData:
 
         results = {}
         for hypervisor in rebalances:
-            if hypervisor['rebalances']:
-                results[hypervisor['id']] = self._calculate_returns(hypervisor['rebalances'])
+            results[hypervisor['id']] = self._calculate_returns(hypervisor['rebalances'])
 
         return results
 
@@ -189,6 +197,8 @@ class HypervisorData:
 
         basics = self.visor_client.query(query_basics)['data']['uniswapV3Hypervisors']
         pool_addresses = [hypervisor['pool']['id'] for hypervisor in basics]
+
+        tvl = self.pricing_client.hypervisors_tvl()
 
         query_slot0 = """
         query slot0($pools: [String!]!){
@@ -226,9 +236,9 @@ class HypervisorData:
                 'decimals1': decimals1,
                 'depositCap0': int(hypervisor['deposit0Max']) / 10 ** decimals0,
                 'depositCap1': int(hypervisor['deposit1Max']) / 10 ** decimals1,
-                'tvl0': int(hypervisor['tvl0']) / 10 ** decimals0,
-                'tvl1': int(hypervisor['tvl1']) / 10 ** decimals1,
-                'tvlUSD': hypervisor['tvlUSD'],
+                'tvl0': tvl[hypervisor_id]['tvl0Decimal'],
+                'tvl1': tvl[hypervisor_id]['tvl1Decimal'],
+                'tvlUSD': tvl[hypervisor_id]['tvlUSD'],
                 'totalSupply': totalSupply,
                 'maxTotalSupply': maxTotalSupply,
                 'capacityUsed': capacityUsed,
