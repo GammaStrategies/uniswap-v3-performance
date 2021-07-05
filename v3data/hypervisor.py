@@ -74,8 +74,8 @@ class HypervisorData:
             return {
                 period: {
                     "cumFeeReturn": 0.0,
-                    "feeApr": None,
-                    "feeApy": None,
+                    "feeApr": 0,
+                    "feeApy": 0,
                     "totalPeriodSeconds": 0
                 }
                 for period in ['daily', 'weekly', 'monthly']
