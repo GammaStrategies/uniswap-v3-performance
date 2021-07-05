@@ -31,7 +31,6 @@ class UserData:
             return {}
 
         tvl = self.pricing_client.hypervisors_tvl()
-        print(tvl)
 
         visors = {}
         for visor in data['visorsOwned']:
