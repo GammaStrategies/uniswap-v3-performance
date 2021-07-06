@@ -2,7 +2,7 @@ import numpy as np
 from datetime import timedelta
 from pandas import DataFrame
 
-from v3data import VisorClient
+from v3data import VisorClient, PricingClient, UniswapV3Client
 from v3data.utils import timestamp_ago
 
 DAY_SECONDS = 24 * 60 * 60
@@ -12,6 +12,8 @@ YEAR_SECONDS = 365 * DAY_SECONDS
 class HypervisorData:
     def __init__(self):
         self.visor_client = VisorClient()
+        self.uniswap_client = UniswapV3Client()
+        self.pricing_client = PricingClient()
 
     def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
         query = """
@@ -64,13 +66,21 @@ class HypervisorData:
     def calculate_returns(self, hypervisor_address):
         data = self.get_rebalance_data(hypervisor_address, timedelta(days=30))
 
-        if not data:
-            # Empty data usually means hypervisor address could not be found
-            return False
-
         return self._calculate_returns(data)
 
     def _calculate_returns(self, data):
+
+        if not data:
+            return {
+                period: {
+                    "cumFeeReturn": 0.0,
+                    "feeApr": 0,
+                    "feeApy": 0,
+                    "totalPeriodSeconds": 0
+                }
+                for period in ['daily', 'weekly', 'monthly']
+            }
+
         df_rebalances = DataFrame(data, dtype=np.float64)
 
         df_rebalances.sort_values('timestamp', inplace=True)
@@ -151,8 +161,91 @@ class HypervisorData:
 
         results = {}
         for hypervisor in rebalances:
-            if hypervisor['rebalances']:
-                results[hypervisor['id']] = self._calculate_returns(hypervisor['rebalances'])
+            results[hypervisor['id']] = self._calculate_returns(hypervisor['rebalances'])
 
         return results
 
+    def all_data(self):
+        query_basics = """
+        {
+            uniswapV3Hypervisors(
+                first:1000
+            ){
+                id
+                totalSupply
+                maxTotalSupply
+                deposit0Max
+                deposit1Max
+                tvl0
+                tvl1
+                tvlUSD
+                pool{
+                    id
+                    token0{
+                        symbol
+                        decimals
+                    }
+                    token1{
+                        symbol
+                        decimals
+                    }
+                }
+
+            }
+        }
+        """
+
+        basics = self.visor_client.query(query_basics)['data']['uniswapV3Hypervisors']
+        pool_addresses = [hypervisor['pool']['id'] for hypervisor in basics]
+
+        tvl = self.pricing_client.hypervisors_tvl()
+
+        query_slot0 = """
+        query slot0($pools: [String!]!){
+            pools(
+                where: {
+                    id_in: $pools
+                }
+            ) {
+                id
+                sqrtPrice
+                tick
+                observationIndex
+            }
+        }
+        """
+        variables = {"pools": pool_addresses}
+        pools_data = self.uniswap_client.query(query_slot0, variables)['data']['pools']
+        pools = {pool.pop('id'): pool for pool in pools_data}
+
+        returns = self.all_returns()
+
+        results = {}
+        for hypervisor in basics:
+            hypervisor_id = hypervisor['id']
+            pool_id = hypervisor['pool']['id']
+            decimals0 = hypervisor['pool']['token0']['decimals']
+            decimals1 = hypervisor['pool']['token1']['decimals']
+            totalSupply = int(hypervisor['totalSupply'])
+            maxTotalSupply = int(hypervisor['maxTotalSupply'])
+            capacityUsed = totalSupply / maxTotalSupply if maxTotalSupply > 0 else "No cap"
+
+            results[hypervisor_id] = {
+                'poolAddress': pool_id,
+                'decimals0': decimals0,
+                'decimals1': decimals1,
+                'depositCap0': int(hypervisor['deposit0Max']) / 10 ** decimals0,
+                'depositCap1': int(hypervisor['deposit1Max']) / 10 ** decimals1,
+                'tvl0': tvl[hypervisor_id]['tvl0Decimal'],
+                'tvl1': tvl[hypervisor_id]['tvl1Decimal'],
+                'tvlUSD': tvl[hypervisor_id]['tvlUSD'],
+                'totalSupply': totalSupply,
+                'maxTotalSupply': maxTotalSupply,
+                'capacityUsed': capacityUsed,
+                'sqrtPrice': pools[pool_id]['sqrtPrice'],
+                'tick': pools[pool_id]['tick'],
+                'observationIndex': pools[pool_id]['observationIndex'],
+                'returns': returns.get(hypervisor_id)
+            }
+
+        return results

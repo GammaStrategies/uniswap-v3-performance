@@ -6,8 +6,11 @@ from v3data.bollingerbands import BollingerBand
 from v3data.strategies import BaseLimit
 from v3data.hypervisor import HypervisorData
 from v3data.visr import VisrData
+from v3data.users import UserData
+from v3data.visor import VisorData
 from v3data.toplevel import TopLevelData
 from v3data.daily import DailyChart
+from v3data.config import DEFAULT_TIMEZONE
 
 app = Flask(__name__)
 CORS(app)
@@ -64,6 +67,20 @@ def daily_hypervisor_flows_chart_data(hypervisor_address):
     daily = DailyChart(days)
 
     return {'data': daily.asset_flows(hypervisor_address)}
+
+
+@app.route('/user/<address>')
+def user_data(address):
+    user_data = UserData(address)
+
+    return user_data.all_data()
+
+
+@app.route('/vault/<address>')
+def visor_data(address):
+    visor_data = VisorData(address)
+
+    return visor_data.all_data()
 
 
 @app.route('/pools/<token>')
@@ -128,8 +145,13 @@ def visr_yield():
 @app.route('/visr/dailyDistribution')
 def visr_distributions():
     days = int(request.args.get("days", 5))
+    timezone = request.args.get("timezone", DEFAULT_TIMEZONE).upper()
+
+    if timezone not in ['UTC', 'UTC-5']:
+        return Response("Only UTC and UTC-5 timezones supported", status=400)
+
     visr = VisrData()
-    distributions = visr.daily_distribution(days)
+    distributions = visr.daily_distribution(timezone, days)
 
     fee_distributions = []
     for i, distribution in enumerate(distributions):
@@ -177,6 +199,13 @@ def hypervisors_return():
     return hypervisor.all_returns()
 
 
+@app.route('/hypervisors/allData')
+def hypervisors_all():
+    hypervisor = HypervisorData()
+
+    return hypervisor.all_data()
+
+
 @app.route('/dashboard')
 def dashboard():
     period = request.args.get("period", "weekly").lower()
@@ -185,7 +214,7 @@ def dashboard():
     token_data = visr.token_data()
     visr_price_usd = visr.price_usd()
     visr_yield = visr.token_yield()
-    distributions = visr.daily_distribution(1)
+    distributions = visr.daily_distribution(timezone=DEFAULT_TIMEZONE, days=1)
 
     last_day_distribution = float(distributions[0]['distributed'])
 
