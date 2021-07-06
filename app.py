@@ -6,6 +6,8 @@ from v3data.bollingerbands import BollingerBand
 from v3data.strategies import BaseLimit
 from v3data.hypervisor import HypervisorData
 from v3data.visr import VisrData
+from v3data.users import UserData
+from v3data.visor import VisorData
 from v3data.toplevel import TopLevelData
 from v3data.daily import DailyChart
 from v3data.config import DEFAULT_TIMEZONE
@@ -65,6 +67,20 @@ def daily_hypervisor_flows_chart_data(hypervisor_address):
     daily = DailyChart(days)
 
     return {'data': daily.asset_flows(hypervisor_address)}
+
+
+@app.route('/user/<address>')
+def user_data(address):
+    user_data = UserData(address)
+
+    return user_data.all_data()
+
+
+@app.route('/vault/<address>')
+def visor_data(address):
+    visor_data = VisorData(address)
+
+    return visor_data.all_data()
 
 
 @app.route('/pools/<token>')

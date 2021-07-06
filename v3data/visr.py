@@ -4,7 +4,7 @@ from pandas import DataFrame
 
 from v3data import VisorClient, UniswapV3Client, EthBlocksClient
 from v3data.config import DEFAULT_TIMEZONE
-from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal, current_date_in_timezone, timestamp_ago
+from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal, timestamp_ago
 
 
 class VisrData:
