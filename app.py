@@ -90,12 +90,19 @@ def uniswap_pools(token):
 
 @app.route('/charts/baseRange/<hypervisor_address>')
 def base_range_chart(hypervisor_address):
-    baseLimitData = BaseLimit(hypervisor_address)
-    chart_data = baseLimitData.rebalance_ranges(hours=336)
+    hypervisor_address = hypervisor_address.lower()
+    baseLimitData = BaseLimit(hours=336, chart=True)
+    chart_data = baseLimitData.rebalance_ranges(hypervisor_address)
     if chart_data:
-        return {'data': chart_data}
+        return {hypervisor_address: chart_data}
     else:
-        return Response("Invalid hypervisor address or not enough data", status=400)
+        return {}
+
+@app.route('/charts/baseRange/all')
+def base_range_chart_all():
+    baseLimitData = BaseLimit(hours=336, chart=True)
+    chart_data = baseLimitData.all_rebalance_ranges()
+    return chart_data
 
 
 @app.route('/hypervisor/<hypervisor_address>/basicStats')

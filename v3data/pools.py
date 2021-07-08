@@ -1,8 +1,10 @@
 import datetime
 from v3data import UniswapV3Client
 from v3data.data import UniV3Data
+from v3data.toplevel import TopLevelData
 from v3data.utils import sqrtPriceX96_to_priceDecimal
 
+USDC_WETH_03_POOL = '0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8'
 
 def pools_from_symbol(symbol):
     client = UniV3Data()
@@ -25,42 +27,10 @@ def pools_from_symbol(symbol):
 
 
 class Pool:
-    def __init__(self, address):
-        self.address = address.lower()
+    def __init__(self):
         self.client = UniswapV3Client()
-        self._init()
 
-    def _init(self):
-        """Get metadata for pool"""
-        query = """
-        query poolData($id: String!) {
-          pool(
-            id: $id
-          ){
-            id
-            token0{
-              id
-              symbol
-              decimals
-            }
-            token1{
-              id
-              symbol
-              decimals
-            }
-          }
-        }
-        """
-        variables = {"id": self.address}
-        data = self.client.query(query, variables)['data']['pool']
-
-        self.symbol0 = data['token0']['symbol']
-        self.symbol1 = data['token1']['symbol']
-
-        self.decimal0 = int(data['token0']['decimals'])
-        self.decimal1 = int(data['token1']['decimals'])
-
-    def swap_prices(self, time_delta=None):
+    def swap_prices(self, pool_address, time_delta=None):
         query = """
         query poolPrices($pool: String!, $timestampStart: Int!, $paginate: String!){
             swaps(
@@ -86,35 +56,59 @@ class Pool:
             timestamp_start = 0
 
         variables = {
-            "pool": self.address,
+            "pool": pool_address,
             "timestampStart": timestamp_start,
             "paginate": ""
         }
         data = self.client.paginate_query(query, "id", variables)
         return data
 
-    def hourly_prices(self, hours):
+    def hourly_prices(self, pools, hours):
+
         query = """
-        query poolPrices($pool: String!, $hours: Int!){
-            poolHourDatas(
-                first: $hours
-                orderBy: id
-                orderDirection: desc
-                where: {pool: $pool, sqrtPrice_gt: 0}
-            ){
-                periodStartUnix
-                sqrtPrice
+        query poolPrices($pools: [String!]!, $hours: Int!){
+            pools(
+                where: {
+                    id_in: $pools
+                    }
+                ){
+                    id
+                    token0 {
+                        decimals
+                    }
+                    token1 {
+                        decimals
+                    }
+                    poolHourData(
+                        first: $hours
+                        orderBy: id
+                        orderDirection: desc
+                        where: {
+                            sqrtPrice_gt: 0
+                        }
+                    ){
+                        periodStartUnix
+                        sqrtPrice
+                    }
+                }
             }
-        }
         """
-        variables = {
-            "pool": self.address,
-            "hours": hours
+        variables = {"pools": [pool.lower() for pool in pools], "hours": hours}
+        data = self.client.query(query, variables)['data']['pools']
+
+        pool_prices = {
+            pool['id']: [
+                {
+                    "timestamp": hour_data['periodStartUnix'],
+                    "price": sqrtPriceX96_to_priceDecimal(
+                        float(hour_data['sqrtPrice']),
+                        int(pool['token0']['decimals']), 
+                        int(pool['token1']['decimals'])
+                    )
+                }
+                for hour_data in pool['poolHourData']
+            ]
+            for pool in data
         }
-        data = self.client.query(query, variables)['data']['poolHourDatas']
 
-        for record in data:
-            record['timestamp'] = record.pop('periodStartUnix')
-            record['price'] = sqrtPriceX96_to_priceDecimal(float(record['sqrtPrice']), self.decimal0, self.decimal1)
-
-        return data
+        return pool_prices
