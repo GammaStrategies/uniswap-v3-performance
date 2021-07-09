@@ -60,34 +60,33 @@ Returns the amount of VISR distributed per day.
 Response:
 ```json
 {
-"dailyDistribution": [
-	{
-		"date": "2021-06-11T00:00:00", 
-		"distributed": 5626.787425526277, 
-		"timestamp": 1623369600
-	}, 
-	{
-		"date": "2021-06-10T00:00:00", 
-		"distributed": 5543.0, 
-		"timestamp": 1623283200
-	}, 
-	{
-		"date": "2021-06-09T00:00:00", 
-		"distributed": 3816.0, 
-		"timestamp": 1623196800
-	}, 
-	{
-		"date": "2021-06-08T00:00:00", 
-		"distributed": 6461.999999999999, 
-		"timestamp": 1623110400
-	}, 
-	{
-		"date": "2021-06-07T00:00:00", 
-		"distributed": 4467.0, 
-		"timestamp": 1623024000
-	}
-  ], 
-  "nDays": 5
+  "feeDistribution": [
+    {
+      "desc": "4,832 VISR Distributed", 
+      "id": 2, 
+      "title": "July 08, 2021"
+    }, 
+    {
+      "desc": "3,472 VISR Distributed", 
+      "id": 3, 
+      "title": "July 07, 2021"
+    }, 
+    {
+      "desc": "6,661 VISR Distributed", 
+      "id": 4, 
+      "title": "July 05, 2021"
+    }, 
+    {
+      "desc": "10,403 VISR Distributed", 
+      "id": 5, 
+      "title": "July 03, 2021"
+    }, 
+    {
+      "desc": "7,361 VISR Distributed", 
+      "id": 6, 
+      "title": "July 02, 2021"
+    }
+  ]
 }
 ```
 
@@ -180,10 +179,306 @@ Response:
 }
 ```
 
+### All hypervisor returns
+`GET /hypervisors/returns`
+
+Get stats related to returns calculated using the most recent daily/weekly/monthly data for ALL hypervisors
+
+Response:
+```json
+{
+  "0x09b8d86c6275e707155cdb5963cf611a432ccb21": {
+    "daily": {
+      "cumFeeReturn": 0.0025895779926869977, 
+      "feeApr": 0.9981291595660754, 
+      "feeApy": 1.70950754393257, 
+      "totalPeriodSeconds": 81818.0
+    }, 
+    "monthly": {
+      "cumFeeReturn": 0.020502573303036842, 
+      "feeApr": 1.0619043775418842, 
+      "feeApy": 1.8874179316359543, 
+      "totalPeriodSeconds": 608877.0
+    }, 
+    "weekly": {
+      "cumFeeReturn": 0.020371796472323123, 
+      "feeApr": 1.0737696530067824, 
+      "feeApy": 1.9217808701189476, 
+      "totalPeriodSeconds": 598308.0
+    }
+  }, 
+  ...
+  "0x18d3284d9eff64fc97b64ab2b871738e684aa151": {
+    "daily": {
+      "cumFeeReturn": 0.003232720797256894, 
+      "feeApr": 1.702295669621517, 
+      "feeApy": 4.464859244435365, 
+      "totalPeriodSeconds": 59888.0
+    }, 
+    "monthly": {
+      "cumFeeReturn": 0.057164421519664055, 
+      "feeApr": 1.5369376610111896, 
+      "feeApy": 3.635346051196099, 
+      "totalPeriodSeconds": 1172941.0
+    }, 
+    "weekly": {
+      "cumFeeReturn": 0.04786421857173351, 
+      "feeApr": 2.566364875295517, 
+      "feeApy": 11.902030647243988, 
+      "totalPeriodSeconds": 588165.0
+    }
+  }
+}
+```
+
+### All Hypervisor Data
+`GET /hypervisors/allData`
+
+Get all latest useful data for all hypervisors
+
+Response:
+```json
+{
+  "0x032c4e67fa01f6c3b01d0903d672d73b2f8d9dce": {
+    "capacityUsed": "No cap", 
+    "decimals0": 18, 
+    "decimals1": 18, 
+    "depositCap0": 1.157920892373162e+59, 
+    "depositCap1": 1.157920892373162e+59, 
+    "maxTotalSupply": 0, 
+    "observationIndex": "0", 
+    "poolAddress": "0xcd83055557536eff25fd0eafbc56e74a1b4260b3", 
+    "poolFeesUSD": "238243.8132098102578987264563502838", 
+    "poolTvlUSD": "8210196.990103881962712220969744398", 
+    "returns": {
+      "daily": {
+        "cumFeeReturn": 0.0, 
+        "feeApr": 0, 
+        "feeApy": 0, 
+        "totalPeriodSeconds": 0
+      }, 
+      "monthly": {
+        "cumFeeReturn": 0.0, 
+        "feeApr": 0, 
+        "feeApy": 0, 
+        "totalPeriodSeconds": 0
+      }, 
+      "weekly": {
+        "cumFeeReturn": 0.0, 
+        "feeApr": 0, 
+        "feeApy": 0, 
+        "totalPeriodSeconds": 0
+      }
+    }, 
+    "sqrtPrice": "5194954499130605945949899211", 
+    "tick": "-54496", 
+    "totalSupply": 0, 
+    "tvl0": 0.0, 
+    "tvl1": 0.0, 
+    "tvlUSD": "0"
+  }, 
+  ...
+}
+```
+
+## Charting Endpoints
+
+### Visor Finance Dashboard
+`GET /dashboard`
+
+All data used for dashboard
+
+Response:
+```json
+{
+  "feeCumulativeFeeDistributed": 370536.5737831378, 
+  "feeCumulativeFeeDistributedAnnual": 2220034.2857142854, 
+  "feeCumulativeFeeUsd": 449861.0550215234, 
+  "feeCumulativeFeeUsdAnnual": 1633879.9773082633, 
+  "feeStatsAmountVisr": 4832.0, 
+  "feeStatsFeeAccural": 4157.342166244254, 
+  "feeStatsStakingApr": 0.16659683342450002, 
+  "feeStatsStakingApy": 0.18123302000049968, 
+  "feeStatsStakingDailyYield": 0.0031950077643054797, 
+  "id": 2, 
+  "stakedAmount": 13744658.013716914, 
+  "stakedUsdAmount": 11825589.056505034, 
+  "uniswapFeesBasedApr": "165%", 
+  "uniswapFeesGenerated": 191832.3372774014, 
+  "uniswapPairAmountPairs": 14, 
+  "uniswapPairTotalValueLocked": 3952783.027803304, 
+  "visrPrice": 0.8603771039412778
+}
+```
+
+### Daily Total Value Locked
+`GET /visr/dailyTvl`
+
+Parameters:
+days: specify how many days of data to return, default 20
+
+Returns data for plotting the daily TVL chart
+
+Response:
+```json
+{
+  "data": [
+    {
+      "date": "2021-07-09T00:00:00Z", 
+      "group": "MATIC-WETH", 
+      "value": 75722.32094085723
+    }, 
+    {
+      "date": "2021-07-08T00:00:00Z", 
+      "group": "MATIC-WETH", 
+      "value": 71736.50304179122
+    }, 
+    {
+      "date": "2021-07-07T00:00:00Z", 
+      "group": "MATIC-WETH", 
+      "value": 76702.43929888491
+    }, 
+    {
+      "date": "2021-07-06T00:00:00Z", 
+      "group": "MATIC-WETH", 
+      "value": 70528.60971291398
+    }, 
+    {
+      "date": "2021-07-05T00:00:00Z", 
+      "group": "MATIC-WETH", 
+      "value": 68066.23221701225
+    }, 
+    {
+      "date": "2021-07-09T00:00:00Z", 
+      "group": "WETH-GTC", 
+      "value": 250840.78329538702
+    ...
+  ]  
+}
+```
+
+### Hypervisor Base Range Chart
+`GET /charts/baseRange/<hypervisor_address>`
+
+Parameters:
+days: specify how many days of data to return, default 20
+
+Returns data to plot price chart with base range bands.
+
+Response:
+```json
+{
+  "0x09b8d86c6275e707155cdb5963cf611a432ccb21": [
+    {
+      "date": "2021-07-01T21:21:08Z", 
+      "group": "MATIC-WETH", 
+      "max": 0.0005633407208100223, 
+      "min": 0.00045663990777634303, 
+      "value": 0.0005096973634525789
+    }, 
+    {
+      "date": "2021-07-01T21:24:34Z", 
+      "group": "MATIC-WETH", 
+      "max": 0.0005633407208100223, 
+      "min": 0.00045663990777634303, 
+      "value": 0.0005097709374719882
+    }, 
+    {
+      "date": "2021-07-01T21:33:36Z", 
+      "group": "MATIC-WETH", 
+      "max": 0.0005633407208100223, 
+      "min": 0.00045663990777634303, 
+      "value": 0.0005098445114913974
+    }, 
+    ...
+  ]
+```
+
+### All Hypervisor Base Range Chart
+`GET /charts/baseRange/all`
+
+Parameters:
+days: specify how many days of data to return, default 20
+
+Returns data to plot price chart with base range bands.
+This is same as Hypervisor Base Range Chart but returns all hypervisors
+
+## User/Vault Data
+
+### User data
+`GET /user/<user_address>`
+
+Get visors owned by users and positions in hypervisors
+
+Response:
+```json
+{
+  "0x04a0b6732d8c03c598a005471721176f15182aae": {  // Visor
+    "0x6c8116abe5c5f2c39553c6f4217840e71462539c": {  //Hypervisor
+      "balance0": 60.7040491828372, 
+      "balance1": 0.0745740786468935, 
+      "balanceUSD": 217.1838873830843, 
+      "shareOfSupply": 0.0006500671724555293, 
+      "shares": "65740489139965549"
+    }, 
+    "0x97491b65c9c8e8754b5c55ed208ff490b2ee6190": {  //Hypervisor
+      "balance0": 1.1937978153737167e-05, 
+      "balance1": 7.10377272450416e-05, 
+      "balanceUSD": 0.5411936546845825, 
+      "shareOfSupply": 2.4106312955619674e-06, 
+      "shares": "259716650867521"
+    }, 
+    "0x9a98bffabc0abf291d6811c034e239e916bbcec0": {  //Hypervisor
+      "balance0": 0.03544642552690304, 
+      "balance1": 32.68156773074734, 
+      "balanceUSD": 107.019510359322, 
+      "shareOfSupply": 8.247170845679256e-05, 
+      "shares": "121597648"
+    }
+  }, 
+  "0xcf033df6ef13454d12e6625063f482e927aa4571": {}
+}
+```
+
+### Visor data
+`GET /vault/<user_address>`
+
+Get positions of vaults
+
+Response:
+```json
+{
+  "0x6c8116abe5c5f2c39553c6f4217840e71462539c": {
+    "balance0": 60.7040491828372, 
+    "balance1": 0.0745740786468935, 
+    "balanceUSD": 217.1838873830843, 
+    "owner": "0xab44ae2ba15a0004d0308b04dd04797176372366", 
+    "shareOfSupply": 0.0006500671724555293, 
+    "shares": 65740489139965549
+  }, 
+  "0x97491b65c9c8e8754b5c55ed208ff490b2ee6190": {
+    "balance0": 1.1937978153737167e-05, 
+    "balance1": 7.10377272450416e-05, 
+    "balanceUSD": 0.5411936546845825, 
+    "owner": "0xab44ae2ba15a0004d0308b04dd04797176372366", 
+    "shareOfSupply": 2.4106312955619674e-06, 
+    "shares": 259716650867521
+  }, 
+  "0x9a98bffabc0abf291d6811c034e239e916bbcec0": {
+    "balance0": 0.03544642552690304, 
+    "balance1": 32.68156773074734, 
+    "balanceUSD": 107.019510359322, 
+    "owner": "0xab44ae2ba15a0004d0308b04dd04797176372366", 
+    "shareOfSupply": 8.247170845679256e-05, 
+    "shares": 121597648
+  }
+}
+```
+
 ## Bollinger Bands
 
 ### Chart data for bollinger bands
-`GET /bollingerBandsChartData`
+`GET /charts/bollingerbands/<poolAddress>`
 
 To get bollinger bands for a specific pool
 
