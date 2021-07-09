@@ -200,7 +200,7 @@ class HypervisorData:
 
         tvl = self.pricing_client.hypervisors_tvl()
 
-        query_slot0 = """
+        query_pool = """
         query slot0($pools: [String!]!){
             pools(
                 where: {
@@ -211,11 +211,13 @@ class HypervisorData:
                 sqrtPrice
                 tick
                 observationIndex
+                feesUSD
+                totalValueLockedUSD
             }
         }
         """
         variables = {"pools": pool_addresses}
-        pools_data = self.uniswap_client.query(query_slot0, variables)['data']['pools']
+        pools_data = self.uniswap_client.query(query_pool, variables)['data']['pools']
         pools = {pool.pop('id'): pool for pool in pools_data}
 
         returns = self.all_returns()
@@ -245,6 +247,8 @@ class HypervisorData:
                 'sqrtPrice': pools[pool_id]['sqrtPrice'],
                 'tick': pools[pool_id]['tick'],
                 'observationIndex': pools[pool_id]['observationIndex'],
+                'poolTvlUSD': pools[pool_id]['totalValueLockedUSD'],
+                'poolFeesUSD': pools[pool_id]['feesUSD'],
                 'returns': returns.get(hypervisor_id)
             }
 
