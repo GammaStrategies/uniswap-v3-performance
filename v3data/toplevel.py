@@ -13,6 +13,8 @@ class TopLevelData:
 
     def __init__(self):
         self.visor_client = VisorClient()
+        self.all_stats_data = {}
+        self.all_returns_data = {}
 
     def get_factory_data(self):
         """Get factory aggregated data for all factories"""
@@ -56,6 +58,54 @@ class TopLevelData:
         """
         return self.visor_client.query(query)['data']['uniswapV3Pools']
 
+    def _get_all_returns_data(self, time_delta):
+        query = """
+        query allRebalances($timestampStart: Int!){
+            uniswapV3Hypervisors(
+                first: 1000
+            ){
+                id
+                grossFeesClaimedUSD
+                tvlUSD
+                rebalances(
+                    first: 1000
+                    where: { timestamp_gte: $timestampStart }
+                    orderBy: timestamp
+                    orderDirection: desc
+                ) {
+                    id
+                    timestamp
+                    grossFeesUSD
+                    protocolFeesUSD
+                    netFeesUSD
+                    totalAmountUSD
+                }
+            }
+        }
+        """
+        variables = {"timestampStart": timestamp_ago(time_delta)}
+        self.all_returns_data = self.visor_client.query(query, variables)['data']['uniswapV3Hypervisors']
+
+    def _get_all_stats_data(self):
+        query = """
+        {
+            uniswapV3HypervisorFactories(
+                first: 1000
+            ){
+                id
+                grossFeesClaimedUSD
+                tvlUSD
+            }
+            uniswapV3Pools(
+                first: 1000
+            ){
+                id
+            }
+        }
+        """
+
+        self.all_stats_data = self.visor_client.query(query)['data']
+
     def get_recent_rebalance_data(self, hours=24):
         query = """
         query rebalances($timestamp_start: Int!){
@@ -75,18 +125,21 @@ class TopLevelData:
         variables = {"timestamp_start": timestamp_start}
         return self.visor_client.query(query, variables)['data']['uniswapV3Rebalances']
 
-    def all_stats(self):
+    def _all_stats(self):
         """
         Aggregate TVL and fees generated stats from all factories
         Should add entity to subgraph to track top level stats
         """
-        data = self.get_factory_data()
-        pool_data = self.get_pool_data()
+        data = self.all_stats_data
         return {
-            "pool_count": len(pool_data),
-            "tvl": sum([float(factory['tvlUSD']) for factory in data]),
-            "fees_claimed": sum([float(factory['grossFeesClaimedUSD']) for factory in data])
+            "pool_count": len(data['uniswapV3Pools']),
+            "tvl": sum([float(factory['tvlUSD']) for factory in data['uniswapV3HypervisorFactories']]),
+            "fees_claimed": sum([float(factory['grossFeesClaimedUSD']) for factory in data['uniswapV3HypervisorFactories']])
         }
+
+    def all_stats(self):
+        self._get_all_stats_data()
+        return self._all_stats()
 
     def recent_fees(self, hours=24):
         visr = VisrData()
@@ -100,11 +153,13 @@ class TopLevelData:
 
         return df_fees.sum().to_dict()
 
-    def calculate_returns(self):
-        hypervisors = self.get_hypervisor_data()
+    def _calculate_returns(self):
+        hypervisors = self.all_returns_data
         tvl = sum([float(hypervisor['tvlUSD']) for hypervisor in hypervisors])
 
-        hypervisor_client = HypervisorData()
+        hypervisor_data = HypervisorData()
+        hypervisor_data.all_rebalance_data = hypervisors
+        all_returns = hypervisor_data._all_returns()
 
         returns = {
             "daily": {
@@ -125,10 +180,14 @@ class TopLevelData:
                 tvl_share = float(hypervisor['tvlUSD']) / tvl
             else:
                 tvl_share = 0
-            results = hypervisor_client.calculate_returns(hypervisor['id'])
-            if results:
-                for period, values in results.items():
+            hypervisor_returns = all_returns.get(hypervisor['id'])
+            if hypervisor_returns:
+                for period, values in hypervisor_returns.items():
                     returns[period]['feeApr'] += values['feeApr'] * tvl_share
                     returns[period]['feeApy'] += values['feeApy'] * tvl_share
 
         return returns
+
+    def calculate_returns(self):
+        self._get_all_returns_data(timedelta(days=30))
+        return self._calculate_returns()

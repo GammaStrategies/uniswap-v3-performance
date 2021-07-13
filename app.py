@@ -6,8 +6,8 @@ from v3data.bollingerbands import BollingerBand
 from v3data.strategies import BaseLimit
 from v3data.hypervisor import HypervisorData
 from v3data.visr import VisrData
-from v3data.users import UserData
-from v3data.visor import VisorData
+from v3data.users import VisorUser
+from v3data.visor import VisorVault
 from v3data.toplevel import TopLevelData
 from v3data.daily import DailyChart
 from v3data.config import DEFAULT_TIMEZONE
@@ -23,8 +23,8 @@ def main():
     return "Visor Data"
 
 
-@app.route('/charts/bollingerbands/<poolAddress>')
-@app.route('/bollingerBandsChartData/<poolAddress>')
+@app.route('/charts/bollingerbands/<string:poolAddress>')
+@app.route('/bollingerBandsChartData/<string:poolAddress>')
 def bollingerbands_chart(poolAddress):
     periodHours = int(request.args.get("periodHours", 24))
 
@@ -33,7 +33,7 @@ def bollingerbands_chart(poolAddress):
     return {'data': bband.chart_data()}
 
 
-@app.route('/bollingerBandsLatest/<poolAddress>')
+@app.route('/bollingerBandsLatest/<string:poolAddress>')
 def bollingerbands_latest(poolAddress):
     periodHours = int(request.args.get("periodHours", 24))
 
@@ -60,7 +60,7 @@ def daily_flows_chart_data():
     return {'data': daily.asset_flows()}
 
 
-@app.route('/charts/dailyHypervisorFlows/<hypervisor_address>')
+@app.route('/charts/dailyHypervisorFlows/<string:hypervisor_address>')
 def daily_hypervisor_flows_chart_data(hypervisor_address):
     days = int(request.args.get("days", 20))
 
@@ -69,26 +69,7 @@ def daily_hypervisor_flows_chart_data(hypervisor_address):
     return {'data': daily.asset_flows(hypervisor_address)}
 
 
-@app.route('/user/<address>')
-def user_data(address):
-    user_data = UserData(address)
-
-    return user_data.all_data()
-
-
-@app.route('/vault/<address>')
-def visor_data(address):
-    visor_data = VisorData(address)
-
-    return visor_data.all_data()
-
-
-@app.route('/pools/<token>')
-def uniswap_pools(token):
-    return {"pools": pools_from_symbol(token)}
-
-
-@app.route('/charts/baseRange/<hypervisor_address>')
+@app.route('/charts/baseRange/<string:hypervisor_address>')
 def base_range_chart(hypervisor_address):
     hours = int(request.args.get("days", 20)) * 24
     hypervisor_address = hypervisor_address.lower()
@@ -99,6 +80,7 @@ def base_range_chart(hypervisor_address):
     else:
         return {}
 
+
 @app.route('/charts/baseRange/all')
 def base_range_chart_all():
     hours = int(request.args.get("days", 20)) * 24
@@ -107,40 +89,34 @@ def base_range_chart_all():
     return chart_data
 
 
-@app.route('/hypervisor/<hypervisor_address>/basicStats')
-def hypervisor_basic_stats(hypervisor_address):
-    hypervisor = HypervisorData()
-    basic_stats = hypervisor.basic_stats(hypervisor_address)
+@app.route('/user/<string:address>')
+def user_data(address):
+    visor_user = VisorUser(address)
 
-    if basic_stats:
-        return basic_stats
-    else:
-        return Response("Invalid hypervisor address or not enough data", status=400)
+    return visor_user.info()
 
 
-@app.route('/hypervisor/<hypervisor_address>/returns')
-def hypervisor_apy(hypervisor_address):
-    hypervisor = HypervisorData()
-    returns = hypervisor.calculate_returns(hypervisor_address)
+@app.route('/vault/<string:address>')
+def visor_data(address):
+    visor_vault = VisorVault(address)
 
-    if returns:
-        return {
-            "hypervisor": hypervisor_address,
-            "returns": returns
-        }
-    else:
-        return Response("Invalid hypervisor address or not enough data", status=400)
+    return visor_vault.info()
+
+
+@app.route('/pools/<string:token>')
+def uniswap_pools(token):
+    return {"pools": pools_from_symbol(token)}
 
 
 @app.route('/visr/basicStats')
 def visr_basic_stats():
     visr = VisrData()
-    token_data = visr.token_data()
+    token_info = visr.token_info()
     visr_price_usd = visr.price_usd()
 
-    token_data['priceUSD'] = visr_price_usd
+    token_info['priceUSD'] = visr_price_usd
 
-    return token_data
+    return token_info
 
 
 @app.route('/visr/yield')
@@ -175,6 +151,31 @@ def visr_distributions():
     return {
         'feeDistribution': fee_distributions
     }
+
+
+@app.route('/hypervisor/<string:hypervisor_address>/basicStats')
+def hypervisor_basic_stats(hypervisor_address):
+    hypervisor = HypervisorData()
+    basic_stats = hypervisor.basic_stats(hypervisor_address)
+
+    if basic_stats:
+        return basic_stats
+    else:
+        return Response("Invalid hypervisor address or not enough data", status=400)
+
+
+@app.route('/hypervisor/<string:hypervisor_address>/returns')
+def hypervisor_apy(hypervisor_address):
+    hypervisor = HypervisorData()
+    returns = hypervisor.calculate_returns(hypervisor_address)
+
+    if returns:
+        return {
+            "hypervisor": hypervisor_address,
+            "returns": returns
+        }
+    else:
+        return Response("Invalid hypervisor address or not enough data", status=400)
 
 
 @app.route('/hypervisors/aggregateStats')
@@ -220,9 +221,10 @@ def dashboard():
     period = request.args.get("period", "weekly").lower()
 
     visr = VisrData()
-    token_data = visr.token_data()
+    visr_info = visr.info()
+    token_info = visr_info['info']
+    visr_yield = visr_info['yield']
     visr_price_usd = visr.price_usd()
-    visr_yield = visr.token_yield()
     distributions = visr.daily_distribution(timezone=DEFAULT_TIMEZONE, days=1)
 
     last_day_distribution = float(distributions[0]['distributed'])
@@ -232,16 +234,16 @@ def dashboard():
     top_level_returns = top_level.calculate_returns()
 
     dashboard_stats = {
-        "stakedUsdAmount": token_data['totalStaked'] * visr_price_usd,
-        "stakedAmount": token_data['totalStaked'],
+        "stakedUsdAmount": token_info['totalStaked'] * visr_price_usd,
+        "stakedAmount": token_info['totalStaked'],
         "feeStatsFeeAccural": last_day_distribution * visr_price_usd,
         "feeStatsAmountVisr": last_day_distribution,
         "feeStatsStakingApr": visr_yield[period]['apr'],
         "feeStatsStakingApy": visr_yield[period]['apy'],
         "feeStatsStakingDailyYield": visr_yield[period]['yield'],
-        "feeCumulativeFeeUsd": token_data['totalDistributedUSD'],
+        "feeCumulativeFeeUsd": token_info['totalDistributedUSD'],
         "feeCumulativeFeeUsdAnnual": visr_yield[period]['estimatedAnnualDistributionUSD'],
-        "feeCumulativeFeeDistributed": token_data['totalDistributed'],
+        "feeCumulativeFeeDistributed": token_info['totalDistributed'],
         "feeCumulativeFeeDistributedAnnual": visr_yield[period]['estimatedAnnualDistribution'],
         "uniswapPairTotalValueLocked": top_level_data['tvl'] + PRIVATE_BETA_TVL,
         "uniswapPairAmountPairs": top_level_data['pool_count'],

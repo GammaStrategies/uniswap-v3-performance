@@ -1,10 +1,10 @@
 import datetime
 from v3data import UniswapV3Client
 from v3data.data import UniV3Data
-from v3data.toplevel import TopLevelData
 from v3data.utils import sqrtPriceX96_to_priceDecimal
 
 USDC_WETH_03_POOL = '0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8'
+
 
 def pools_from_symbol(symbol):
     client = UniV3Data()
@@ -102,7 +102,7 @@ class Pool:
                     "timestamp": hour_data['periodStartUnix'],
                     "price": sqrtPriceX96_to_priceDecimal(
                         float(hour_data['sqrtPrice']),
-                        int(pool['token0']['decimals']), 
+                        int(pool['token0']['decimals']),
                         int(pool['token1']['decimals'])
                     )
                 }
