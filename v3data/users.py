@@ -5,7 +5,7 @@ class VisorUser:
     def __init__(self, user_address):
         self.visor_client = VisorClient()
         self.pricing_client = PricingClient()
-        self.address = user_address
+        self.address = user_address.lower()
 
     def info(self):
         query_users = """

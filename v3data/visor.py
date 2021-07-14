@@ -5,7 +5,7 @@ class VisorVault:
     def __init__(self, visor_address):
         self.visor_client = VisorClient()
         self.pricing_client = PricingClient()
-        self.address = visor_address
+        self.address = visor_address.lower()
 
     def info(self):
         query_visor = """

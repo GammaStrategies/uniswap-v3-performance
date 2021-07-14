@@ -5,7 +5,7 @@ from datetime import timedelta
 
 from v3data import VisorClient
 from v3data.pools import Pool, USDC_WETH_03_POOL
-from v3data.utils import timestamp_to_date, tick_to_priceDecimal, timestamp_ago
+from v3data.utils import tick_to_priceDecimal, timestamp_ago
 
 WETH_ADDRESS = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
 
