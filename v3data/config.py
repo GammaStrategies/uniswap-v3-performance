@@ -14,7 +14,8 @@ visor_subgraphs = {
 }
 
 pricing_subgraphs = {
-    "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hypervisor-pricing"
+    "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hypervisor-pricing",
+    "staging": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hypervisor-subgraph-staging"
 }
 
 ETH_BLOCKS_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/blocklytics/ethereum-blocks"
