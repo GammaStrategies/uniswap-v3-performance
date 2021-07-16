@@ -14,10 +14,12 @@ visor_subgraphs = {
 }
 
 pricing_subgraphs = {
-    "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hypervisor-pricing"
+    "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hypervisor-pricing",
+    "staging": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hypervisor-subgraph-staging"
 }
 
 ETH_BLOCKS_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/blocklytics/ethereum-blocks"
+UNI_V2_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2"
 UNI_V3_SUBGRAPH_URL = uniswap_subgraphs[os.environ.get('UNISWAP_SUBGRAPH', 'alt')]
 VISOR_SUBGRAPH_URL = visor_subgraphs[os.environ.get('VISOR_SUBGRAPH', 'prod')]
 PRICING_SUBGRAPH_URL = pricing_subgraphs[os.environ.get('PRICING_SUBGRAPH', 'test')]
@@ -26,4 +28,4 @@ PRICING_SUBGRAPH_URL = pricing_subgraphs[os.environ.get('PRICING_SUBGRAPH', 'tes
 TOKEN_LIST_URL = "https://tokens.coingecko.com/uniswap/all.json"
 
 DEFAULT_BBAND_INTERVALS = 20
-DEFAULT_TIMEZONE = os.environ.get('TIMEZONE','UTC-5')
+DEFAULT_TIMEZONE = os.environ.get('TIMEZONE', 'UTC-5')

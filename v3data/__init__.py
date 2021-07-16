@@ -3,6 +3,7 @@ import requests
 from v3data.config import (
     VISOR_SUBGRAPH_URL,
     PRICING_SUBGRAPH_URL,
+    UNI_V2_SUBGRAPH_URL,
     UNI_V3_SUBGRAPH_URL,
     ETH_BLOCKS_SUBGRAPH_URL
 )
@@ -86,8 +87,13 @@ class PricingClient(SubgraphClient):
                 "tvl0Decimal": int(hypervisor['tvl0']) / 10 ** int(hypervisor['pool']['token0']['decimals']),
                 "tvl1Decimal": int(hypervisor['tvl1']) / 10 ** int(hypervisor['pool']['token1']['decimals']),
                 "totalSupply": int(hypervisor['totalSupply'])
-            }
-        for hypervisor in tvls}
+            } for hypervisor in tvls
+        }
+
+
+class UniswapV2Client(SubgraphClient):
+    def __init__(self):
+        super().__init__(UNI_V2_SUBGRAPH_URL)
 
 
 class UniswapV3Client(SubgraphClient):

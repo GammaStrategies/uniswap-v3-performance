@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 
 from v3data import SubgraphClient
-from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal
-from v3data.config import UNI_V3_SUBGRAPH_URL, V3_FACTORY_ADDRESS, TOKEN_LIST_URL
+from v3data.utils import sqrtPriceX96_to_priceDecimal
+from v3data.config import UNI_V3_SUBGRAPH_URL, TOKEN_LIST_URL
 
 
 class UniV3Data(SubgraphClient):
@@ -83,22 +83,6 @@ class UniV3Data(SubgraphClient):
 
         return pool0 + pool1
 
-    def get_factory(self):
-        """Get factory data."""
-        query = """
-        query factory($id: String!){
-          factory(id: $id) {
-            id
-            poolCount
-            txCount
-            totalVolumeUSD
-            totalValueLockedUSD
-          }
-        }
-        """
-        variables = {"id": V3_FACTORY_ADDRESS}
-        self.factory = self.query(query, variables)['data']['factory']
-
     def get_pool(self, pool_address):
         """Get metadata for pool"""
         query = """
@@ -123,150 +107,6 @@ class UniV3Data(SubgraphClient):
 
         variables = {"id": pool_address.lower()}
         return self.query(query, variables)['data']['pool']
-
-    def get_pools(self):
-        """Get latest factory data."""
-        query = """
-        query allPools($skip: Int!) {
-          pools(
-            first: 1000
-            skip: $skip
-            orderBy: volumeUSD
-            orderDirection: desc
-          ){
-            id
-            token0{
-              symbol
-            }
-            token1{
-              symbol
-            }
-            volumeUSD
-          }
-        }
-        """
-
-        self.get_factory()
-        n_skips = int(self.factory['poolCount']) // 1000 + 1
-
-        self.pools = []
-        for i in range(n_skips):
-            variables = {'skip': i * 1000}
-            self.pools.extend(self.query(query, variables)['data']['pools'])
-
-    def get_daily_uniswap_data(self):
-        """Get aggregated daily data for uniswap v3."""
-        query = """
-        {
-          uniswapDayDatas(
-            first: 1000
-            orderBy: date
-            orderDirection: asc
-          ) {
-            id
-            date
-            volumeUSD
-            tvlUSD
-            txCount
-          }
-        }
-        """
-
-        self.daily_uniswap_data = self.query(query)['data']['uniswapDayDatas']
-
-    def get_daily_pool_data(self):
-        """Get daily data for pools."""
-
-        query = """
-        query allDailyPoolData($date: Int!, $skip: Int!){
-          poolDayDatas(
-            first: 1000
-            skip: $skip
-            where: { date: $date }
-            orderBy: volumeUSD
-            orderDirection: desc
-          ){
-            id
-            date
-            pool{
-              id
-              token0{symbol}
-              token1{symbol}
-            }
-            tvlUSD
-            volumeUSD
-            txCount
-          }
-        }
-        """
-
-        self.get_daily_uniswap_data()
-        self.get_factory()
-        n_skips = int(self.factory['poolCount']) // 1000 + 1
-        # Loop through days
-        self.daily_pool_data = []
-        for day in self.daily_uniswap_data:
-            for i in range(n_skips):
-                print(day['date'])
-                variables = {"date": day['date'], "skip": i * 1000}
-                self.daily_pool_data.extend((self.query(query, variables))['data']['poolDayDatas'])
-
-    def uniswap_data(self):
-        """Current TVL, volume, transaction count."""
-        self.get_factory()
-        data = {
-            'totalValueLockedUSD': self.factory['totalValueLockedUSD'],
-            'totalVolumeUSD': self.factory['totalVolumeUSD'],
-            'txCount': self.factory['txCount']
-        }
-        return data
-
-    def volume_pie_chart_data(self):
-        """Data for pie chart of pool volumes"""
-        self.get_pools()
-
-        volume = [float(pool['volumeUSD']) for pool in self.pools]
-        labels = [f"{pool['token0']['symbol']}-{pool['token1']['symbol']}" for pool in self.pools]
-
-        data = {
-            "datasets": [{
-                "data": volume
-            }],
-            "labels": labels
-        }
-
-        return data
-
-    def daily_volume_by_pair(self):
-        """Daily volume by pair"""
-        self.get_daily_pool_data()
-        data = [
-            {
-                'pair': f"{pool_day['pool']['token0']['symbol']}-{pool_day['pool']['token1']['symbol']}",
-                'date': timestamp_to_date(pool_day['date']),
-                'volumeUSD': pool_day['volumeUSD']
-            }
-            for pool_day in self.daily_pool_data if pool_day['volumeUSD'] != '0'
-        ]
-
-        return data
-
-    def cumulative_trade_volume(self):
-        """Daily cumulative trade volume."""
-        self.get_daily_uniswap_data()
-        # This assumes data is ordered already
-        cumulative = []
-        cumulativeVolumeUSD = 0
-        for uniswap_day in self.daily_uniswap_data:
-            cumulativeVolumeUSD += float(uniswap_day['volumeUSD'])
-            cumulative.append(
-                {
-                    "date": timestamp_to_date(uniswap_day['date']),
-                    "cumulativeVolumeUSD": cumulativeVolumeUSD
-                }
-            )
-
-        return cumulative
 
     def get_historical_pool_prices(self, pool_address, time_delta=None):
         pool_address = pool_address.lower()

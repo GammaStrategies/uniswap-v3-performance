@@ -1,12 +1,13 @@
 from v3data import VisorClient, PricingClient
 
-class UserData:
+
+class VisorUser:
     def __init__(self, user_address):
         self.visor_client = VisorClient()
         self.pricing_client = PricingClient()
-        self.address = user_address
+        self.address = user_address.lower()
 
-    def all_data(self):
+    def info(self):
         query_users = """
         query userData($userAddress: String!) {
             user(
@@ -39,7 +40,7 @@ class UserData:
             for hypervisor in visor['hypervisorShares']:
                 hypervisor_id = hypervisor['hypervisor']['id']
                 shareOfSupply = int(hypervisor['shares']) / int(tvl[hypervisor_id]['totalSupply'])
-                print(tvl[hypervisor_id]['tvlUSD'])
+
                 visors[visor_id][hypervisor_id] = {
                     "shares": hypervisor['shares'],
                     "shareOfSupply": shareOfSupply,

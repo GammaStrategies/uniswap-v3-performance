@@ -1,5 +1,4 @@
 import datetime
-import pytz
 
 
 def timestamp_to_date(timestamp, format=None):
