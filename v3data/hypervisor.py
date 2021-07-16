@@ -9,13 +9,6 @@ DAY_SECONDS = 24 * 60 * 60
 YEAR_SECONDS = 365 * DAY_SECONDS
 
 
-# Hypervisors to use non-realtime TVL
-TVL_OVERRIDE = [
-    "0xd8dbdb77305898365d7ba6dd438f2663f7d4e409",
-    "0x33682bfc1d94480a0e3de0a565180b182b71d485"
-]
-
-
 class HypervisorData:
     def __init__(self):
         self.visor_client = VisorClient()
@@ -266,10 +259,5 @@ class HypervisorData:
                 'poolFeesUSD': pools[pool_id]['feesUSD'],
                 'returns': returns.get(hypervisor_id)
             }
-
-            if hypervisor_id in TVL_OVERRIDE:
-                results[hypervisor_id]['tvl0'] = int(hypervisor['tvl0']) / 10 ** decimals0
-                results[hypervisor_id]['tvl1'] = int(hypervisor['tvl1']) / 10 ** decimals1
-                results[hypervisor_id]['tvlUSD'] = hypervisor['tvlUSD']
 
         return results
