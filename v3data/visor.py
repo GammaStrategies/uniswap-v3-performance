@@ -16,6 +16,7 @@ class VisorVault:
                 owner {
                     id
                 }
+                visrStaked
                 hypervisorShares {
                     hypervisor {
                         id
@@ -34,14 +35,16 @@ class VisorVault:
         visor_owner = data['owner']['id']
         tvl = self.pricing_client.hypervisors_tvl()
 
-        hypervisor_shares = {}
+        visor_info = {
+            "owner": visor_owner,
+            "visrStaked": int(data['visrStaked']) / 10 ** 18
+        }
         for record in data['hypervisorShares']:
             hypervisor_id = record['hypervisor']['id']
             shares = int(record['shares'])
             totalSupply = int(tvl[hypervisor_id]['totalSupply'])
             shareOfSupply = shares / totalSupply if totalSupply > 0 else 0
-            hypervisor_shares[hypervisor_id] = {
-                "owner": visor_owner,
+            visor_info[hypervisor_id] = {
                 "shares": shares,
                 "shareOfSupply": shareOfSupply,
                 "balance0": tvl[hypervisor_id]['tvl0Decimal'] * shareOfSupply,
@@ -49,4 +52,4 @@ class VisorVault:
                 "balanceUSD": float(tvl[hypervisor_id]['tvlUSD']) * shareOfSupply
             }
 
-        return hypervisor_shares
+        return visor_info

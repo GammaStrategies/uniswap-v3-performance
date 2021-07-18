@@ -15,6 +15,7 @@ class VisorUser:
             ){
                 visorsOwned {
                     id
+                    visrStaked
                     hypervisorShares {
                         hypervisor {
                             id
@@ -36,7 +37,9 @@ class VisorUser:
         visors = {}
         for visor in data['visorsOwned']:
             visor_id = visor['id']
-            visors[visor_id] = {}
+            visors[visor_id] = {
+                "visrStaked": int(visor['visrStaked']) / 10 ** 18
+            }
             for hypervisor in visor['hypervisorShares']:
                 hypervisor_id = hypervisor['hypervisor']['id']
                 shareOfSupply = int(hypervisor['shares']) / int(tvl[hypervisor_id]['totalSupply'])
