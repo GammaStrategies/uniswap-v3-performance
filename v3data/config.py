@@ -29,3 +29,5 @@ TOKEN_LIST_URL = "https://tokens.coingecko.com/uniswap/all.json"
 
 DEFAULT_BBAND_INTERVALS = 20
 DEFAULT_TIMEZONE = os.environ.get('TIMEZONE', 'UTC-5')
+
+PRIVATE_BETA_TVL = 400000

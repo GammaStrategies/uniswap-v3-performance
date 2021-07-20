@@ -392,6 +392,7 @@ Response:
     }, 
     ...
   ]
+}
 ```
 
 ### All Hypervisor Base Range Chart
@@ -402,6 +403,40 @@ days: specify how many days of data to return, default 20
 
 Returns data to plot price chart with base range bands.
 This is same as Hypervisor Base Range Chart but returns all hypervisors
+
+### Benchmark Chart
+`GET /charts/benchmark/<hypervisorAddress>`
+
+Parameters:
+startYear: Set year of start date for chart
+startMonth: Set month of start date for chart
+nMonths: Set number of months to plot
+
+Returns data to plot hypervisor returns against various benchmarks
+
+Response:
+```json
+{
+  "0x97491b65c9c8e8754b5c55ed208ff490b2ee6190": [
+    {
+      "date": "2021-06-18T00:00:00Z", 
+      "group": "Hypervisor", 
+      "value": 1.0
+    }, 
+    {
+      "date": "2021-06-19T00:00:00Z", 
+      "group": "Hypervisor", 
+      "value": 0.9788681219249996
+    }, 
+    {
+      "date": "2021-06-20T00:00:00Z", 
+      "group": "Hypervisor", 
+      "value": 1.0030726571948547
+    },
+    ...
+  ]
+}
+```
 
 ## User/Vault Data
 

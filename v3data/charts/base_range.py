@@ -6,8 +6,8 @@ from datetime import timedelta
 from v3data import VisorClient
 from v3data.pools import Pool, USDC_WETH_03_POOL
 from v3data.utils import tick_to_priceDecimal, timestamp_ago
+from v3data.constants import WETH_ADDRESS
 
-WETH_ADDRESS = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
 
 STABLECOINS = [
     "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",  # USDC

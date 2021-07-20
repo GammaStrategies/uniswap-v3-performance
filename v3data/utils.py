@@ -17,6 +17,10 @@ def timestamp_ago(time_delta):
     return int((datetime.datetime.utcnow() - time_delta).replace(tzinfo=datetime.timezone.utc).timestamp())
 
 
+def year_month_to_timestamp(year, month):
+    return int(datetime.datetime(year, month, 1, tzinfo=datetime.timezone.utc).timestamp())
+
+
 def sqrtPriceX96_to_priceDecimal(sqrtPriceX96, token0_decimal, token1_decimal):
     return ((sqrtPriceX96 ** 2) / 2 ** (96 * 2)) * 10 ** (token0_decimal - token1_decimal)
 
