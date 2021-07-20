@@ -57,7 +57,7 @@ class Benchmark:
         hypervisor_data = self.pricing_client.query(
             query_hypervisor, variables_hypervisor)['data']['hypervisor']
 
-        if not hypervisor_data:
+        if not hypervisor_data['dayData']:
             return None
 
         token0 = hypervisor_data['pool']['token0']['id']
