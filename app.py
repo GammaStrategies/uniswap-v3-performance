@@ -9,7 +9,6 @@ from v3data.visr import VisrData
 from v3data.users import VisorUser
 from v3data.visor import VisorVault
 from v3data.toplevel import TopLevelData
-from v3data.performance import HypervisorPerformance
 from v3data.config import DEFAULT_TIMEZONE, PRIVATE_BETA_TVL
 
 app = Flask(__name__)
@@ -118,13 +117,6 @@ def visor_data(address):
 @app.route('/pools/<string:token>')
 def uniswap_pools(token):
     return {"pools": pools_from_symbol(token)}
-
-
-@app.route('/dev/v2pools/<string:address>')
-def v2pools(address):
-    hp = HypervisorPerformance()
-    data = hp._get_v2_pricing(address)
-    return {"data": data}
 
 
 @app.route('/visr/basicStats')
