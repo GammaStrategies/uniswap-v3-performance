@@ -1,4 +1,5 @@
 from flask import Flask, request, Response
+from flask_caching import Cache
 from flask_cors import CORS
 
 from v3data.pools import pools_from_symbol
@@ -9,9 +10,11 @@ from v3data.visr import VisrData
 from v3data.users import VisorUser
 from v3data.visor import VisorVault
 from v3data.toplevel import TopLevelData
-from v3data.config import DEFAULT_TIMEZONE, PRIVATE_BETA_TVL
+from v3data.config import DEFAULT_TIMEZONE, PRIVATE_BETA_TVL, CHARTS_CACHE_TIMEOUT
 
 app = Flask(__name__)
+app.config.from_mapping({'CACHE_TYPE': 'SimpleCache'})
+cache = Cache(app)
 CORS(app)
 
 
@@ -22,6 +25,7 @@ def main():
 
 @app.route('/charts/bollingerbands/<string:poolAddress>')
 @app.route('/bollingerBandsChartData/<string:poolAddress>')
+@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def bollingerbands_chart(poolAddress):
     periodHours = int(request.args.get("periodHours", 24))
 
@@ -40,6 +44,7 @@ def bollingerbands_latest(poolAddress):
 
 
 @app.route('/charts/dailyTvl')
+@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def daily_tvl_chart_data():
     days = int(request.args.get("days", 20))
 
@@ -67,6 +72,7 @@ def daily_hypervisor_flows_chart_data(hypervisor_address):
 
 
 @app.route('/charts/baseRange/<string:hypervisor_address>')
+@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def base_range_chart(hypervisor_address):
     hours = int(request.args.get("days", 20)) * 24
     hypervisor_address = hypervisor_address.lower()
@@ -79,6 +85,7 @@ def base_range_chart(hypervisor_address):
 
 
 @app.route('/charts/baseRange/all')
+@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def base_range_chart_all():
     hours = int(request.args.get("days", 20)) * 24
     baseLimitData = BaseLimit(hours=hours, chart=True)
@@ -87,6 +94,7 @@ def base_range_chart_all():
 
 
 @app.route('/charts/benchmark/<string:hypervisor_address>')
+@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def benchmark_chart(hypervisor_address):
     start_year = int(request.args.get("startYear", 2021))
     start_month = int(request.args.get("startMonth", 6))
