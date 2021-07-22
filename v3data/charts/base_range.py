@@ -175,8 +175,9 @@ class BaseLimit:
         ]).sort_values('timestamp').set_index('timestamp')
 
         # Remove outlier
-        if rebalance_data['token0_name'] == 'USDC' and set(OVERRIDE_TS).issubset(set(df_data.index)):
-            df_data.drop(OVERRIDE_TS, inplace=True)
+        if rebalance_data['token0_name'] == 'USDC':
+            drop_ts = set(OVERRIDE_TS).intersection(set(df_data.index))
+            df_data.drop(drop_ts, inplace=True)
 
         token0_is_stable = (rebalance_data['is_stablecoin'] and rebalance_data['weth_token'] == 1)
         token1_is_token = (not rebalance_data['is_stablecoin'] and rebalance_data['weth_token'] == 0)
