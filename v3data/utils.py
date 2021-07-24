@@ -18,6 +18,8 @@ def timestamp_ago(time_delta):
 
 
 def year_month_to_timestamp(year, month):
+    if year < 0 or month < 0 or month > 12:
+        raise ValueError("Invalid month")
     return int(datetime.datetime(year, month, 1, tzinfo=datetime.timezone.utc).timestamp())
 
 

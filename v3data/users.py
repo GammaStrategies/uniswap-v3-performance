@@ -6,6 +6,7 @@ class VisorUser:
         self.visor_client = VisorClient()
         self.pricing_client = PricingClient()
         self.address = user_address.lower()
+        self.decimal_factor = 10 ** 18
 
     def info(self):
         query_users = """
@@ -38,14 +39,15 @@ class VisorUser:
         for visor in data['visorsOwned']:
             visor_id = visor['id']
             visors[visor_id] = {
-                "visrStaked": int(visor['visrStaked']) / 10 ** 18
+                "visrStaked": int(visor['visrStaked']) / self.decimal_factor
             }
             for hypervisor in visor['hypervisorShares']:
                 hypervisor_id = hypervisor['hypervisor']['id']
-                shareOfSupply = int(hypervisor['shares']) / int(tvl[hypervisor_id]['totalSupply'])
+                shares = int(hypervisor['shares'])
+                shareOfSupply = shares / int(tvl[hypervisor_id]['totalSupply'])
 
                 visors[visor_id][hypervisor_id] = {
-                    "shares": hypervisor['shares'],
+                    "shares": shares / self.decimal_factor,
                     "shareOfSupply": shareOfSupply,
                     "balance0": tvl[hypervisor_id]['tvl0Decimal'] * shareOfSupply,
                     "balance1": tvl[hypervisor_id]['tvl1Decimal'] * shareOfSupply,
