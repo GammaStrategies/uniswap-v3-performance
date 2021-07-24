@@ -46,7 +46,7 @@ class VisorVault:
             totalSupply = int(tvl[hypervisor_id]['totalSupply'])
             shareOfSupply = shares / totalSupply if totalSupply > 0 else 0
             visor_info[hypervisor_id] = {
-                "shares": shares / self.decimal_factor,
+                "shares": shares,
                 "shareOfSupply": shareOfSupply,
                 "balance0": tvl[hypervisor_id]['tvl0Decimal'] * shareOfSupply,
                 "balance1": tvl[hypervisor_id]['tvl1Decimal'] * shareOfSupply,

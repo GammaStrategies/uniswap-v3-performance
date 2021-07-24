@@ -47,7 +47,7 @@ class VisorUser:
                 shareOfSupply = shares / int(tvl[hypervisor_id]['totalSupply'])
 
                 visors[visor_id][hypervisor_id] = {
-                    "shares": shares / self.decimal_factor,
+                    "shares": shares,
                     "shareOfSupply": shareOfSupply,
                     "balance0": tvl[hypervisor_id]['tvl0Decimal'] * shareOfSupply,
                     "balance1": tvl[hypervisor_id]['tvl1Decimal'] * shareOfSupply,

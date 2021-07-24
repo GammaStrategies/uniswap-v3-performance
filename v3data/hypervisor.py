@@ -14,7 +14,6 @@ class HypervisorData:
         self.visor_client = VisorClient()
         self.uniswap_client = UniswapV3Client()
         self.pricing_client = PricingClient()
-        self.decimal_factor = 10 ** 18
 
     def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
         query = """
@@ -250,8 +249,8 @@ class HypervisorData:
                 'tvl0': tvl[hypervisor_id]['tvl0Decimal'],
                 'tvl1': tvl[hypervisor_id]['tvl1Decimal'],
                 'tvlUSD': tvl[hypervisor_id]['tvlUSD'],
-                'totalSupply': totalSupply / self.decimal_factor,
-                'maxTotalSupply': maxTotalSupply / self.decimal_factor,
+                'totalSupply': totalSupply,
+                'maxTotalSupply': maxTotalSupply,
                 'capacityUsed': capacityUsed,
                 'sqrtPrice': pools[pool_id]['sqrtPrice'],
                 'tick': pools[pool_id]['tick'],
