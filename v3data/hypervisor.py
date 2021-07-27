@@ -2,7 +2,7 @@ import numpy as np
 from datetime import timedelta
 from pandas import DataFrame
 
-from v3data import VisorClient, PricingClient, UniswapV3Client
+from v3data import VisorClient, UniswapV3Client
 from v3data.utils import timestamp_ago
 
 DAY_SECONDS = 24 * 60 * 60
@@ -13,7 +13,6 @@ class HypervisorData:
     def __init__(self):
         self.visor_client = VisorClient()
         self.uniswap_client = UniswapV3Client()
-        self.pricing_client = PricingClient()
 
     def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
         query = """
@@ -90,20 +89,27 @@ class HypervisorData:
         data = self._get_hypervisor_data(hypervisor_address)
         return data
 
+    def empty_returns(self):
+        return {
+            period: {
+                "cumFeeReturn": 0.0,
+                "feeApr": 0,
+                "feeApy": 0,
+                "totalPeriodSeconds": 0
+            }
+            for period in ['daily', 'weekly', 'monthly']
+        }
+
     def _calculate_returns(self, data):
 
         if not data:
-            return {
-                period: {
-                    "cumFeeReturn": 0.0,
-                    "feeApr": 0,
-                    "feeApy": 0,
-                    "totalPeriodSeconds": 0
-                }
-                for period in ['daily', 'weekly', 'monthly']
-            }
+            return self.empty_returns()
 
         df_rebalances = DataFrame(data, dtype=np.float64)
+        df_rebalances = df_rebalances[df_rebalances.totalAmountUSD > 0]
+
+        if df_rebalances.empty:
+            return self.empty_returns()
 
         df_rebalances.sort_values('timestamp', inplace=True)
 
@@ -203,7 +209,7 @@ class HypervisorData:
         basics = self.visor_client.query(query_basics)['data']['uniswapV3Hypervisors']
         pool_addresses = [hypervisor['pool']['id'] for hypervisor in basics]
 
-        tvl = self.pricing_client.hypervisors_tvl()
+        tvl = self.visor_client.hypervisors_tvl()
 
         query_pool = """
         query slot0($pools: [String!]!){

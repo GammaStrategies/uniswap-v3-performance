@@ -1,13 +1,13 @@
 import numpy as np
 import pandas as pd
 
-from v3data import PricingClient, UniswapV2Client
+from v3data import VisorClient, UniswapV2Client
 from v3data.utils import year_month_to_timestamp
 from v3data.constants import WETH_ADDRESS
 
 class Benchmark:
     def __init__(self, address, start_year, start_month, n_months=1):
-        self.pricing_client = PricingClient()
+        self.visor_client = VisorClient()
         self.v2_client = UniswapV2Client()
         self.address = address
         self._init_dates(start_year, start_month, n_months)
@@ -23,7 +23,7 @@ class Benchmark:
         # Get hypervisor position
         query_hypervisor = """
         query hypervisorPricng($id: String!, $startDate: Int!, $endDate: Int!){
-            hypervisor(id: $id) {
+            uniswapV3Hypervisor(id: $id) {
                 id
                 pool {
                     token0{ 
@@ -35,7 +35,7 @@ class Benchmark:
                         symbol
                     }
                 }
-                dayData(
+                uniswapV3HypervisorDayData(
                     where:{
                         date_gte: $startDate
                         date_lt: $endDate
@@ -54,10 +54,10 @@ class Benchmark:
             "endDate": self.end_date
         }
 
-        hypervisor_data = self.pricing_client.query(
-            query_hypervisor, variables_hypervisor)['data']['hypervisor']
+        hypervisor_data = self.visor_client.query(
+            query_hypervisor, variables_hypervisor)['data']['uniswapV3Hypervisor']
 
-        if not hypervisor_data['dayData']:
+        if not hypervisor_data['uniswapV3HypervisorDayData']:
             return None
 
         token0 = hypervisor_data['pool']['token0']['id']
@@ -66,7 +66,7 @@ class Benchmark:
         self.weth_token = 0 if token0 == WETH_ADDRESS else 1
 
 
-        hypervisor_daily = hypervisor_data['dayData']
+        hypervisor_daily = hypervisor_data['uniswapV3HypervisorDayData']
 
         # Get V2 data
 

@@ -1,10 +1,9 @@
-from v3data import VisorClient, PricingClient
+from v3data import VisorClient
 
 
 class VisorVault:
     def __init__(self, visor_address):
         self.visor_client = VisorClient()
-        self.pricing_client = PricingClient()
         self.address = visor_address.lower()
         self.decimal_factor = 10 ** 18
 
@@ -34,7 +33,7 @@ class VisorVault:
             return {}
 
         visor_owner = data['owner']['id']
-        tvl = self.pricing_client.hypervisors_tvl()
+        tvl = self.visor_client.hypervisors_tvl()
 
         visor_info = {
             "owner": visor_owner,

@@ -1,10 +1,9 @@
-from v3data import VisorClient, PricingClient
+from v3data import VisorClient
 
 
 class VisorUser:
     def __init__(self, user_address):
         self.visor_client = VisorClient()
-        self.pricing_client = PricingClient()
         self.address = user_address.lower()
         self.decimal_factor = 10 ** 18
 
@@ -33,7 +32,7 @@ class VisorUser:
         if not data:
             return {}
 
-        tvl = self.pricing_client.hypervisors_tvl()
+        tvl = self.visor_client.hypervisors_tvl()
 
         visors = {}
         for visor in data['visorsOwned']:

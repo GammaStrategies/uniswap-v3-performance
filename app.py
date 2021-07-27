@@ -10,6 +10,7 @@ from v3data.visr import VisrData
 from v3data.users import VisorUser
 from v3data.visor import VisorVault
 from v3data.toplevel import TopLevelData
+from v3data.dashboard import Dashboard
 from v3data.config import DEFAULT_TIMEZONE, PRIVATE_BETA_TVL, CHARTS_CACHE_TIMEOUT
 
 app = Flask(__name__)
@@ -238,38 +239,6 @@ def hypervisors_all():
 @app.route('/dashboard')
 def dashboard():
     period = request.args.get("period", "weekly").lower()
+    dashboard = Dashboard(period)
 
-    visr = VisrData()
-    visr_info = visr.info()
-    token_info = visr_info['info']
-    visr_yield = visr_info['yield']
-    visr_price_usd = visr.price_usd()
-    distributions = visr.daily_distribution(timezone=DEFAULT_TIMEZONE, days=1)
-
-    last_day_distribution = float(distributions[0]['distributed'])
-
-    top_level = TopLevelData()
-    top_level_data = top_level.all_stats()
-    top_level_returns = top_level.calculate_returns()
-
-    dashboard_stats = {
-        "stakedUsdAmount": token_info['totalStaked'] * visr_price_usd,
-        "stakedAmount": token_info['totalStaked'],
-        "feeStatsFeeAccural": last_day_distribution * visr_price_usd,
-        "feeStatsAmountVisr": last_day_distribution,
-        "feeStatsStakingApr": visr_yield[period]['apr'],
-        "feeStatsStakingApy": visr_yield[period]['apy'],
-        "feeStatsStakingDailyYield": visr_yield[period]['yield'],
-        "feeCumulativeFeeUsd": token_info['totalDistributedUSD'],
-        "feeCumulativeFeeUsdAnnual": visr_yield[period]['estimatedAnnualDistributionUSD'],
-        "feeCumulativeFeeDistributed": token_info['totalDistributed'],
-        "feeCumulativeFeeDistributedAnnual": visr_yield[period]['estimatedAnnualDistribution'],
-        "uniswapPairTotalValueLocked": top_level_data['tvl'] + PRIVATE_BETA_TVL,
-        "uniswapPairAmountPairs": top_level_data['pool_count'],
-        "uniswapFeesGenerated": top_level_data['fees_claimed'],
-        "uniswapFeesBasedApr": f"{top_level_returns[period]['feeApr']:.0%}",
-        "visrPrice": visr_price_usd,  # End point for price
-        "id": 2  # What is this?
-    }
-
-    return dashboard_stats
+    return dashboard.info('UTC')
