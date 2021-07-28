@@ -9,7 +9,6 @@ from v3data.visr import VisrData
 from v3data.users import VisorUser
 from v3data.visor import VisorVault
 from v3data.toplevel import TopLevelData
-from v3data.performance import HypervisorPerformance
 from v3data.config import DEFAULT_TIMEZONE, PRIVATE_BETA_TVL
 
 app = Flask(__name__)
