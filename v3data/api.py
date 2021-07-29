@@ -1,5 +1,4 @@
 from flask import Flask, request, Response
-from flask_caching import Cache
 from flask_cors import CORS
 
 from v3data.pools import pools_from_symbol
@@ -10,12 +9,9 @@ from v3data.visr import VisrData
 from v3data.users import VisorUser
 from v3data.visor import VisorVault
 from v3data.toplevel import TopLevelData
-from v3data.dashboard import Dashboard
-from v3data.config import DEFAULT_TIMEZONE, PRIVATE_BETA_TVL, CHARTS_CACHE_TIMEOUT
+from v3data.config import DEFAULT_TIMEZONE, PRIVATE_BETA_TVL
 
 app = Flask(__name__)
-app.config.from_mapping({'CACHE_TYPE': 'SimpleCache'})
-cache = Cache(app)
 CORS(app)
 
 
@@ -26,7 +22,6 @@ def main():
 
 @app.route('/charts/bollingerbands/<string:poolAddress>')
 @app.route('/bollingerBandsChartData/<string:poolAddress>')
-@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def bollingerbands_chart(poolAddress):
     periodHours = int(request.args.get("periodHours", 24))
 
@@ -45,7 +40,6 @@ def bollingerbands_latest(poolAddress):
 
 
 @app.route('/charts/dailyTvl')
-@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def daily_tvl_chart_data():
     days = int(request.args.get("days", 20))
 
@@ -73,7 +67,6 @@ def daily_hypervisor_flows_chart_data(hypervisor_address):
 
 
 @app.route('/charts/baseRange/<string:hypervisor_address>')
-@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def base_range_chart(hypervisor_address):
     hours = int(request.args.get("days", 20)) * 24
     hypervisor_address = hypervisor_address.lower()
@@ -86,7 +79,6 @@ def base_range_chart(hypervisor_address):
 
 
 @app.route('/charts/baseRange/all')
-@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def base_range_chart_all():
     hours = int(request.args.get("days", 20)) * 24
     baseLimitData = BaseLimit(hours=hours, chart=True)
@@ -95,7 +87,6 @@ def base_range_chart_all():
 
 
 @app.route('/charts/benchmark/<string:hypervisor_address>')
-@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def benchmark_chart(hypervisor_address):
     start_year = int(request.args.get("startYear", 2021))
     start_month = int(request.args.get("startMonth", 6))
@@ -126,6 +117,13 @@ def visor_data(address):
 @app.route('/pools/<string:token>')
 def uniswap_pools(token):
     return {"pools": pools_from_symbol(token)}
+
+
+@app.route('/dev/v2pools/<string:address>')
+def v2pools(address):
+    hp = HypervisorPerformance()
+    data = hp._get_v2_pricing(address)
+    return {"data": data}
 
 
 @app.route('/visr/basicStats')
@@ -239,6 +237,38 @@ def hypervisors_all():
 @app.route('/dashboard')
 def dashboard():
     period = request.args.get("period", "weekly").lower()
-    dashboard = Dashboard(period)
 
-    return dashboard.info('UTC')
+    visr = VisrData()
+    visr_info = visr.info()
+    token_info = visr_info['info']
+    visr_yield = visr_info['yield']
+    visr_price_usd = visr.price_usd()
+    distributions = visr.daily_distribution(timezone=DEFAULT_TIMEZONE, days=1)
+
+    last_day_distribution = float(distributions[0]['distributed'])
+
+    top_level = TopLevelData()
+    top_level_data = top_level.all_stats()
+    top_level_returns = top_level.calculate_returns()
+
+    dashboard_stats = {
+        "stakedUsdAmount": token_info['totalStaked'] * visr_price_usd,
+        "stakedAmount": token_info['totalStaked'],
+        "feeStatsFeeAccural": last_day_distribution * visr_price_usd,
+        "feeStatsAmountVisr": last_day_distribution,
+        "feeStatsStakingApr": visr_yield[period]['apr'],
+        "feeStatsStakingApy": visr_yield[period]['apy'],
+        "feeStatsStakingDailyYield": visr_yield[period]['yield'],
+        "feeCumulativeFeeUsd": token_info['totalDistributedUSD'],
+        "feeCumulativeFeeUsdAnnual": visr_yield[period]['estimatedAnnualDistributionUSD'],
+        "feeCumulativeFeeDistributed": token_info['totalDistributed'],
+        "feeCumulativeFeeDistributedAnnual": visr_yield[period]['estimatedAnnualDistribution'],
+        "uniswapPairTotalValueLocked": top_level_data['tvl'] + PRIVATE_BETA_TVL,
+        "uniswapPairAmountPairs": top_level_data['pool_count'],
+        "uniswapFeesGenerated": top_level_data['fees_claimed'],
+        "uniswapFeesBasedApr": f"{top_level_returns[period]['feeApr']:.0%}",
+        "visrPrice": visr_price_usd,  # End point for price
+        "id": 2  # What is this?
+    }
+
+    return dashboard_stats

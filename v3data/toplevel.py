@@ -155,6 +155,7 @@ class TopLevelData:
 
     def _calculate_returns(self):
         hypervisors = self.all_returns_data
+
         tvl = sum([float(hypervisor['tvlUSD']) for hypervisor in hypervisors])
 
         hypervisor_data = HypervisorData()

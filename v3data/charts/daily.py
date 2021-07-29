@@ -1,13 +1,12 @@
 import pandas as pd
 import numpy as np
-from v3data import VisorClient, PricingClient
+from v3data import VisorClient
 
 
 class DailyChart:
     def __init__(self, days=20):
         self.days = days
         self.visor_client = VisorClient()
-        self.pricing_client = PricingClient()
 
     def _get_all_flows(self):
         """Daily chart flows bar chart for hypervisors"""
@@ -91,7 +90,7 @@ class DailyChart:
         """Total TVL chart broken down by hypervisor"""
         query = """
         query hypervisorDaily($days: Int!){
-            hypervisors(
+            uniswapV3Hypervisors(
                 first: 1000
             ){
                 id
@@ -105,7 +104,7 @@ class DailyChart:
                         decimals
                     }
                 }
-                dayData(
+                uniswapV3HypervisorDayData(
                     first: $days
                     orderBy: date
                     orderDirection: desc
@@ -122,11 +121,11 @@ class DailyChart:
         }
         """
         variables = {'days': self.days}
-        data = self.pricing_client.query(query, variables)['data']['hypervisors']
+        data = self.visor_client.query(query, variables)['data']['uniswapV3Hypervisors']
 
         df_all = pd.DataFrame()
         for hypervisor in data:
-            df_hypervisor = pd.DataFrame(hypervisor['dayData'], dtype=np.float64)
+            df_hypervisor = pd.DataFrame(hypervisor['uniswapV3HypervisorDayData'], dtype=np.float64)
             df_hypervisor['hypervisor'] = hypervisor['id']
             df_hypervisor['name'] = f"{hypervisor['pool']['token0']['symbol']}-{hypervisor['pool']['token1']['symbol']}"
             df_all = pd.concat([df_all, df_hypervisor])
