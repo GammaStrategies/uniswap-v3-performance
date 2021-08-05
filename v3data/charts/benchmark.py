@@ -5,6 +5,7 @@ from v3data import VisorClient, UniswapV2Client
 from v3data.utils import year_month_to_timestamp
 from v3data.constants import WETH_ADDRESS
 
+
 class Benchmark:
     def __init__(self, address, start_year, start_month, n_months=1):
         self.visor_client = VisorClient()
@@ -17,7 +18,7 @@ class Benchmark:
         additional_years, end_month = divmod(start_month + n_months, 12)
         end_year = start_year + additional_years
         self.start_date = year_month_to_timestamp(start_year, start_month)
-        self.end_date = year_month_to_timestamp(end_year, end_month) 
+        self.end_date = year_month_to_timestamp(end_year, end_month)
 
     def get_data(self):
         # Get hypervisor position
@@ -26,16 +27,16 @@ class Benchmark:
             uniswapV3Hypervisor(id: $id) {
                 id
                 pool {
-                    token0{ 
+                    token0{
                         id
                         symbol
                     }
-                    token1{ 
+                    token1{
                         id
                         symbol
                     }
                 }
-                uniswapV3HypervisorDayData(
+                dayData(
                     where:{
                         date_gte: $startDate
                         date_lt: $endDate
@@ -57,7 +58,7 @@ class Benchmark:
         hypervisor_data = self.visor_client.query(
             query_hypervisor, variables_hypervisor)['data']['uniswapV3Hypervisor']
 
-        if not hypervisor_data['uniswapV3HypervisorDayData']:
+        if not hypervisor_data['dayData']:
             return None
 
         token0 = hypervisor_data['pool']['token0']['id']
@@ -65,8 +66,7 @@ class Benchmark:
 
         self.weth_token = 0 if token0 == WETH_ADDRESS else 1
 
-
-        hypervisor_daily = hypervisor_data['uniswapV3HypervisorDayData']
+        hypervisor_daily = hypervisor_data['dayData']
 
         # Get V2 data
 
@@ -122,7 +122,6 @@ class Benchmark:
             "v2": v2_data
         }
 
-
     def chart(self):
         data = self.get_data()
 
@@ -145,9 +144,8 @@ class Benchmark:
         df_eth = pd.DataFrame(data['v2']['ethDayData'], dtype=np.float64).set_index('date')
         df_eth['ethPriceUsdc'] = df_eth.reserve0 / df_eth.reserve1
 
-
         df_all = df_hypervisor.join([
-            df_lp[['v2lpPrice','tokenPriceEth']],
+            df_lp[['v2lpPrice', 'tokenPriceEth']],
             df_eth[['ethPriceUsdc']]
         ])
 
@@ -156,7 +154,7 @@ class Benchmark:
         df_all = df_all[['close', 'v2lpPrice', 'tokenPriceUsdc', 'ethPriceUsdc']]
         df_all = df_all.div(df_all.iloc[0])  # Normalise to first value
         df_all = df_all.rename(columns={
-            'close': 'Hypervisor', 
+            'close': 'Hypervisor',
             'v2lpPrice': 'Uniswap V2 LP',
             'tokenPriceUsdc': data["token0_symbol"] if self.weth_token == 1 else data["token1_symbol"],
             'ethPriceUsdc': 'ETH',

@@ -7,8 +7,8 @@ class VisorVault:
         self.address = visor_address.lower()
         self.decimal_factor = 10 ** 18
 
-    def info(self):
-        query_visor = """
+    def _get_data(self):
+        query = """
         query visorData($visorAddress: String!) {
             visor(
                 id: $visorAddress
@@ -20,6 +20,14 @@ class VisorVault:
                 hypervisorShares {
                     hypervisor {
                         id
+                        pool{
+                            token0{ decimals }
+                            token1{ decimals }
+                        }
+                        totalSupply
+                        tvl0
+                        tvl1
+                        tvlUSD
                     }
                     shares
                 }
@@ -27,29 +35,36 @@ class VisorVault:
         }
         """
         variables = {"visorAddress": self.address}
-        data = self.visor_client.query(query_visor, variables)['data']['visor']
+        self.data = self.visor_client.query(query, variables)['data']['visor']
 
-        if not data:
+    def info(self, get_data=True):
+
+        if get_data:
+            self._get_data()
+
+        if not self.data:
             return {}
 
-        visor_owner = data['owner']['id']
-        tvl = self.visor_client.hypervisors_tvl()
-
+        visor_owner = self.data['owner']['id']
         visor_info = {
             "owner": visor_owner,
-            "visrStaked": int(data['visrStaked']) / self.decimal_factor
+            "visrStaked": int(self.data['visrStaked']) / self.decimal_factor
         }
-        for record in data['hypervisorShares']:
-            hypervisor_id = record['hypervisor']['id']
-            shares = int(record['shares'])
-            totalSupply = int(tvl[hypervisor_id]['totalSupply'])
+        for hypervisor in self.data['hypervisorShares']:
+            hypervisor_id = hypervisor['hypervisor']['id']
+            shares = int(hypervisor['shares'])
+            totalSupply = int(hypervisor['hypervisor']['totalSupply'])
             shareOfSupply = shares / totalSupply if totalSupply > 0 else 0
+            tvlUSD = float(hypervisor['hypervisor']['tvlUSD'])
+            tvl0_decimal = float(hypervisor['hypervisor']['tvl0']) / 10 ** int(hypervisor['hypervisor']['pool']['token0']['decimals'])
+            tvl1_decimal = float(hypervisor['hypervisor']['tvl1']) / 10 ** int(hypervisor['hypervisor']['pool']['token1']['decimals'])
+            
             visor_info[hypervisor_id] = {
                 "shares": shares,
-                "shareOfSupply": shareOfSupply,
-                "balance0": tvl[hypervisor_id]['tvl0Decimal'] * shareOfSupply,
-                "balance1": tvl[hypervisor_id]['tvl1Decimal'] * shareOfSupply,
-                "balanceUSD": float(tvl[hypervisor_id]['tvlUSD']) * shareOfSupply
+                    "shareOfSupply": shareOfSupply,
+                    "balance0": tvl0_decimal * shareOfSupply,
+                    "balance1": tvl1_decimal * shareOfSupply,
+                    "balanceUSD": tvlUSD * shareOfSupply
             }
 
         return visor_info

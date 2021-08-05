@@ -16,7 +16,7 @@ class DailyChart:
                 first: 1000
             ){
                 id
-                uniswapV3HypervisorDayData(
+                dayData(
                     first: $days
                     orderBy: date
                     orderDirection: desc
@@ -35,7 +35,7 @@ class DailyChart:
         }
         hypervisors = self.visor_client.query(query, variables)['data']['uniswapV3Hypervisors']
 
-        data = [day_data for hypervisor in hypervisors for day_data in hypervisor['uniswapV3HypervisorDayData']]
+        data = [day_data for hypervisor in hypervisors for day_data in hypervisor['dayData']]
 
         return data
 
@@ -104,7 +104,7 @@ class DailyChart:
                         decimals
                     }
                 }
-                uniswapV3HypervisorDayData(
+                dayData(
                     first: $days
                     orderBy: date
                     orderDirection: desc
@@ -125,7 +125,7 @@ class DailyChart:
 
         df_all = pd.DataFrame()
         for hypervisor in data:
-            df_hypervisor = pd.DataFrame(hypervisor['uniswapV3HypervisorDayData'], dtype=np.float64)
+            df_hypervisor = pd.DataFrame(hypervisor['dayData'], dtype=np.float64)
             df_hypervisor['hypervisor'] = hypervisor['id']
             df_hypervisor['name'] = f"{hypervisor['pool']['token0']['symbol']}-{hypervisor['pool']['token1']['symbol']}"
             df_all = pd.concat([df_all, df_hypervisor])

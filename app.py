@@ -6,7 +6,7 @@ from v3data.pools import pools_from_symbol
 from v3data.bollingerbands import BollingerBand
 from v3data.charts import BaseLimit, Benchmark, DailyChart
 from v3data.hypervisor import HypervisorData
-from v3data.visr import VisrData
+from v3data.visr import VisrInfo, VisrYield, VisrDistribution
 from v3data.users import VisorUser
 from v3data.visor import VisorVault
 from v3data.toplevel import TopLevelData
@@ -130,47 +130,26 @@ def uniswap_pools(token):
 
 @app.route('/visr/basicStats')
 def visr_basic_stats():
-    visr = VisrData()
-    token_info = visr.token_info()
-    visr_price_usd = visr.price_usd()
-
-    token_info['priceUSD'] = visr_price_usd
-
-    return token_info
+    visr_info = VisrInfo(days=30)
+    return visr_info.output()
 
 
 @app.route('/visr/yield')
 def visr_yield():
-    visr = VisrData()
-    yield_data = visr.token_yield()
-
-    return yield_data
+    visr_yield = VisrYield(days=30)
+    return visr_yield.output()
 
 
 @app.route('/visr/dailyDistribution')
 def visr_distributions():
-    days = int(request.args.get("days", 5))
+    days = int(request.args.get("days", 6))
     timezone = request.args.get("timezone", DEFAULT_TIMEZONE).upper()
 
     if timezone not in ['UTC', 'UTC-5']:
         return Response("Only UTC and UTC-5 timezones supported", status=400)
 
-    visr = VisrData()
-    distributions = visr.daily_distribution(timezone, days)
-
-    fee_distributions = []
-    for i, distribution in enumerate(distributions):
-        fee_distributions.append(
-            {
-                'title': distribution['date'],
-                'desc': f"{int(distribution['distributed']):,} VISR Distributed",
-                'id': i + 2
-            }
-        )
-
-    return {
-        'feeDistribution': fee_distributions
-    }
+    visr_distributions = VisrDistribution(days=days, timezone=timezone)
+    return visr_distributions.output()
 
 
 @app.route('/hypervisor/<string:hypervisor_address>/basicStats')
