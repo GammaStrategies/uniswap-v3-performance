@@ -118,7 +118,7 @@ class Dashboard:
             "feeStatsAmountVisr": last_day_distribution,
             "feeStatsStakingApr": visr_yield[self.period]['apr'],
             "feeStatsStakingApy": visr_yield[self.period]['apy'],
-            "feeStatsStakingDailyYield": visr_yield[self.period]['yield'],
+            "feeStatsStakingDailyYield": visr_yield['daily']['yield'],  # Hard-code this to daily
             "feeCumulativeFeeUsd": visr_info['totalDistributedUSD'],
             "feeCumulativeFeeUsdAnnual": visr_yield[self.period]['estimatedAnnualDistributionUSD'],
             "feeCumulativeFeeDistributed": visr_info['totalDistributed'],
