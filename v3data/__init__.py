@@ -4,7 +4,8 @@ from v3data.config import (
     VISOR_SUBGRAPH_URL,
     UNI_V2_SUBGRAPH_URL,
     UNI_V3_SUBGRAPH_URL,
-    ETH_BLOCKS_SUBGRAPH_URL
+    ETH_BLOCKS_SUBGRAPH_URL,
+    THEGRAPH_INDEX_NODE_URL
 )
 
 
@@ -119,3 +120,34 @@ class EthBlocksClient(SubgraphClient):
         }
 
         return int(self.query(query, variables)['data']['blocks'][0]['number'])
+
+class IndexNodeClient(SubgraphClient):
+    def __init__(self):
+        super().__init__(THEGRAPH_INDEX_NODE_URL)
+        self.set_subgraph_name()
+
+    def set_subgraph_name(self):
+        split_visor_url = VISOR_SUBGRAPH_URL.split('/')
+        if not split_visor_url[-1]:
+            split_visor_url.pop(-1)
+        self.subgraph_name = f"{split_visor_url[-2]}/{split_visor_url[-1]}"
+
+
+    def status(self):
+        query = f"""
+        {{ 
+            indexingStatusForCurrentVersion(
+                subgraphName: "{self.subgraph_name}"
+            ){{
+                chains{{
+                    latestBlock {{ hash number }}
+                }}
+            }}
+        }}
+        """
+        latestBlock = int(self.query(query)['data']['indexingStatusForCurrentVersion']['chains'][0]['latestBlock']['number'])
+
+        return {
+            "url": VISOR_SUBGRAPH_URL,
+            "latestBlock": latestBlock
+        }

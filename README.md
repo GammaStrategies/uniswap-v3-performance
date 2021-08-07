@@ -522,3 +522,19 @@ with these paramaters:
 poolAddress: address of pool
 
 periodHours: The total period in hours
+
+
+## Misc
+
+### Subgraph Status
+`GET /status/subgraph`
+
+Gets current status of subgraph
+
+Response:
+```json
+{
+  "latestBlock": 12978109, 
+  "url": "https://api.thegraph.com/subgraphs/name/visorfinance/visor"
+}
+```

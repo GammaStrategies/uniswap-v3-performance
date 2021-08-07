@@ -4,6 +4,7 @@ from pandas import DataFrame
 from v3data import VisorClient, UniswapV3Client, EthBlocksClient
 from v3data.config import DEFAULT_TIMEZONE
 from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal
+from v3data.constants import DAYS_IN_PERIOD
 
 
 class VisrData:
@@ -79,14 +80,8 @@ class VisrCalculations(VisrData):
         df_data['dailyYield'] = df_data.distributed / df_data.totalStaked
         df_data = df_data.sort_values('date')
 
-        periods = {
-            "daily": 1,
-            "weekly": 7,
-            "monthly": 30
-        }
-
         results = {}
-        for period, days in periods.items():
+        for period, days in DAYS_IN_PERIOD.items():
             df_period = df_data.tail(days).copy()
             n_days = len(df_period)
             annual_scaling_factor = 365 / n_days

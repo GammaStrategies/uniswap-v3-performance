@@ -16,21 +16,6 @@ class TopLevelData:
         self.all_stats_data = {}
         self.all_returns_data = {}
 
-    def get_factory_data(self):
-        """Get factory aggregated data for all factories"""
-        query = """
-        {
-            uniswapV3HypervisorFactories(
-                first: 1000
-            ){
-                id
-                grossFeesClaimedUSD
-                tvlUSD
-            }
-        }
-        """
-        return self.visor_client.query(query)['data']['uniswapV3HypervisorFactories']
-
     def get_hypervisor_data(self):
         """Get hypervisor IDs"""
         query = """
@@ -89,7 +74,7 @@ class TopLevelData:
     def _get_all_stats_data(self):
         query = """
         {
-            uniswapV3HypervisorFactories(
+            uniswapV3Hypervisors(
                 first: 1000
             ){
                 id
@@ -133,8 +118,8 @@ class TopLevelData:
         data = self.all_stats_data
         return {
             "pool_count": len(data['uniswapV3Pools']),
-            "tvl": sum([float(factory['tvlUSD']) for factory in data['uniswapV3HypervisorFactories']]),
-            "fees_claimed": sum([float(factory['grossFeesClaimedUSD']) for factory in data['uniswapV3HypervisorFactories']])
+            "tvl": sum([float(factory['tvlUSD']) for factory in data['uniswapV3Hypervisors']]),
+            "fees_claimed": sum([float(factory['grossFeesClaimedUSD']) for factory in data['uniswapV3Hypervisors']])
         }
 
     def all_stats(self):

@@ -2,6 +2,7 @@ from flask import Flask, request, Response
 from flask_caching import Cache
 from flask_cors import CORS
 
+from v3data import IndexNodeClient
 from v3data.pools import pools_from_symbol
 from v3data.bollingerbands import BollingerBand
 from v3data.charts import BaseLimit, Benchmark, DailyChart
@@ -23,6 +24,10 @@ CORS(app)
 def main():
     return "Visor Data"
 
+@app.route('/status/subgraph')
+def subgraph_status():
+    client = IndexNodeClient()
+    return client.status()
 
 @app.route('/charts/bollingerbands/<string:poolAddress>')
 @app.route('/bollingerBandsChartData/<string:poolAddress>')
