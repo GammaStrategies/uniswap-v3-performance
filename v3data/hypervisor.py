@@ -4,6 +4,7 @@ from pandas import DataFrame
 
 from v3data import VisorClient, UniswapV3Client
 from v3data.utils import timestamp_ago
+from v3data.constants import DAYS_IN_PERIOD
 
 DAY_SECONDS = 24 * 60 * 60
 YEAR_SECONDS = 365 * DAY_SECONDS
@@ -120,15 +121,9 @@ class HypervisorData:
         # Time since last rebalance
         df_rebalances['periodSeconds'] = df_rebalances.timestamp.diff()
 
-        periods = {
-            "daily": 1,
-            "weekly": 7,
-            "monthly": 30
-        }
-
         # Calculate returns for using last 1, 7, and 30 days data
         results = {}
-        for period, days in periods.items():
+        for period, days in DAYS_IN_PERIOD.items():
             timestamp_start = timestamp_ago(timedelta(days=days))
             df_period = df_rebalances.loc[df_rebalances.timestamp > timestamp_start].copy()
 
