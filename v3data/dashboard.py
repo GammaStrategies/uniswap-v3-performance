@@ -6,6 +6,7 @@ from v3data.visor import VisorVault
 from v3data.toplevel import TopLevelData
 from v3data.utils import timestamp_ago
 from v3data.config import PRIVATE_BETA_TVL
+from v3data.constants import DAYS_IN_PERIOD
 
 
 class Dashboard:
@@ -42,13 +43,6 @@ class Dashboard:
                 distributed
                 distributedUSD
                 totalStaked
-            }
-            uniswapV3HypervisorFactories(
-                first: 1000
-            ){
-                id
-                grossFeesClaimedUSD
-                tvlUSD
             }
             uniswapV3Pools(
                 first: 1000
@@ -89,7 +83,7 @@ class Dashboard:
             'visrTokenDayDatas': data['visrTokenDayDatas']
         }
         self.top_level_data = {
-            "uniswapV3HypervisorFactories": data['uniswapV3HypervisorFactories'],
+            "uniswapV3Hypervisors": data['uniswapV3Hypervisors'],
             "uniswapV3Pools": data['uniswapV3Pools']
         }
         self.top_level_returns_data = data['uniswapV3Hypervisors']
@@ -111,6 +105,8 @@ class Dashboard:
         top_level_data = top_level._all_stats()
         top_level_returns = top_level._calculate_returns()
 
+        daily_yield = visr_yield[self.period]['yield'] / DAYS_IN_PERIOD[self.period]
+
         dashboard_stats = {
             "stakedUsdAmount": visr_info['totalStaked'] * visr_price_usd,
             "stakedAmount": visr_info['totalStaked'],
@@ -118,7 +114,7 @@ class Dashboard:
             "feeStatsAmountVisr": last_day_distribution,
             "feeStatsStakingApr": visr_yield[self.period]['apr'],
             "feeStatsStakingApy": visr_yield[self.period]['apy'],
-            "feeStatsStakingDailyYield": visr_yield[self.period]['yield'],
+            "feeStatsStakingDailyYield": daily_yield,
             "feeCumulativeFeeUsd": visr_info['totalDistributedUSD'],
             "feeCumulativeFeeUsdAnnual": visr_yield[self.period]['estimatedAnnualDistributionUSD'],
             "feeCumulativeFeeDistributed": visr_info['totalDistributed'],
