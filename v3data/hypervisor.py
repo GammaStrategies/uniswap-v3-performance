@@ -175,6 +175,8 @@ class HypervisorData:
                 first:1000
             ){
                 id
+                baseLower
+                baseUpper
                 totalSupply
                 maxTotalSupply
                 deposit0Max
@@ -204,8 +206,6 @@ class HypervisorData:
         basics = self.visor_client.query(query_basics)['data']['uniswapV3Hypervisors']
         pool_addresses = [hypervisor['pool']['id'] for hypervisor in basics]
 
-        tvl = self.visor_client.hypervisors_tvl()
-
         query_pool = """
         query slot0($pools: [String!]!){
             pools(
@@ -234,6 +234,9 @@ class HypervisorData:
             pool_id = hypervisor['pool']['id']
             decimals0 = hypervisor['pool']['token0']['decimals']
             decimals1 = hypervisor['pool']['token1']['decimals']
+            tick = int(pools[pool_id]['tick'])
+            baseLower = int(hypervisor['baseLower'])
+            baseUpper = int(hypervisor['baseUpper'])
             totalSupply = int(hypervisor['totalSupply'])
             maxTotalSupply = int(hypervisor['maxTotalSupply'])
             capacityUsed = totalSupply / maxTotalSupply if maxTotalSupply > 0 else "No cap"
@@ -247,14 +250,17 @@ class HypervisorData:
                 'grossFeesClaimed0': int(hypervisor['grossFeesClaimed0']) / 10 ** decimals0,
                 'grossFeesClaimed1': int(hypervisor['grossFeesClaimed1']) / 10 ** decimals1,
                 'grossFeesClaimedUSD': hypervisor['grossFeesClaimedUSD'],
-                'tvl0': tvl[hypervisor_id]['tvl0Decimal'],
-                'tvl1': tvl[hypervisor_id]['tvl1Decimal'],
-                'tvlUSD': tvl[hypervisor_id]['tvlUSD'],
+                'tvl0': int(hypervisor['tvl0']) / 10 ** decimals0,
+                'tvl1': int(hypervisor['tvl1']) / 10 ** decimals1,
+                'tvlUSD': hypervisor['tvlUSD'],
                 'totalSupply': totalSupply,
                 'maxTotalSupply': maxTotalSupply,
                 'capacityUsed': capacityUsed,
                 'sqrtPrice': pools[pool_id]['sqrtPrice'],
-                'tick': pools[pool_id]['tick'],
+                'tick': tick,
+                'baseLower': baseLower,
+                'baseUpper': baseUpper,
+                'inRange': bool(baseLower <= tick <= baseUpper),
                 'observationIndex': pools[pool_id]['observationIndex'],
                 'poolTvlUSD': pools[pool_id]['totalValueLockedUSD'],
                 'poolFeesUSD': pools[pool_id]['feesUSD'],
