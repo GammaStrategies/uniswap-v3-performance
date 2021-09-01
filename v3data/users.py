@@ -1,7 +1,8 @@
 from v3data import VisorClient
+from v3data.visor import VisorVaultInfo
 
 
-class VisorUser:
+class UserData:
     def __init__(self, user_address):
         self.visor_client = VisorClient()
         self.address = user_address.lower()
@@ -11,12 +12,18 @@ class VisorUser:
     def _get_data(self):
         query = """
         query userData($userAddress: String!) {
+            visrToken(id: "0xf938424f7210f31df2aee3011291b658f872e91e"){
+                totalStaked
+            }
             user(
                 id: $userAddress
             ){
                 visorsOwned {
                     id
+                    owner{ id }
                     visrStaked
+                    visrDeposited
+                    visrEarnedRealized
                     hypervisorShares {
                         hypervisor {
                             id
@@ -24,49 +31,46 @@ class VisorUser:
                                 token0{ decimals }
                                 token1{ decimals }
                             }
+                            conversion {
+                                baseTokenIndex
+                                priceTokenInBase
+                                priceBaseInUSD
+                            }
                             totalSupply
                             tvl0
                             tvl1
                             tvlUSD
                         }
                         shares
+                        initialToken0
+                        initialToken1
+                        initialUSD
                     }
                 }
             }
         }
         """
         variables = {"userAddress": self.address}
-        self.data = self.visor_client.query(query, variables)['data']['user']
+        self.data = self.visor_client.query(query, variables)['data']
 
-    def info(self, get_data=True):
+
+class UserInfo(UserData):
+    def output(self, get_data=True):
 
         if get_data:
             self._get_data()
 
-        if not self.data:
+        if not self.data.get('user'):
             return {}
 
         visors = {}
-        for visor in self.data['visorsOwned']:
-            visor_id = visor['id']
-            visors[visor_id] = {
-                "visrStaked": int(visor['visrStaked']) / self.decimal_factor
+        for visor in self.data['user']['visorsOwned']:
+            visor_address = visor['id']
+            visor_vault_info = VisorVaultInfo(visor_address)
+            visor_vault_info.data = {
+                'visrToken': self.data['visrToken'],
+                'visor': visor,
             }
-            for hypervisor in visor['hypervisorShares']:
-                hypervisor_id = hypervisor['hypervisor']['id']
-                shares = int(hypervisor['shares'])
-                totalSupply = int(hypervisor['hypervisor']['totalSupply'])
-                shareOfSupply = shares / totalSupply if totalSupply > 0 else 0
-                tvlUSD = float(hypervisor['hypervisor']['tvlUSD'])
-                tvl0_decimal = float(hypervisor['hypervisor']['tvl0']) / 10 ** int(hypervisor['hypervisor']['pool']['token0']['decimals'])
-                tvl1_decimal = float(hypervisor['hypervisor']['tvl1']) / 10 ** int(hypervisor['hypervisor']['pool']['token1']['decimals'])
-
-                visors[visor_id][hypervisor_id] = {
-                    "shares": shares,
-                    "shareOfSupply": shareOfSupply,
-                    "balance0": tvl0_decimal * shareOfSupply,
-                    "balance1": tvl1_decimal * shareOfSupply,
-                    "balanceUSD": tvlUSD * shareOfSupply
-                }
+            visors[visor_address] = visor_vault_info.output(get_data=False)
 
         return visors

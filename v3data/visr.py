@@ -1,7 +1,7 @@
 import numpy as np
 from pandas import DataFrame
 
-from v3data import VisorClient, UniswapV3Client, EthBlocksClient
+from v3data import VisorClient, UniswapV3Client
 from v3data.config import DEFAULT_TIMEZONE
 from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal
 from v3data.constants import DAYS_IN_PERIOD
@@ -136,7 +136,6 @@ class VisrYield(VisrCalculations):
 
     def output(self):
         return self.visr_yield(get_data=True)
-
 
 
 class VisrDistribution(VisrCalculations):

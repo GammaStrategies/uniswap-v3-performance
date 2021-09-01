@@ -7,7 +7,7 @@ from v3data.charts import BaseLimit, Benchmark, DailyChart
 from v3data.hypervisor import HypervisorData
 from v3data.visr import VisrData
 from v3data.users import VisorUser
-from v3data.visor import VisorVault
+from v3data.visor import VisorVaultInfo
 from v3data.toplevel import TopLevelData
 from v3data.config import DEFAULT_TIMEZONE, PRIVATE_BETA_TVL
 
@@ -109,9 +109,8 @@ def user_data(address):
 
 @app.route('/vault/<string:address>')
 def visor_data(address):
-    visor_vault = VisorVault(address)
-
-    return visor_vault.info()
+    visor_vault_info = VisorVaultInfo(address)
+    return visor_vault_info.output()
 
 
 @app.route('/pools/<string:token>')

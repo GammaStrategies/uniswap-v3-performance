@@ -2,7 +2,6 @@ from datetime import timedelta
 
 from v3data import VisorClient
 from v3data.visr import VisrCalculations, VisrPrice
-from v3data.visor import VisorVault
 from v3data.toplevel import TopLevelData
 from v3data.utils import timestamp_ago
 from v3data.config import PRIVATE_BETA_TVL

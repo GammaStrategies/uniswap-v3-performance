@@ -3,7 +3,7 @@ from datetime import timedelta
 from pandas import DataFrame
 
 from v3data import VisorClient, UniswapV3Client
-from v3data.utils import timestamp_ago
+from v3data.utils import timestamp_ago, timestamp_to_date
 from v3data.constants import DAYS_IN_PERIOD
 
 DAY_SECONDS = 24 * 60 * 60
@@ -175,6 +175,7 @@ class HypervisorData:
                 first:1000
             ){
                 id
+                created
                 baseLower
                 baseUpper
                 totalSupply
@@ -184,6 +185,9 @@ class HypervisorData:
                 grossFeesClaimed0
                 grossFeesClaimed1
                 grossFeesClaimedUSD
+                feesReinvested0
+                feesReinvested1
+                feesReinvestedUSD
                 tvl0
                 tvl1
                 tvlUSD
@@ -242,6 +246,7 @@ class HypervisorData:
             capacityUsed = totalSupply / maxTotalSupply if maxTotalSupply > 0 else "No cap"
 
             results[hypervisor_id] = {
+                'createDate': timestamp_to_date(int(hypervisor['created']), '%d %b, %Y'),
                 'poolAddress': pool_id,
                 'decimals0': decimals0,
                 'decimals1': decimals1,
@@ -250,6 +255,9 @@ class HypervisorData:
                 'grossFeesClaimed0': int(hypervisor['grossFeesClaimed0']) / 10 ** decimals0,
                 'grossFeesClaimed1': int(hypervisor['grossFeesClaimed1']) / 10 ** decimals1,
                 'grossFeesClaimedUSD': hypervisor['grossFeesClaimedUSD'],
+                'feesReinvested0': int(hypervisor['feesReinvested0']) / 10 ** decimals0,
+                'feesReinvested1': int(hypervisor['feesReinvested1']) / 10 ** decimals1,
+                'feesReinvestedUSD': hypervisor['feesReinvestedUSD'],
                 'tvl0': int(hypervisor['tvl0']) / 10 ** decimals0,
                 'tvl1': int(hypervisor['tvl1']) / 10 ** decimals1,
                 'tvlUSD': hypervisor['tvlUSD'],
