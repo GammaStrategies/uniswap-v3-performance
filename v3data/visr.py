@@ -206,4 +206,8 @@ class VisrPrice(VisrPriceData):
             decimal0,
             decimal1
         )
-        return visr_in_eth * eth_in_usdc
+
+        return {
+            "visr_in_usdc": visr_in_eth * eth_in_usdc,
+            "visr_in_eth": visr_in_eth
+        }

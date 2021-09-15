@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from v3data import VisorClient
 from v3data.visr import VisrCalculations, VisrPrice
+from v3data.eth import EthCalculations
 from v3data.toplevel import TopLevelData
 from v3data.utils import timestamp_ago
 from v3data.config import PRIVATE_BETA_TVL
@@ -14,6 +15,7 @@ class Dashboard:
         self.period = period
         self.days = 30
         self.visr_data = {}
+        self.eth_data = {}
         self.top_level_data = {}
         self.top_level_returns_data = {}
 
@@ -42,6 +44,25 @@ class Dashboard:
                 distributed
                 distributedUSD
                 totalStaked
+            }
+            ethToken(
+                id: "0"
+            ){
+                totalDistributed
+                totalDistributedUSD
+            }
+            ethDayDatas(
+                orderBy: date
+                orderDirection: desc
+                first: $days
+                where: {
+                    distributed_gt: 0
+                    timezone: $timezone
+                }
+            ){
+                date
+                distributed
+                distributedUSD
             }
             uniswapV3Pools(
                 first: 1000
@@ -81,6 +102,10 @@ class Dashboard:
             'visrToken': data['visrToken'],
             'visrTokenDayDatas': data['visrTokenDayDatas']
         }
+        self.eth_data = {
+            'ethToken': data['ethToken'],
+            'ethDayDatas': data['ethDayDatas']
+        }
         self.top_level_data = {
             "uniswapV3Hypervisors": data['uniswapV3Hypervisors'],
             "uniswapV3Pools": data['uniswapV3Pools']
@@ -96,7 +121,14 @@ class Dashboard:
         distributions = visr_calcs.distributions(get_data=False)
         last_day_distribution = float(distributions[0]['distributed'])
         visr_price = VisrPrice()
-        visr_price_usd = visr_price.output()
+        visr_price_usd = visr_price.output()["visr_in_usdc"]
+
+        eth_calcs = EthCalculations(days=30)
+        eth_calcs.data = self.eth_data
+        eth_distributions = eth_calcs.distributions(get_data=False)
+        eth_last_distribution = float(eth_distributions[0]['distributed'])
+        eth_average_daily_distribution = eth_last_distribution / 7
+        visr_in_eth = visr_price.output()["visr_in_eth"]
 
         top_level = TopLevelData()
         top_level.all_stats_data = self.top_level_data
@@ -107,10 +139,12 @@ class Dashboard:
         daily_yield = visr_yield[self.period]['yield'] / DAYS_IN_PERIOD[self.period]
 
         dashboard_stats = {
+            "visr_in_eth": visr_in_eth,
+            "visr_price_usd": visr_price_usd,
             "stakedUsdAmount": visr_info['totalStaked'] * visr_price_usd,
             "stakedAmount": visr_info['totalStaked'],
-            "feeStatsFeeAccural": last_day_distribution * visr_price_usd,
-            "feeStatsAmountVisr": last_day_distribution,
+            "feeStatsFeeAccural": (eth_average_daily_distribution / visr_in_eth) * visr_price_usd, # last_day_distribution * visr_price_usd,
+            "feeStatsAmountVisr": (eth_average_daily_distribution / visr_in_eth), # last_day_distribution,
             "feeStatsStakingApr": visr_yield[self.period]['apr'],
             "feeStatsStakingApy": visr_yield[self.period]['apy'],
             "feeStatsStakingDailyYield": daily_yield,
