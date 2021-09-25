@@ -12,8 +12,21 @@ def timestamp_to_date(timestamp, format=None):
         return dt.strftime(format)
 
 
+def parse_date(date_string, date_format="%Y-%m-%d"):
+    if not date_string:
+        return None
+
+    try:
+        date = datetime.datetime.strptime(date_string, date_format)
+    except ValueError:
+        return None
+
+    return date
+
+
 def date_to_timestamp(date):
-    return int(date.replace(tzinfo=datetime.timezone.utc).timestamp())
+    date_as_dt = datetime.datetime(year=date.year, month=date.month, day=date.day)
+    return int(date_as_dt.replace(tzinfo=datetime.timezone.utc).timestamp())
 
 
 def timestamp_ago(time_delta):

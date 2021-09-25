@@ -14,6 +14,7 @@ from v3data.visor import VisorVaultInfo
 from v3data.toplevel import TopLevelData
 from v3data.dashboard import Dashboard
 from v3data.config import DEFAULT_TIMEZONE, PRIVATE_BETA_TVL, CHARTS_CACHE_TIMEOUT
+from v3data.utils import parse_date
 
 app = Flask(__name__)
 app.config.from_mapping({'CACHE_TYPE': 'SimpleCache'})
@@ -103,14 +104,12 @@ def base_range_chart_all():
 
 
 @app.route('/charts/benchmark/<string:hypervisor_address>')
-@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
+# @cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def benchmark_chart(hypervisor_address):
-    start_year = int(request.args.get("startYear", 2021))
-    start_month = int(request.args.get("startMonth", 6))
-    start_day = int(request.args.get("start", 1))
-    n_months = int(request.args.get("nMonths", 1))
+    start_date = parse_date(request.args.get("startDate"))
+    end_date = parse_date(request.args.get("endDate"))
     hypervisor_address = hypervisor_address.lower()
-    benchmark = Benchmark(hypervisor_address, start_year, start_month, start_day, n_months)
+    benchmark = Benchmark(hypervisor_address, start_date, end_date)
     chart_data = benchmark.chart()
     if chart_data:
         return {hypervisor_address: chart_data}
@@ -158,6 +157,7 @@ def visr_distributions():
 
     visr_distributions = VisrDistribution(days=days, timezone=timezone)
     return visr_distributions.output()
+
 
 @app.route('/eth/dailyDistribution')
 def eth_distributions():

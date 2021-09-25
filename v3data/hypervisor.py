@@ -102,8 +102,8 @@ class HypervisorData:
         }
 
     def _calculate_returns(self, data):
-
-        if (not data) or (len(data) < 2):  # Calculations require more than 1 rebalance
+        # Calculations require more than 1 rebalance
+        if (not data) or (len(data) < 2):
             return self.empty_returns()
 
         df_rebalances = DataFrame(data, dtype=np.float64)
