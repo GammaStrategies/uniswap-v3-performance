@@ -1,12 +1,11 @@
 from datetime import timedelta
 
 from v3data import VisorClient
-from v3data.visr import VisrCalculations, VisrPrice
+from v3data.visr import VisrCalculations, VisrPrice, ProtocolFeesCalculations
 from v3data.eth import EthCalculations
 from v3data.toplevel import TopLevelData
 from v3data.utils import timestamp_ago
 from v3data.config import PRIVATE_BETA_TVL
-from v3data.constants import DAYS_IN_PERIOD
 
 
 class Dashboard:
@@ -21,7 +20,7 @@ class Dashboard:
 
     def _get_data(self, timezone):
         query = """
-        query($days: Int!, $timezone: String!, $timestampStart: Int!){
+        query($days: Int!, $timezone: String!, $timestampStart: Int!, $rebalancesStart: Int!){
             visrToken(
                 id: "0xf938424f7210f31df2aee3011291b658f872e91e"
             ){
@@ -89,12 +88,21 @@ class Dashboard:
                     totalAmountUSD
                 }
             }
+            uniswapV3Rebalances(
+                where: {
+                    timestamp_gt: $rebalancesStart
+                }
+            ) {
+                timestamp
+                protocolFeesUSD
+            }
         }
         """
         variables = {
             "days": self.days,
             "timezone": timezone,
-            "timestampStart": timestamp_ago(timedelta(self.days))
+            "timestampStart": timestamp_ago(timedelta(self.days)),
+            "rebalancesStart": timestamp_ago(timedelta(7))
         }
 
         data = self.visor_client.query(query, variables)['data']
@@ -112,6 +120,11 @@ class Dashboard:
         }
         self.top_level_returns_data = data['uniswapV3Hypervisors']
 
+        self.protocol_fees_data = {
+            'uniswapV3Rebalances': data['uniswapV3Rebalances'],
+            'visrToken': data['visrToken'],
+        }
+
     def info(self, timezone):
         self._get_data(timezone)
         visr_calcs = VisrCalculations(days=30)
@@ -122,6 +135,10 @@ class Dashboard:
         last_day_distribution = float(distributions[0]['distributed'])
         visr_price = VisrPrice()
         visr_price_usd = visr_price.output()["visr_in_usdc"]
+
+        protocol_fees_calcs = ProtocolFeesCalculations(days=7)
+        protocol_fees_calcs.data = self.protocol_fees_data
+        collected_fees = protocol_fees_calcs.collected_fees(get_data=False)
 
         eth_calcs = EthCalculations(days=30)
         eth_calcs.data = self.eth_data
@@ -136,18 +153,18 @@ class Dashboard:
         top_level_data = top_level._all_stats()
         top_level_returns = top_level._calculate_returns()
 
-        daily_yield = visr_yield[self.period]['yield'] / DAYS_IN_PERIOD[self.period]
+        # daily_yield = visr_yield[self.period]['yield'] / DAYS_IN_PERIOD[self.period]
 
         dashboard_stats = {
             "visr_in_eth": visr_in_eth,
             "visr_price_usd": visr_price_usd,
             "stakedUsdAmount": visr_info['totalStaked'] * visr_price_usd,
             "stakedAmount": visr_info['totalStaked'],
-            "feeStatsFeeAccural": (eth_average_daily_distribution / visr_in_eth) * visr_price_usd, # last_day_distribution * visr_price_usd,
-            "feeStatsAmountVisr": (eth_average_daily_distribution / visr_in_eth), # last_day_distribution,
-            "feeStatsStakingApr": visr_yield[self.period]['apr'],
-            "feeStatsStakingApy": visr_yield[self.period]['apy'],
-            "feeStatsStakingDailyYield": daily_yield,
+            "feeStatsFeeAccural": collected_fees['daily']['collected_usd'], # (eth_average_daily_distribution / visr_in_eth) * visr_price_usd, # last_day_distribution * visr_price_usd,
+            "feeStatsAmountVisr": collected_fees['daily']['collected_visr'], # (eth_average_daily_distribution / visr_in_eth), # last_day_distribution,
+            "feeStatsStakingApr": collected_fees[self.period]['apr'], # visr_yield[self.period]['apr'],
+            "feeStatsStakingApy": collected_fees[self.period]['apy'], # visr_yield[self.period]['apy'],
+            "feeStatsStakingDailyYield": collected_fees[self.period]['yield'], #daily_yield,
             "feeCumulativeFeeUsd": visr_info['totalDistributedUSD'],
             "feeCumulativeFeeUsdAnnual": visr_yield[self.period]['estimatedAnnualDistributionUSD'],
             "feeCumulativeFeeDistributed": visr_info['totalDistributed'],

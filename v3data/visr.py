@@ -1,9 +1,10 @@
 import numpy as np
+from datetime import timedelta
 from pandas import DataFrame
 
 from v3data import VisorClient, UniswapV3Client
 from v3data.config import DEFAULT_TIMEZONE
-from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal
+from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal, timestamp_ago
 from v3data.constants import DAYS_IN_PERIOD
 
 
@@ -211,3 +212,71 @@ class VisrPrice(VisrPriceData):
             "visr_in_usdc": visr_in_eth * eth_in_usdc,
             "visr_in_eth": visr_in_eth
         }
+
+
+class ProtocolFeesData:
+    def __init__(self):
+        self.visor_client = VisorClient()
+
+    def _get_data(self, time_delta):
+        query = """
+        query  protocolFees($timestamp_start: Int!) {
+            uniswapV3Rebalances(
+                where: {
+                    timestamp_gt: $timestamp_start
+                }
+            ) {
+                timestamp
+                protocolFeesUSD
+            }
+            visrToken(
+                id: "0xf938424f7210f31df2aee3011291b658f872e91e"
+            ){
+                totalStaked
+            }
+        }
+        """
+        variables = {"timestamp_start": timestamp_ago(time_delta)}
+        self.data = self.visor_client.query(query, variables)['data']
+
+
+class ProtocolFeesCalculations(ProtocolFeesData):
+    def __init__(self, days=30):
+        super().__init__()
+        self.days = days
+
+    def collected_fees(self, get_data=True):
+        if get_data:
+            self._get_data(timedelta(days=self.days))
+
+        rebalances = self.data['uniswapV3Rebalances']
+
+        if not rebalances:
+            return 0
+
+        df_rebalances = DataFrame(rebalances, dtype=np.float64)
+
+        visr_price = VisrPrice()
+        visr_in_usd = visr_price.output()['visr_in_usdc']
+
+        visr_staked_usd = visr_in_usd * int(self.data['visrToken']['totalStaked']) / 10**18
+
+        results = {}
+        for period, days in DAYS_IN_PERIOD.items():
+            df_period = df_rebalances[df_rebalances.timestamp > timestamp_ago(timedelta(days=days))].copy()
+
+            total_fees_in_period = df_period.protocolFeesUSD.sum()
+            fees_per_day = total_fees_in_period / days
+
+            daily_yield = fees_per_day / visr_staked_usd
+            fees_apr = daily_yield * 365
+            fees_apy = (1 + daily_yield) ** 365 - 1
+
+            results[period] = {}
+            results[period]['collected_usd'] = fees_per_day
+            results[period]['collected_visr'] = fees_per_day / visr_in_usd
+            results[period]['yield'] = daily_yield
+            results[period]['apr'] = fees_apr
+            results[period]['apy'] = fees_apy
+
+        return results
