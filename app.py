@@ -1,3 +1,5 @@
+import logging
+
 from flask import Flask, request, Response
 from flask_caching import Cache
 from flask_cors import CORS
@@ -15,6 +17,12 @@ from v3data.toplevel import TopLevelData
 from v3data.dashboard import Dashboard
 from v3data.config import DEFAULT_TIMEZONE, PRIVATE_BETA_TVL, CHARTS_CACHE_TIMEOUT
 from v3data.utils import parse_date
+
+logging.basicConfig(
+    format='[%(asctime)s:%(levelname)s]:%(message)s',
+    datefmt='%Y/%m/%d %I:%M:%S',
+    level=logging.INFO
+)
 
 app = Flask(__name__)
 app.config.from_mapping({'CACHE_TYPE': 'SimpleCache'})
