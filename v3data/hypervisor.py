@@ -238,7 +238,7 @@ class HypervisorData:
             pool_id = hypervisor['pool']['id']
             decimals0 = hypervisor['pool']['token0']['decimals']
             decimals1 = hypervisor['pool']['token1']['decimals']
-            tick = int(pools[pool_id]['tick'])
+            tick = int(pools[pool_id]['tick']) if pools[pool_id]['tick'] else 0
             baseLower = int(hypervisor['baseLower'])
             baseUpper = int(hypervisor['baseUpper'])
             totalSupply = int(hypervisor['totalSupply'])
