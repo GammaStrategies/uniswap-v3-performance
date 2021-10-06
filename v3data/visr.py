@@ -84,6 +84,7 @@ class VisrCalculations(VisrData):
             self._get_data()
 
         df_data = DataFrame(self.data['visrTokenDayDatas'], dtype=np.float64)
+        df_data.totalStaked = int(self.data['rewardHypervisor']['totalVisr'])
         df_data['dailyYield'] = df_data.distributed / df_data.totalStaked
         df_data = df_data.sort_values('date')
 

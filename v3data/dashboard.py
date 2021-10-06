@@ -6,6 +6,7 @@ from v3data.eth import EthCalculations
 from v3data.toplevel import TopLevelData
 from v3data.utils import timestamp_ago
 from v3data.config import PRIVATE_BETA_TVL
+from v3data.constants import DAYS_IN_PERIOD
 
 
 class Dashboard:
@@ -159,7 +160,7 @@ class Dashboard:
         top_level_data = top_level._all_stats()
         top_level_returns = top_level._calculate_returns()
 
-        # daily_yield = visr_yield[self.period]['yield'] / DAYS_IN_PERIOD[self.period]
+        daily_yield = visr_yield[self.period]['yield'] / DAYS_IN_PERIOD[self.period]
 
         dashboard_stats = {
             "visr_in_eth": visr_in_eth,
@@ -168,9 +169,9 @@ class Dashboard:
             "stakedAmount": visr_info['totalStaked'],
             "feeStatsFeeAccural": collected_fees['daily']['collected_usd'], # (eth_average_daily_distribution / visr_in_eth) * visr_price_usd, # last_day_distribution * visr_price_usd,
             "feeStatsAmountVisr": collected_fees['daily']['collected_visr'], # (eth_average_daily_distribution / visr_in_eth), # last_day_distribution,
-            "feeStatsStakingApr": collected_fees[self.period]['apr'], # visr_yield[self.period]['apr'],
-            "feeStatsStakingApy": collected_fees[self.period]['apy'], # visr_yield[self.period]['apy'],
-            "feeStatsStakingDailyYield": collected_fees[self.period]['yield'], #daily_yield,
+            "feeStatsStakingApr":  visr_yield[self.period]['apr'],  # collected_fees[self.period]['apr'],
+            "feeStatsStakingApy":  visr_yield[self.period]['apy'],  # collected_fees[self.period]['apy'],
+            "feeStatsStakingDailyYield": daily_yield,  # collected_fees[self.period]['yield'],
             "feeCumulativeFeeUsd": visr_info['totalDistributedUSD'],
             "feeCumulativeFeeUsdAnnual": visr_yield[self.period]['estimatedAnnualDistributionUSD'],
             "feeCumulativeFeeDistributed": visr_info['totalDistributed'],
