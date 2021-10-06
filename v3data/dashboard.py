@@ -96,6 +96,11 @@ class Dashboard:
                 timestamp
                 protocolFeesUSD
             }
+            rewardHypervisor(
+                id:"0xc9f27a50f82571c1c8423a42970613b8dbda14ef"
+            ) {
+                totalVisr
+            }
         }
         """
         variables = {
@@ -108,7 +113,8 @@ class Dashboard:
         data = self.visor_client.query(query, variables)['data']
         self.visr_data = {
             'visrToken': data['visrToken'],
-            'visrTokenDayDatas': data['visrTokenDayDatas']
+            'visrTokenDayDatas': data['visrTokenDayDatas'],
+            'rewardHypervisor': data['rewardHypervisor']
         }
         self.eth_data = {
             'ethToken': data['ethToken'],

@@ -44,6 +44,11 @@ class VisrData:
                 distributedUSD
                 totalStaked
             }
+            rewardHypervisor(
+                id:"0xc9f27a50f82571c1c8423a42970613b8dbda14ef"
+            ) {
+                totalVisr
+            }
         }
         """
         variables = {
@@ -63,11 +68,12 @@ class VisrCalculations(VisrData):
             self._get_data()
 
         data = self.data['visrToken']
+        visrStaked = self.data['rewardHypervisor']['totalVisr']
 
         return {
             "totalDistributed": int(data['totalDistributed']) / self.decimal_factor,
             "totalDistributedUSD": float(data['totalDistributedUSD']),
-            "totalStaked": int(data['totalStaked']) / self.decimal_factor,
+            "totalStaked": int(visrStaked) / self.decimal_factor,
             "totalSupply": int(data['totalSupply']) / self.decimal_factor
         }
 
