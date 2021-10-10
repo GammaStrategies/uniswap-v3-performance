@@ -9,7 +9,7 @@ from v3data.visr import VisrData
 from v3data.users import VisorUser
 from v3data.visor import VisorVaultInfo
 from v3data.toplevel import TopLevelData
-from v3data.config import DEFAULT_TIMEZONE, PRIVATE_BETA_TVL
+from v3data.config import DEFAULT_TIMEZONE
 
 app = Flask(__name__)
 CORS(app)
@@ -201,7 +201,7 @@ def aggregate_stats():
     top_level_data = top_level.all_stats()
 
     return {
-        'totalValueLockedUSD': top_level_data['tvl'] + PRIVATE_BETA_TVL,
+        'totalValueLockedUSD': top_level_data['tvl'],
         'pairCount': top_level_data['pool_count'],
         'totalFeesClaimedUSD': top_level_data['fees_claimed']
     }
@@ -262,7 +262,7 @@ def dashboard():
         "feeCumulativeFeeUsdAnnual": visr_yield[period]['estimatedAnnualDistributionUSD'],
         "feeCumulativeFeeDistributed": token_info['totalDistributed'],
         "feeCumulativeFeeDistributedAnnual": visr_yield[period]['estimatedAnnualDistribution'],
-        "uniswapPairTotalValueLocked": top_level_data['tvl'] + PRIVATE_BETA_TVL,
+        "uniswapPairTotalValueLocked": top_level_data['tvl'],
         "uniswapPairAmountPairs": top_level_data['pool_count'],
         "uniswapFeesGenerated": top_level_data['fees_claimed'],
         "uniswapFeesBasedApr": f"{top_level_returns[period]['feeApr']:.0%}",

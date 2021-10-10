@@ -15,7 +15,7 @@ from v3data.users import UserInfo
 from v3data.visor import VisorVaultInfo
 from v3data.toplevel import TopLevelData
 from v3data.dashboard import Dashboard
-from v3data.config import DEFAULT_TIMEZONE, PRIVATE_BETA_TVL, CHARTS_CACHE_TIMEOUT
+from v3data.config import DEFAULT_TIMEZONE, CHARTS_CACHE_TIMEOUT
 from v3data.utils import parse_date
 
 logging.basicConfig(
@@ -210,7 +210,7 @@ def aggregate_stats():
     top_level_data = top_level.all_stats()
 
     return {
-        'totalValueLockedUSD': top_level_data['tvl'] + PRIVATE_BETA_TVL,
+        'totalValueLockedUSD': top_level_data['tvl'],
         'pairCount': top_level_data['pool_count'],
         'totalFeesClaimedUSD': top_level_data['fees_claimed']
     }

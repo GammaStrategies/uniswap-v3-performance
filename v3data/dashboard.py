@@ -5,7 +5,6 @@ from v3data.visr import VisrCalculations, VisrPrice, ProtocolFeesCalculations
 from v3data.eth import EthCalculations
 from v3data.toplevel import TopLevelData
 from v3data.utils import timestamp_ago
-from v3data.config import PRIVATE_BETA_TVL
 from v3data.constants import DAYS_IN_PERIOD
 
 
@@ -176,7 +175,7 @@ class Dashboard:
             "feeCumulativeFeeUsdAnnual": visr_yield[self.period]['estimatedAnnualDistributionUSD'],
             "feeCumulativeFeeDistributed": visr_info['totalDistributed'],
             "feeCumulativeFeeDistributedAnnual": visr_yield[self.period]['estimatedAnnualDistribution'],
-            "uniswapPairTotalValueLocked": top_level_data['tvl'] + PRIVATE_BETA_TVL,
+            "uniswapPairTotalValueLocked": top_level_data['tvl'],
             "uniswapPairAmountPairs": top_level_data['pool_count'],
             "uniswapFeesGenerated": top_level_data['fees_claimed'],
             "uniswapFeesBasedApr": f"{top_level_returns[self.period]['feeApr']:.0%}",
