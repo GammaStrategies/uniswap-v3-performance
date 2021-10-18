@@ -1,15 +1,17 @@
 from v3data import VisorClient
+from v3data.constants import RHYPERVISOR_ADDRESS
 
 
 class VisorVaultData:
     def __init__(self, visor_address):
         self.visor_client = VisorClient()
         self.address = visor_address.lower()
+        self.reward_hypervisor_address = RHYPERVISOR_ADDRESS
         self.decimal_factor = 10 ** 18
 
     def _get_data(self):
         query = """
-        query visorData($visorAddress: String!) {
+        query visorData($visorAddress: String!, $rewardHypervisorAddress: String!) {
             visrToken(id: "0xf938424f7210f31df2aee3011291b658f872e91e"){
                 totalStaked
             }
@@ -17,7 +19,6 @@ class VisorVaultData:
                 id: $visorAddress
             ){
                 owner { id }
-                visrStaked
                 visrDeposited
                 visrEarnedRealized
                 hypervisorShares {
@@ -42,10 +43,23 @@ class VisorVaultData:
                     initialToken1
                     initialUSD
                 }
+                rewardHypervisorShares{
+                    rewardHypervisor { id }
+                    shares
+                }
+            }
+            rewardHypervisor(
+                id: $rewardHypervisorAddress
+            ){
+                totalVisr
+                totalSupply
             }
         }
         """
-        variables = {"visorAddress": self.address}
+        variables = {
+            "visorAddress": self.address,
+            "rewardHypervisorAddress": self.reward_hypervisor_address
+        }
         self.data = self.visor_client.query(query, variables)['data']
 
 
@@ -97,8 +111,17 @@ class VisorVaultInfo(VisorVaultData):
         if not self.data['visor']:
             return {}
 
+        reward_hypervisor_shares = self.data['visor']['rewardHypervisorShares']
+        vvisr_shares = 0
+        for shares in reward_hypervisor_shares:
+            if shares.get('rewardHypervisor', {}).get('id') == self.reward_hypervisor_address:
+                vvisr_shares = int(shares['shares'])
+                
+
+        vvisr_virtual_price = int(self.data['rewardHypervisor']['totalVisr']) / int(self.data['rewardHypervisor']['totalSupply'])
+
         visor_owner = self.data['visor']['owner']['id']
-        visrStaked = int(self.data['visor']['visrStaked'])
+        visrStaked = vvisr_shares * vvisr_virtual_price
         visrDeposited = int(self.data['visor']['visrDeposited'])
         visrEarnedRealized = int(self.data['visor']['visrEarnedRealized'])
         visor_info = {
