@@ -4,6 +4,7 @@ from v3data import VisorClient
 from v3data.visr import VisrCalculations, VisrPrice, ProtocolFeesCalculations
 from v3data.eth import EthCalculations
 from v3data.toplevel import TopLevelData
+from v3data.rewardshypervisor import RewardsHypervisorInfo
 from v3data.utils import timestamp_ago
 from v3data.constants import DAYS_IN_PERIOD
 
@@ -17,6 +18,7 @@ class Dashboard:
         self.eth_data = {}
         self.top_level_data = {}
         self.top_level_returns_data = {}
+        self.rewards_hypervisor_data = {}
 
     def _get_data(self, timezone):
         query = """
@@ -100,6 +102,7 @@ class Dashboard:
                 id:"0xc9f27a50f82571c1c8423a42970613b8dbda14ef"
             ) {
                 totalVisr
+                totalSupply
             }
         }
         """
@@ -130,6 +133,9 @@ class Dashboard:
             'uniswapV3Rebalances': data['uniswapV3Rebalances'],
             'visrToken': data['visrToken'],
         }
+        self.rewards_hypervisor_data = {
+            'rewardHypervisor': data['rewardHypervisor']
+        }
 
     def info(self, timezone):
         self._get_data(timezone)
@@ -150,7 +156,7 @@ class Dashboard:
         eth_calcs.data = self.eth_data
         eth_distributions = eth_calcs.distributions(get_data=False)
         eth_last_distribution = float(eth_distributions[0]['distributed'])
-        eth_average_daily_distribution = eth_last_distribution / 7
+        # eth_average_daily_distribution = eth_last_distribution / 7
         visr_in_eth = visr_price.output()["visr_in_eth"]
 
         top_level = TopLevelData()
@@ -161,9 +167,12 @@ class Dashboard:
 
         daily_yield = visr_yield[self.period]['yield'] / DAYS_IN_PERIOD[self.period]
 
+        rewards = RewardsHypervisorInfo()
+        rewards.data = self.rewards_hypervisor_data
+        rewards_info = rewards.output(get_data=False)
+
         dashboard_stats = {
-            "visr_in_eth": visr_in_eth,
-            "visr_price_usd": visr_price_usd,
+            "visrInEth": visr_in_eth,
             "stakedUsdAmount": visr_info['totalStaked'] * visr_price_usd,
             "stakedAmount": visr_info['totalStaked'],
             "feeStatsFeeAccural": collected_fees['daily']['collected_usd'], # (eth_average_daily_distribution / visr_in_eth) * visr_price_usd, # last_day_distribution * visr_price_usd,
@@ -180,6 +189,7 @@ class Dashboard:
             "uniswapFeesGenerated": top_level_data['fees_claimed'],
             "uniswapFeesBasedApr": f"{top_level_returns[self.period]['feeApr']:.0%}",
             "visrPrice": visr_price_usd,  # End point for price
+            "visrPerVvisr": rewards_info['visr_per_vvisr'],
             "id": 2
         }
 
