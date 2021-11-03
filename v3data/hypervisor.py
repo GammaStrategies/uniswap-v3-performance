@@ -6,6 +6,7 @@ from pandas import DataFrame
 from v3data import VisorClient, UniswapV3Client
 from v3data.utils import timestamp_ago, timestamp_to_date
 from v3data.constants import DAYS_IN_PERIOD
+from v3data.config import EXCLUDED_HYPERVISORS
 
 DAY_SECONDS = 24 * 60 * 60
 YEAR_SECONDS = 365 * DAY_SECONDS
@@ -162,7 +163,8 @@ class HypervisorData:
     def _all_returns(self):
         results = {}
         for hypervisor in self.all_rebalance_data:
-            results[hypervisor['id']] = self._calculate_returns(hypervisor['rebalances'])
+            if hypervisor['id'] not in EXCLUDED_HYPERVISORS:
+                results[hypervisor['id']] = self._calculate_returns(hypervisor['rebalances'])
 
         return results
 
