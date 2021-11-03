@@ -408,9 +408,8 @@ This is same as Hypervisor Base Range Chart but returns all hypervisors
 `GET /charts/benchmark/<hypervisorAddress>`
 
 Parameters:
-startYear: Set year of start date for chart
-startMonth: Set month of start date for chart
-nMonths: Set number of months to plot
+startDate: Set start date for chart (YYYY-MM-DD)
+endDate: Set start date for chart (YYYY-MM-DD)
 
 Returns data to plot hypervisor returns against various benchmarks
 

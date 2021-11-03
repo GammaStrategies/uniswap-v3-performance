@@ -1,14 +1,17 @@
+import logging
 import numpy as np
 from datetime import timedelta
 from pandas import DataFrame
 
 from v3data import VisorClient, UniswapV3Client
-from v3data.utils import timestamp_ago
+from v3data.utils import timestamp_ago, timestamp_to_date
 from v3data.constants import DAYS_IN_PERIOD
+from v3data.config import EXCLUDED_HYPERVISORS
 
 DAY_SECONDS = 24 * 60 * 60
 YEAR_SECONDS = 365 * DAY_SECONDS
 
+logger = logging.getLogger(__name__)
 
 class HypervisorData:
     def __init__(self):
@@ -102,8 +105,8 @@ class HypervisorData:
         }
 
     def _calculate_returns(self, data):
-
-        if not data:
+        # Calculations require more than 1 rebalance
+        if (not data) or (len(data) < 2):
             return self.empty_returns()
 
         df_rebalances = DataFrame(data, dtype=np.float64)
@@ -160,7 +163,8 @@ class HypervisorData:
     def _all_returns(self):
         results = {}
         for hypervisor in self.all_rebalance_data:
-            results[hypervisor['id']] = self._calculate_returns(hypervisor['rebalances'])
+            if hypervisor['id'] not in EXCLUDED_HYPERVISORS:
+                results[hypervisor['id']] = self._calculate_returns(hypervisor['rebalances'])
 
         return results
 
@@ -175,6 +179,7 @@ class HypervisorData:
                 first:1000
             ){
                 id
+                created
                 baseLower
                 baseUpper
                 totalSupply
@@ -184,6 +189,9 @@ class HypervisorData:
                 grossFeesClaimed0
                 grossFeesClaimed1
                 grossFeesClaimedUSD
+                feesReinvested0
+                feesReinvested1
+                feesReinvestedUSD
                 tvl0
                 tvl1
                 tvlUSD
@@ -230,41 +238,50 @@ class HypervisorData:
 
         results = {}
         for hypervisor in basics:
-            hypervisor_id = hypervisor['id']
-            pool_id = hypervisor['pool']['id']
-            decimals0 = hypervisor['pool']['token0']['decimals']
-            decimals1 = hypervisor['pool']['token1']['decimals']
-            tick = int(pools[pool_id]['tick'])
-            baseLower = int(hypervisor['baseLower'])
-            baseUpper = int(hypervisor['baseUpper'])
-            totalSupply = int(hypervisor['totalSupply'])
-            maxTotalSupply = int(hypervisor['maxTotalSupply'])
-            capacityUsed = totalSupply / maxTotalSupply if maxTotalSupply > 0 else "No cap"
+            try:
+                hypervisor_id = hypervisor['id']
+                pool_id = hypervisor['pool']['id']
+                decimals0 = hypervisor['pool']['token0']['decimals']
+                decimals1 = hypervisor['pool']['token1']['decimals']
+                tick = int(pools[pool_id]['tick']) if pools[pool_id]['tick'] else 0
+                baseLower = int(hypervisor['baseLower'])
+                baseUpper = int(hypervisor['baseUpper'])
+                totalSupply = int(hypervisor['totalSupply'])
+                maxTotalSupply = int(hypervisor['maxTotalSupply'])
+                capacityUsed = totalSupply / maxTotalSupply if maxTotalSupply > 0 else "No cap"
 
-            results[hypervisor_id] = {
-                'poolAddress': pool_id,
-                'decimals0': decimals0,
-                'decimals1': decimals1,
-                'depositCap0': int(hypervisor['deposit0Max']) / 10 ** decimals0,
-                'depositCap1': int(hypervisor['deposit1Max']) / 10 ** decimals1,
-                'grossFeesClaimed0': int(hypervisor['grossFeesClaimed0']) / 10 ** decimals0,
-                'grossFeesClaimed1': int(hypervisor['grossFeesClaimed1']) / 10 ** decimals1,
-                'grossFeesClaimedUSD': hypervisor['grossFeesClaimedUSD'],
-                'tvl0': int(hypervisor['tvl0']) / 10 ** decimals0,
-                'tvl1': int(hypervisor['tvl1']) / 10 ** decimals1,
-                'tvlUSD': hypervisor['tvlUSD'],
-                'totalSupply': totalSupply,
-                'maxTotalSupply': maxTotalSupply,
-                'capacityUsed': capacityUsed,
-                'sqrtPrice': pools[pool_id]['sqrtPrice'],
-                'tick': tick,
-                'baseLower': baseLower,
-                'baseUpper': baseUpper,
-                'inRange': bool(baseLower <= tick <= baseUpper),
-                'observationIndex': pools[pool_id]['observationIndex'],
-                'poolTvlUSD': pools[pool_id]['totalValueLockedUSD'],
-                'poolFeesUSD': pools[pool_id]['feesUSD'],
-                'returns': returns.get(hypervisor_id)
-            }
+                results[hypervisor_id] = {
+                    'createDate': timestamp_to_date(int(hypervisor['created']), '%d %b, %Y'),
+                    'poolAddress': pool_id,
+                    'decimals0': decimals0,
+                    'decimals1': decimals1,
+                    'depositCap0': int(hypervisor['deposit0Max']) / 10 ** decimals0,
+                    'depositCap1': int(hypervisor['deposit1Max']) / 10 ** decimals1,
+                    'grossFeesClaimed0': int(hypervisor['grossFeesClaimed0']) / 10 ** decimals0,
+                    'grossFeesClaimed1': int(hypervisor['grossFeesClaimed1']) / 10 ** decimals1,
+                    'grossFeesClaimedUSD': hypervisor['grossFeesClaimedUSD'],
+                    'feesReinvested0': int(hypervisor['feesReinvested0']) / 10 ** decimals0,
+                    'feesReinvested1': int(hypervisor['feesReinvested1']) / 10 ** decimals1,
+                    'feesReinvestedUSD': hypervisor['feesReinvestedUSD'],
+                    'tvl0': int(hypervisor['tvl0']) / 10 ** decimals0,
+                    'tvl1': int(hypervisor['tvl1']) / 10 ** decimals1,
+                    'tvlUSD': hypervisor['tvlUSD'],
+                    'totalSupply': totalSupply,
+                    'maxTotalSupply': maxTotalSupply,
+                    'capacityUsed': capacityUsed,
+                    'sqrtPrice': pools[pool_id]['sqrtPrice'],
+                    'tick': tick,
+                    'baseLower': baseLower,
+                    'baseUpper': baseUpper,
+                    'inRange': bool(baseLower <= tick <= baseUpper),
+                    'observationIndex': pools[pool_id]['observationIndex'],
+                    'poolTvlUSD': pools[pool_id]['totalValueLockedUSD'],
+                    'poolFeesUSD': pools[pool_id]['feesUSD'],
+                    'returns': returns.get(hypervisor_id)
+                }
+            except Exception as e:
+                logger.warning(f"Failed on hypervisor {hypervisor['id']}")
+                logger.exception(e)
+                pass
 
         return results

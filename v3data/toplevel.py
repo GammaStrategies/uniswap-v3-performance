@@ -6,6 +6,7 @@ from v3data import VisorClient
 from v3data.visr import VisrData
 from v3data.hypervisor import HypervisorData
 from v3data.utils import timestamp_ago
+from v3data.config import EXCLUDED_HYPERVISORS
 
 
 class TopLevelData:
@@ -118,7 +119,7 @@ class TopLevelData:
         data = self.all_stats_data
         return {
             "pool_count": len(data['uniswapV3Pools']),
-            "tvl": sum([float(factory['tvlUSD']) for factory in data['uniswapV3Hypervisors']]),
+            "tvl": sum([float(hypervisor['tvlUSD']) for hypervisor in data['uniswapV3Hypervisors'] if hypervisor['id'] not in EXCLUDED_HYPERVISORS]),
             "fees_claimed": sum([float(factory['grossFeesClaimedUSD']) for factory in data['uniswapV3Hypervisors']])
         }
 
@@ -141,7 +142,7 @@ class TopLevelData:
     def _calculate_returns(self):
         hypervisors = self.all_returns_data
 
-        tvl = sum([float(hypervisor['tvlUSD']) for hypervisor in hypervisors])
+        tvl = sum([float(hypervisor['tvlUSD']) for hypervisor in hypervisors if hypervisor['id'] not in EXCLUDED_HYPERVISORS])
 
         hypervisor_data = HypervisorData()
         hypervisor_data.all_rebalance_data = hypervisors
@@ -162,6 +163,8 @@ class TopLevelData:
             }
         }
         for hypervisor in hypervisors:
+            if hypervisor['id']  in EXCLUDED_HYPERVISORS:
+                continue
             if tvl > 0:
                 tvl_share = float(hypervisor['tvlUSD']) / tvl
             else:
