@@ -7,6 +7,7 @@ from v3data.toplevel import TopLevelData
 from v3data.rewardshypervisor import RewardsHypervisorInfo
 from v3data.utils import timestamp_ago
 from v3data.constants import DAYS_IN_PERIOD
+from v3data.config import APR_PLACEHOLDER
 
 
 class Dashboard:
@@ -187,7 +188,7 @@ class Dashboard:
             "uniswapPairTotalValueLocked": top_level_data['tvl'],
             "uniswapPairAmountPairs": top_level_data['pool_count'],
             "uniswapFeesGenerated": top_level_data['fees_claimed'],
-            "uniswapFeesBasedApr": f"{top_level_returns[self.period]['feeApr']:.0%}",
+            "uniswapFeesBasedApr": APR_PLACEHOLDER,  # f"{top_level_returns[self.period]['feeApr']:.0%}",
             "visrPrice": visr_price_usd,  # End point for price
             "visrPerVvisr": rewards_info['visr_per_vvisr'],
             "id": 2
