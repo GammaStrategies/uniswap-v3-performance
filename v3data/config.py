@@ -18,7 +18,7 @@ THEGRAPH_INDEX_NODE_URL = "https://api.thegraph.com/index-node/graphql"
 ETH_BLOCKS_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/blocklytics/ethereum-blocks"
 UNI_V2_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2"
 UNI_V3_SUBGRAPH_URL = uniswap_subgraphs[os.environ.get('UNISWAP_SUBGRAPH', 'prod')]
-VISOR_SUBGRAPH_URL = visor_subgraphs[os.environ.get('VISOR_SUBGRAPH', 'test')]
+VISOR_SUBGRAPH_URL = visor_subgraphs[os.environ.get('VISOR_SUBGRAPH', 'prod')]
 
 
 TOKEN_LIST_URL = "https://tokens.coingecko.com/uniswap/all.json"
@@ -28,4 +28,4 @@ DEFAULT_TIMEZONE = os.environ.get('TIMEZONE', 'UTC-5')
 
 CHARTS_CACHE_TIMEOUT = os.environ.get('CHARTS_CACHE_TIMEOUT', 600)
 
-EXCLUDED_HYPERVISORS = []
+EXCLUDED_HYPERVISORS = ['0x8cd73cb1e1fa35628e36b8c543c5f825cd4e77f1']

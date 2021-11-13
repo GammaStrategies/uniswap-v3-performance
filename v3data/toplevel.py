@@ -120,7 +120,7 @@ class TopLevelData:
         return {
             "pool_count": len(data['uniswapV3Pools']),
             "tvl": sum([float(hypervisor['tvlUSD']) for hypervisor in data['uniswapV3Hypervisors'] if hypervisor['id'] not in EXCLUDED_HYPERVISORS]),
-            "fees_claimed": sum([float(factory['grossFeesClaimedUSD']) for factory in data['uniswapV3Hypervisors']])
+            "fees_claimed": sum([float(hypervisor['grossFeesClaimedUSD']) for hypervisor in data['uniswapV3Hypervisors'] if hypervisor['id'] not in EXCLUDED_HYPERVISORS])
         }
 
     def all_stats(self):

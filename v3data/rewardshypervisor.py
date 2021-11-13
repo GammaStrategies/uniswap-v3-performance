@@ -29,7 +29,7 @@ class RewardsHypervisorCalculations(RewardsHypervisorData):
         if get_data:
             self._get_data()
         data = self.data['rewardHypervisor']
-        print(data['totalVisr'])
+
         visr_staked = int(data['totalVisr']) / self.decimal_factor
         vvisr_total = int(data['totalSupply']) / self.decimal_factor
         visr_per_vvisr = visr_staked / vvisr_total
