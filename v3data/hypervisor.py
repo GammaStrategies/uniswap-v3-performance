@@ -154,6 +154,9 @@ class HypervisorData:
 
             results[period] = returns.to_dict('records')[0]
 
+        if results['monthly']['feeApy'] == np.inf:
+            results['monthly'] = results['weekly']
+
         return results
 
     def calculate_returns(self, hypervisor_address):
