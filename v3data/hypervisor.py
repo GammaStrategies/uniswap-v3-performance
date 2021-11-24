@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from datetime import timedelta
+from datetime import timedelta, datetime
 from pandas import DataFrame
 
 from v3data import VisorClient, UniswapV3Client
@@ -168,8 +168,22 @@ class HypervisorData:
         for hypervisor in self.all_rebalance_data:
             if hypervisor['id'] not in EXCLUDED_HYPERVISORS:
                 results[hypervisor['id']] = self._calculate_returns(hypervisor['rebalances'])
+                if hypervisor['id'] == '0x5230371a6d5311b1d7dd30c0f5474c2ef0a24661':
+                    results[hypervisor['id']] = self._taper(results[hypervisor['id']])
+
 
         return results
+
+    def _taper(self, results):
+        total_time = 234000
+        target_date = datetime(2021, 11, 28)
+        time_remaining = max(0, (target_date - datetime.now()).total_seconds())
+        time_remaining = max(0, (target_date - datetime(2021, 11, 27)).total_seconds())
+        time_factor = time_remaining / total_time
+        results['weekly']['feeApy'] = 0.6 + (2.23 * time_factor)
+        print(results)
+        return results
+
 
     def all_returns(self):
         self._get_all_rebalance_data(timedelta(days=30))
