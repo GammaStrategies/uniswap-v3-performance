@@ -178,9 +178,9 @@ class HypervisorData:
         total_time = 234000
         target_date = datetime(2021, 11, 28)
         time_remaining = max(0, (target_date - datetime.now()).total_seconds())
-        time_remaining = max(0, (target_date - datetime(2021, 11, 27)).total_seconds())
         time_factor = time_remaining / total_time
         results['weekly']['feeApy'] = 0.6 + (2.23 * time_factor)
+        results['weekly']['feeApr'] = 0.6 + (2.23 * time_factor)
         print(results)
         return results
 
