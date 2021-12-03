@@ -28,4 +28,4 @@ DEFAULT_TIMEZONE = os.environ.get('TIMEZONE', 'UTC-5')
 
 CHARTS_CACHE_TIMEOUT = os.environ.get('CHARTS_CACHE_TIMEOUT', 600)
 
-EXCLUDED_HYPERVISORS = ['0x8cd73cb1e1fa35628e36b8c543c5f825cd4e77f1']
+EXCLUDED_HYPERVISORS = filter(None, os.environ.get('EXCLUDED_HYPES', "").split(","))
