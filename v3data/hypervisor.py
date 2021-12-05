@@ -181,7 +181,6 @@ class HypervisorData:
         time_factor = time_remaining / total_time
         results['weekly']['feeApy'] = 0.6 + (2.23 * time_factor)
         results['weekly']['feeApr'] = 0.6 + (2.23 * time_factor)
-        print(results)
         return results
 
 

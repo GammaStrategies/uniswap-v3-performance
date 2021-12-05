@@ -244,7 +244,7 @@ def hypervisors_all():
 
 @app.route('/dashboard')
 def dashboard():
-    period = request.args.get("period", "monthly").lower()
+    period = request.args.get("period", "weekly").lower()
     dashboard = Dashboard(period)
 
     return dashboard.info('UTC')

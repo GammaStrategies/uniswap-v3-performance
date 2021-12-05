@@ -117,6 +117,12 @@ class TopLevelData:
         Should add entity to subgraph to track top level stats
         """
         data = self.all_stats_data
+        for hypervisor in data['uniswapV3Hypervisors']:
+            if hypervisor["id"] == "0x8cd73cb1e1fa35628e36b8c543c5f825cd4e77f1":
+                # Correcting incorrect USD value for TCR
+                hypervisor['grossFeesClaimedUSD'] = str(max(float(hypervisor['grossFeesClaimedUSD']) - 770480494, 0))
+                break
+
         return {
             "pool_count": len(data['uniswapV3Pools']),
             "tvl": sum([float(hypervisor['tvlUSD']) for hypervisor in data['uniswapV3Hypervisors'] if hypervisor['id'] not in EXCLUDED_HYPERVISORS]),
