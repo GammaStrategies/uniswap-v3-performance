@@ -2,7 +2,7 @@ import numpy as np
 from datetime import timedelta
 from pandas import DataFrame
 
-from v3data import VisorClient, UniswapV3Client
+from v3data import VisorClient, UniswapV3Client, CoingeckoClient
 from v3data.config import DEFAULT_TIMEZONE
 from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal, timestamp_ago
 from v3data.constants import DAYS_IN_PERIOD
@@ -220,6 +220,17 @@ class VisrPrice(VisrPriceData):
             "visr_in_eth": visr_in_eth
         }
 
+class VisrPriceCg:
+    def output(self):
+        client = CoingeckoClient()
+        prices = client.get_price("gamma-strategies", "usd,eth")
+
+        return {
+            "visr_in_usdc": prices.get('gamma-strategies', {}).get('usd'),
+            "visr_in_eth": prices.get('gamma-strategies', {}).get('eth')
+        }
+
+
 
 class ProtocolFeesData:
     def __init__(self):
@@ -263,7 +274,7 @@ class ProtocolFeesCalculations(ProtocolFeesData):
 
         df_rebalances = DataFrame(rebalances, dtype=np.float64)
 
-        visr_price = VisrPrice()
+        visr_price = VisrPriceCg()
         visr_in_usd = visr_price.output()['visr_in_usdc']
 
         visr_staked_usd = visr_in_usd * int(self.data['visrToken']['totalStaked']) / 10**18

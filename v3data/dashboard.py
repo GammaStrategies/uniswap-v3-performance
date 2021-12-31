@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from v3data import VisorClient
-from v3data.visr import VisrCalculations, VisrPrice, ProtocolFeesCalculations
+from v3data.visr import VisrCalculations, VisrPrice, ProtocolFeesCalculations, VisrPriceCg
 from v3data.eth import EthCalculations
 from v3data.toplevel import TopLevelData
 from v3data.rewardshypervisor import RewardsHypervisorInfo
@@ -145,7 +145,8 @@ class Dashboard:
         visr_yield = visr_calcs.visr_yield(get_data=False)
         distributions = visr_calcs.distributions(get_data=False)
         last_day_distribution = float(distributions[0]['distributed'])
-        visr_price = VisrPrice()
+        # visr_price = VisrPrice()
+        visr_price = VisrPriceCg()
         visr_price_usd = visr_price.output()["visr_in_usdc"]
 
         protocol_fees_calcs = ProtocolFeesCalculations(days=7)
@@ -168,19 +169,18 @@ class Dashboard:
         daily_yield = visr_yield[self.period]['yield'] / DAYS_IN_PERIOD[self.period]
 
         rewards = RewardsHypervisorInfo()
-        rewards.data = self.rewards_hypervisor_data
-        rewards_info = rewards.output(get_data=False)
+        # rewards.data = self.rewards_hypervisor_data
+        rewards_info = rewards.output(get_data=True)
 
         dashboard_stats = {
-            "visrInEth": visr_in_eth,
-            "stakedUsdAmount": visr_info['totalStaked'] * visr_price_usd,
-            "stakedAmount": visr_info['totalStaked'],
-            "feeStatsFeeAccural": collected_fees['daily']['collected_usd'], # (eth_average_daily_distribution / visr_in_eth) * visr_price_usd, # last_day_distribution * visr_price_usd,
-            "feeStatsAmountVisr": collected_fees['daily']['collected_visr'], # (eth_average_daily_distribution / visr_in_eth), # last_day_distribution,
-            "feeStatsStakingApr":  visr_yield[self.period]['apr'],  # collected_fees[self.period]['apr'],
-            "feeStatsStakingApy":  visr_yield[self.period]['apy'],  # collected_fees[self.period]['apy'],
-            "feeStatsStakingDailyYield": daily_yield,  # collected_fees[self.period]['yield'],
-            "feeCumulativeFeeUsd": visr_info['totalDistributed'] * visr_price_usd, # visr_info['totalDistributedUSD'],
+            "stakedUsdAmount": rewards_info['gamma_staked'] * visr_price_usd,
+            "stakedAmount": rewards_info['gamma_staked'],
+            "feeStatsFeeAccural": collected_fees['daily']['collected_usd'],
+            "feeStatsAmountVisr": collected_fees['daily']['collected_visr'],
+            "feeStatsStakingApr":  0, # visr_yield[self.period]['apr'],
+            "feeStatsStakingApy":  0, # visr_yield[self.period]['apy'],
+            "feeStatsStakingDailyYield": 0, # daily_yield,
+            "feeCumulativeFeeUsd": visr_info['totalDistributedUSD'],
             "feeCumulativeFeeUsdAnnual": visr_yield[self.period]['estimatedAnnualDistributionUSD'],
             "feeCumulativeFeeDistributed": visr_info['totalDistributed'],
             "feeCumulativeFeeDistributedAnnual": visr_yield[self.period]['estimatedAnnualDistribution'],
@@ -189,7 +189,11 @@ class Dashboard:
             "uniswapFeesGenerated": top_level_data['fees_claimed'],
             "uniswapFeesBasedApr": f"{top_level_returns[self.period]['feeApr']:.0%}",
             "visrPrice": visr_price_usd,  # End point for price
-            "visrPerVvisr": rewards_info['visr_per_vvisr'],
+            "visrInEth": visr_in_eth,
+            "gammaPrice": visr_price_usd,  # End point for price
+            "gammaInEth": visr_in_eth,
+            "visrPerVvisr": rewards_info['gamma_per_xgamma'],
+            "gammaPerXgamma": rewards_info['gamma_per_xgamma'],
             "id": 2
         }
 

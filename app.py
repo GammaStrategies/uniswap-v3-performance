@@ -15,7 +15,7 @@ from v3data.users import UserInfo
 from v3data.visor import VisorVaultInfo
 from v3data.toplevel import TopLevelData
 from v3data.dashboard import Dashboard
-from v3data.config import DEFAULT_TIMEZONE, CHARTS_CACHE_TIMEOUT
+from v3data.config import DEFAULT_TIMEZONE, CHARTS_CACHE_TIMEOUT, DASHBOARD_CACHE_TIMEOUT
 from v3data.utils import parse_date
 
 logging.basicConfig(
@@ -243,6 +243,7 @@ def hypervisors_all():
 
 
 @app.route('/dashboard')
+@cache.cached(timeout=DASHBOARD_CACHE_TIMEOUT)
 def dashboard():
     period = request.args.get("period", "weekly").lower()
     dashboard = Dashboard(period)

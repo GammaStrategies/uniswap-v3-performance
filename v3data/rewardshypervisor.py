@@ -1,9 +1,8 @@
-from v3data import VisorClient
+from v3data import XgammaClient
 
 class RewardsHypervisorData:
     def __init__(self):
-        self.visor_client = VisorClient()
-        self.address = "0xc9f27a50f82571c1c8423a42970613b8dbda14ef"
+        self.client = XgammaClient()
         self.decimal_factor = 10 ** 18
         self.data = {}
 
@@ -11,33 +10,31 @@ class RewardsHypervisorData:
 
         query = """
         {
-            rewardHypervisor(
-                id:"0xc9f27a50f82571c1c8423a42970613b8dbda14ef"
+            xgamma(
+                id:"xgamma"
             ) {
-                totalVisr
+                gammaStaked
                 totalSupply
             }
         }
         """
-        variables = {
-            "id": self.address
-        }
-        self.data = self.visor_client.query(query, variables)['data']
+
+        self.data = self.client.query(query)['data']
 
 class RewardsHypervisorCalculations(RewardsHypervisorData):
     def basic_info(self, get_data=True):
         if get_data:
             self._get_data()
-        data = self.data['rewardHypervisor']
+        data = self.data['xgamma']
 
-        visr_staked = int(data['totalVisr']) / self.decimal_factor
-        vvisr_total = int(data['totalSupply']) / self.decimal_factor
-        visr_per_vvisr = visr_staked / vvisr_total
+        gamma_staked = int(data['gammaStaked']) / self.decimal_factor
+        xgamma_total = int(data['totalSupply']) / self.decimal_factor
+        gamma_per_xgamma = gamma_staked / xgamma_total
 
         return {
-            "visr_staked": visr_staked,
-            "vvisr_total": vvisr_total,
-            "visr_per_vvisr": visr_per_vvisr
+            "gamma_staked": gamma_staked,
+            "xgamma_total": xgamma_total,
+            "gamma_per_xgamma": gamma_per_xgamma
         }
 
 class RewardsHypervisorInfo(RewardsHypervisorCalculations):

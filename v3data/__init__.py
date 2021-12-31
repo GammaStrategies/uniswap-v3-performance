@@ -5,7 +5,8 @@ from v3data.config import (
     UNI_V2_SUBGRAPH_URL,
     UNI_V3_SUBGRAPH_URL,
     ETH_BLOCKS_SUBGRAPH_URL,
-    THEGRAPH_INDEX_NODE_URL
+    THEGRAPH_INDEX_NODE_URL,
+    XGAMMA_SUBGRAPH_URL
 )
 
 
@@ -151,3 +152,32 @@ class IndexNodeClient(SubgraphClient):
             "url": VISOR_SUBGRAPH_URL,
             "latestBlock": latestBlock
         }
+
+
+class XgammaClient(SubgraphClient):
+    def __init__(self):
+        super().__init__(XGAMMA_SUBGRAPH_URL)
+
+
+class CoingeckoClient:
+    def __init__(self):
+        self.base = "https://api.coingecko.com/api/v3/"
+
+    def get_price(self, ids, vs_currencies):
+        endpoint = f"{self.base}/simple/price"
+
+        params = {
+          "ids": ids,
+          "vs_currencies": vs_currencies
+        }
+
+        response = requests.get(endpoint, params=params)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return {
+                "gamma-strategies": {
+                    "usd": 0.623285,
+                    "eth": 0.00016391
+                }
+            }
