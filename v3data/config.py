@@ -14,11 +14,18 @@ visor_subgraphs = {
     'lab': "https://api.thegraph.com/subgraphs/name/l0c4t0r/laboratory"
 }
 
+gamma_subgraphs = {
+    'prod': "https://api.thegraph.com/subgraphs/name/gammastrategies/gamma",
+    'test': "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma",
+    'lab': "https://api.thegraph.com/subgraphs/name/l0c4t0r/laboratory"
+}
+
 THEGRAPH_INDEX_NODE_URL = "https://api.thegraph.com/index-node/graphql"
 ETH_BLOCKS_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/blocklytics/ethereum-blocks"
 UNI_V2_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2"
 UNI_V3_SUBGRAPH_URL = uniswap_subgraphs[os.environ.get('UNISWAP_SUBGRAPH', 'prod')]
-VISOR_SUBGRAPH_URL = visor_subgraphs[os.environ.get('VISOR_SUBGRAPH', 'test')]
+VISOR_SUBGRAPH_URL = visor_subgraphs[os.environ.get('VISOR_SUBGRAPH', 'prod')]
+GAMMA_SUBGRAPH_URL = gamma_subgraphs[os.environ.get('GAMMA_SUBGRAPH', 'test')]
 XGAMMA_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/l0c4t0r/xgamma"
 
 

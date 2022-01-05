@@ -11,6 +11,7 @@ from v3data.charts import BaseLimit, Benchmark, DailyChart
 from v3data.hypervisor import HypervisorData
 from v3data.visr import VisrInfo, VisrYield, VisrDistribution
 from v3data.eth import EthDistribution
+from v3data.gamma import GammaDistribution
 from v3data.users import UserInfo
 from v3data.visor import VisorVaultInfo
 from v3data.toplevel import TopLevelData
@@ -177,6 +178,18 @@ def eth_distributions():
 
     eth_distributions = EthDistribution(days=days, timezone=timezone)
     return eth_distributions.output()
+
+
+@app.route('/gamma/dailyDistribution')
+def gamma_distributions():
+    days = int(request.args.get("days", 6))
+    timezone = request.args.get("timezone", DEFAULT_TIMEZONE).upper()
+
+    if timezone not in ['UTC', 'UTC-5']:
+        return Response("Only UTC and UTC-5 timezones supported", status=400)
+
+    gamma_distributions = GammaDistribution(days=days, timezone=timezone)
+    return gamma_distributions.output()
 
 
 @app.route('/hypervisor/<string:hypervisor_address>/basicStats')

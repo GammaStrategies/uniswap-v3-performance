@@ -2,6 +2,7 @@ import requests
 
 from v3data.config import (
     VISOR_SUBGRAPH_URL,
+    GAMMA_SUBGRAPH_URL,
     UNI_V2_SUBGRAPH_URL,
     UNI_V3_SUBGRAPH_URL,
     ETH_BLOCKS_SUBGRAPH_URL,
@@ -86,6 +87,9 @@ class VisorClient(SubgraphClient):
             } for hypervisor in tvls
         }
 
+class GammaClient(SubgraphClient):
+    def __init__(self):
+        super().__init__(GAMMA_SUBGRAPH_URL)
 
 class UniswapV2Client(SubgraphClient):
     def __init__(self):
