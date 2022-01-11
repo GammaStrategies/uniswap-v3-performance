@@ -114,7 +114,7 @@ class GammaCalculations(GammaData):
         results = [
             {
                 "timestamp": day['date'],
-                "date": timestamp_to_date(int(day['date']), '%B %d, %Y'),
+                "date": timestamp_to_date(int(day['date']), '%d/%m/%Y'),
                 "distributed": float(day['distributed']) / self.decimal_factor
             }
             for day in self.data['visrTokenDayDatas']
