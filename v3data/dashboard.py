@@ -1,7 +1,8 @@
 from datetime import timedelta
 
 from v3data import VisorClient
-from v3data.visr import VisrCalculations, VisrPrice, ProtocolFeesCalculations, VisrPriceCg
+from v3data.visr import VisrCalculations, ProtocolFeesCalculations
+from v3data.gamma import GammaPrice
 from v3data.eth import EthCalculations
 from v3data.toplevel import TopLevelData
 from v3data.rewardshypervisor import RewardsHypervisorInfo
@@ -145,9 +146,8 @@ class Dashboard:
         visr_yield = visr_calcs.visr_yield(get_data=False)
         distributions = visr_calcs.distributions(get_data=False)
         last_day_distribution = float(distributions[0]['distributed'])
-        # visr_price = VisrPrice()
-        visr_price = VisrPriceCg()
-        visr_price_usd = visr_price.output()["visr_in_usdc"]
+        visr_price = GammaPrice()
+        visr_price_usd = visr_price.output()["gamma_in_usdc"]
 
         protocol_fees_calcs = ProtocolFeesCalculations(days=7)
         protocol_fees_calcs.data = self.protocol_fees_data
@@ -158,7 +158,7 @@ class Dashboard:
         eth_distributions = eth_calcs.distributions(get_data=False)
         eth_last_distribution = float(eth_distributions[0]['distributed'])
         # eth_average_daily_distribution = eth_last_distribution / 7
-        visr_in_eth = visr_price.output()["visr_in_eth"]
+        visr_in_eth = visr_price.output()["gamma_in_eth"]
 
         top_level = TopLevelData()
         top_level.all_stats_data = self.top_level_data
