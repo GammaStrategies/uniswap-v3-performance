@@ -25,7 +25,7 @@ ETH_BLOCKS_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/blocklytics/e
 UNI_V2_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2"
 UNI_V3_SUBGRAPH_URL = uniswap_subgraphs[os.environ.get('UNISWAP_SUBGRAPH', 'prod')]
 VISOR_SUBGRAPH_URL = visor_subgraphs[os.environ.get('VISOR_SUBGRAPH', 'prod')]
-GAMMA_SUBGRAPH_URL = gamma_subgraphs[os.environ.get('GAMMA_SUBGRAPH', 'test')]
+GAMMA_SUBGRAPH_URL = gamma_subgraphs[os.environ.get('GAMMA_SUBGRAPH', 'prod')]
 XGAMMA_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/l0c4t0r/xgamma"
 
 
@@ -38,3 +38,10 @@ CHARTS_CACHE_TIMEOUT = os.environ.get('CHARTS_CACHE_TIMEOUT', 600)
 DASHBOARD_CACHE_TIMEOUT = os.environ.get('DASHBOARD_CACHE_TIMEOUT', 600)
 
 EXCLUDED_HYPERVISORS = list(filter(None, os.environ.get('EXCLUDED_HYPES', "").split(",")))
+
+legacy_stats = {
+    "visr_distributed": 987998.1542393989,
+    "visr_distributed_usd": 1246656.7073805775,
+    "estimated_visr_annual_distribution": 1237782.0442017058,
+    "estimated_visr_annual_distribution_usd": 1197097.0895269862
+}

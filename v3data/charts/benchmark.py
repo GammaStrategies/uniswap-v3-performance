@@ -2,7 +2,7 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
-from v3data import VisorClient, UniswapV2Client
+from v3data import GammaClient, UniswapV2Client
 from v3data.utils import date_to_timestamp
 from v3data.constants import WETH_ADDRESS
 
@@ -43,7 +43,7 @@ V2_BASE_POOLS = {
 
 class Benchmark:
     def __init__(self, address, start_date, end_date):
-        self.visor_client = VisorClient()
+        self.gamma_client = GammaClient()
         self.v2_client = UniswapV2Client()
         self.address = address
         self._init_dates(start_date, end_date)
@@ -105,7 +105,7 @@ class Benchmark:
             "endDate": self.end_timestamp
         }
 
-        hypervisor_data = self.visor_client.query(
+        hypervisor_data = self.gamma_client.query(
             query_hypervisor, variables_hypervisor)['data']['uniswapV3Hypervisor']
 
         if not hypervisor_data['dayData']:

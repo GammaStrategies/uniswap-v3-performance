@@ -5,7 +5,7 @@ from pandas import DataFrame
 from v3data import GammaClient, UniswapV3Client
 from v3data.config import DEFAULT_TIMEZONE
 from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal, timestamp_ago
-from v3data.constants import DAYS_IN_PERIOD
+from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
 
 
 class GammaData:
@@ -13,46 +13,58 @@ class GammaData:
         self.gamma_client = GammaClient()
         self.days = days
         self.timezone = timezone
-        self.address = "0x6bea7cfef803d1e3d5f7c0103f7ded065644e197"
+        self.address = GAMMA_ADDRESS
         self.decimal_factor = 10 ** 18
         self.data = {}
 
     def _get_data(self):
 
         query = """
-        query($id: String!, $days: Int!, $timezone: String!){
-            visrToken(
-                id: $id
-            ){
+        query($xgammaAddress: String!, $gammaAddress: String!, $days: Int!, $timezone: String!){
+            token(id: $gammaAddress){
                 totalSupply
-                totalDistributed
-                totalDistributedUSD
-                totalStaked
             }
-            visrTokenDayDatas(
+            protocolDistribution(id: $gammaAddress){
+                distributed
+                distributedUSD
+            }
+            distributionDayDatas(
                 orderBy: date
                 orderDirection: desc
                 first: $days
                 where: {
+                    token: $gammaAddress
                     distributed_gt: 0
-                    totalStaked_gt: 0
                     timezone: $timezone
                 }
             ){
                 date
                 distributed
                 distributedUSD
-                totalStaked
+            }
+            rewardHypervisorDayDatas(
+                orderBy: date
+                orderDirection: desc
+                first: $days
+                where: {
+                    totalGamma_gt: 0
+                    timezone: $timezone
+                }
+            ){
+                date
+                totalGamma
             }
             rewardHypervisor(
-                id:"0x26805021988f1a45dc708b5fb75fc75f21747d8c"
+                id: $xgammaAddress
             ) {
-                totalVisr
+                totalGamma
+                totalSupply
             }
         }
         """
         variables = {
-            "id": self.address,
+            "gammaAddress": self.address,
+            "xgammaAddress": XGAMMA_ADDRESS,
             "days": self.days,
             "timezone": self.timezone
         }
@@ -68,14 +80,11 @@ class GammaCalculations(GammaData):
         if get_data:
             self._get_data()
 
-        data = self.data['visrToken']
-        gammaStaked = self.data['rewardHypervisor']['totalVisr']
-
         return {
-            "totalDistributed": int(data['totalDistributed']) / self.decimal_factor,
-            "totalDistributedUSD": float(data['totalDistributedUSD']),
-            "totalStaked": int(gammaStaked) / self.decimal_factor,
-            "totalSupply": int(data['totalSupply']) / self.decimal_factor
+            "totalDistributed": int(self.data['protocolDistribution']['distributed']) / self.decimal_factor,
+            "totalDistributedUSD": float(self.data['protocolDistribution']['distributedUSD']),
+            "totalStaked": int(self.data['rewardHypervisor']['totalGamma']) / self.decimal_factor,
+            "totalSupply": int(self.data['token']['totalSupply']) / self.decimal_factor
         }
 
     def gamma_yield(self, get_data=True):
@@ -84,8 +93,12 @@ class GammaCalculations(GammaData):
         if get_data:
             self._get_data()
 
-        df_data = DataFrame(self.data['visrTokenDayDatas'], dtype=np.float64)
-        df_data.totalStaked = int(self.data['rewardHypervisor']['totalVisr'])
+        if not self.data['distributionDayDatas']:
+            return self._empty_yield()
+
+        df_dist = DataFrame(self.data['distributionDayDatas'], dtype=np.float64).set_index('date')
+        df_rh = DataFrame(self.data['rewardHypervisorDayDatas'], dtype=np.float64).set_index('date')
+        df_data = df_dist.join(df_rh)
         df_data['dailyYield'] = df_data.distributed / df_data.totalStaked
         df_data = df_data.sort_values('date')
 
@@ -107,6 +120,19 @@ class GammaCalculations(GammaData):
 
         return results
 
+    def _empty_yield(self):
+        results = {}
+        for period, days in DAYS_IN_PERIOD.items():
+            results[period] = {}
+            results[period]['yield'] = 0
+            results[period]['apr'] = 0
+            results[period]['apy'] = 0
+            results[period]['estimatedAnnualDistribution'] = 0
+            results[period]['estimatedAnnualDistributionUSD'] = 0
+
+        return results
+
+
     def distributions(self, get_data=True):
         if get_data:
             self._get_data()
@@ -114,10 +140,10 @@ class GammaCalculations(GammaData):
         results = [
             {
                 "timestamp": day['date'],
-                "date": timestamp_to_date(int(day['date']), '%d/%m/%Y'),
+                "date": timestamp_to_date(int(day['date']), '%m/%d/%Y'),
                 "distributed": float(day['distributed']) / self.decimal_factor
             }
-            for day in self.data['visrTokenDayDatas']
+            for day in self.data['distributionDayDatas']
         ]
 
         return results
@@ -227,7 +253,7 @@ class ProtocolFeesData:
 
     def _get_data(self, time_delta):
         query = """
-        query  protocolFees($timestamp_start: Int!) {
+        query  protocolFees($xgammaAddress: String!, $timestamp_start: Int!) {
             uniswapV3Rebalances(
                 where: {
                     timestamp_gt: $timestamp_start
@@ -236,14 +262,15 @@ class ProtocolFeesData:
                 timestamp
                 protocolFeesUSD
             }
-            visrToken(
-                id: "0xf938424f7210f31df2aee3011291b658f872e91e"
-            ){
-                totalStaked
+            rewardHypervisor(id: $xgammaAddress) {
+                totalGamma
             }
         }
         """
-        variables = {"timestamp_start": timestamp_ago(time_delta)}
+        variables = {
+            "xgammaAddress": XGAMMA_ADDRESS,
+            "timestamp_start": timestamp_ago(time_delta)
+            }
         self.data = self.visor_client.query(query, variables)['data']
 
 
@@ -264,9 +291,9 @@ class ProtocolFeesCalculations(ProtocolFeesData):
         df_rebalances = DataFrame(rebalances, dtype=np.float64)
 
         gamma_price = GammaPrice()
-        gamma_in_usd = gamma_price.output()['visr_in_usdc']
+        gamma_in_usd = gamma_price.output()['gamma_in_usdc']
 
-        gamma_staked_usd = gamma_in_usd * int(self.data['visrToken']['totalStaked']) / 10**18
+        gamma_staked_usd = gamma_in_usd * int(self.data['rewardHypervisor']['totalGamma']) / 10**18
 
         results = {}
         for period, days in DAYS_IN_PERIOD.items():

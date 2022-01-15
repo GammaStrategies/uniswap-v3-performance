@@ -1,7 +1,7 @@
 import numpy as np
 from pandas import DataFrame
 
-from v3data import VisorClient, UniswapV3Client
+from v3data import GammaClient
 from v3data.config import DEFAULT_TIMEZONE
 from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal
 from v3data.constants import DAYS_IN_PERIOD
@@ -9,7 +9,7 @@ from v3data.constants import DAYS_IN_PERIOD
 
 class EthData:
     def __init__(self, days, timezone=DEFAULT_TIMEZONE):
-        self.visor_client = VisorClient()
+        self.visor_client = GammaClient()
         self.days = days
         self.timezone = timezone
         self.decimal_factor = 10 ** 18
@@ -18,18 +18,19 @@ class EthData:
     def _get_data(self):
 
         query = """
-        query($days: Int!, $timezone: String!){
-            ethToken(
-                id: "0"
+        query($token: String!, $days: Int!, $timezone: String!){
+            protocolDistribution(
+                id: $token
             ){
-                totalDistributed
-                totalDistributedUSD
+                distributed
+                distributedUSD
             }
-            ethDayDatas(
+            distributionDayDatas(
                 orderBy: date
                 orderDirection: desc
                 first: $days
                 where: {
+                    token: $token
                     distributed_gt: 0
                     timezone: $timezone
                 }
@@ -41,6 +42,7 @@ class EthData:
         }
         """
         variables = {
+            "token": "ETH",
             "days": self.days,
             "timezone": self.timezone
         }
@@ -70,10 +72,10 @@ class EthCalculations(EthData):
         results = [
             {
                 "timestamp": day['date'],
-                "date": timestamp_to_date(int(day['date']), '%B %d, %Y'),
+                "date": timestamp_to_date(int(day['date']), '%m/%d/%Y'),
                 "distributed": float(day['distributed']) / self.decimal_factor
             }
-            for day in self.data['ethDayDatas']
+            for day in self.data['distributionDayDatas']
         ]
 
         return results

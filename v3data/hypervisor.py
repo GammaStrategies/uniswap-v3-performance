@@ -3,7 +3,7 @@ import numpy as np
 from datetime import timedelta, datetime
 from pandas import DataFrame
 
-from v3data import VisorClient, UniswapV3Client
+from v3data import GammaClient, UniswapV3Client
 from v3data.utils import timestamp_ago, timestamp_to_date
 from v3data.constants import DAYS_IN_PERIOD
 from v3data.config import EXCLUDED_HYPERVISORS
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class HypervisorData:
     def __init__(self):
-        self.visor_client = VisorClient()
+        self.gamma_client = GammaClient()
         self.uniswap_client = UniswapV3Client()
 
     def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
@@ -43,7 +43,7 @@ class HypervisorData:
             "timestamp_start": timestamp_start,
             "limit": limit
         }
-        return self.visor_client.query(query, variables)['data']['uniswapV3Rebalances']
+        return self.gamma_client.query(query, variables)['data']['uniswapV3Rebalances']
 
     def _get_all_rebalance_data(self, time_delta):
         query = """
@@ -70,7 +70,7 @@ class HypervisorData:
         """
         timestamp_start = timestamp_ago(time_delta)
         variables = {"timestamp_start": timestamp_start}
-        self.all_rebalance_data = self.visor_client.query(query, variables)['data']['uniswapV3Hypervisors']
+        self.all_rebalance_data = self.gamma_client.query(query, variables)['data']['uniswapV3Hypervisors']
 
     def _get_hypervisor_data(self, hypervisor_address):
         query = """
@@ -87,7 +87,7 @@ class HypervisorData:
         }
         """
         variables = {"id": hypervisor_address.lower()}
-        return self.visor_client.query(query, variables)['data']['uniswapV3Hypervisor']
+        return self.gamma_client.query(query, variables)['data']['uniswapV3Hypervisor']
 
     def basic_stats(self, hypervisor_address):
         data = self._get_hypervisor_data(hypervisor_address)
@@ -227,7 +227,7 @@ class HypervisorData:
         }
         """
 
-        basics = self.visor_client.query(query_basics)['data']['uniswapV3Hypervisors']
+        basics = self.gamma_client.query(query_basics)['data']['uniswapV3Hypervisors']
         pool_addresses = [hypervisor['pool']['id'] for hypervisor in basics]
 
         query_pool = """

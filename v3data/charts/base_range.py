@@ -3,7 +3,7 @@ import pandas as pd
 
 from datetime import timedelta
 
-from v3data import VisorClient
+from v3data import GammaClient
 from v3data.pools import Pool, USDC_WETH_03_POOL
 from v3data.utils import tick_to_priceDecimal, timestamp_ago
 
@@ -30,7 +30,7 @@ class BaseLimit:
     def __init__(self, hours, chart=True):
         self.hours = hours
         self.timestamp_start = timestamp_ago(timedelta(hours=hours))
-        self.visor_client = VisorClient()
+        self.gamma_client = GammaClient()
         self.chart = chart
         self.pool_hourly = {}
         self.eth_hourly = {}
@@ -121,7 +121,7 @@ class BaseLimit:
             "timestampStart": self.timestamp_start
         }
 
-        data = self.visor_client.query(query, variables)['data']['uniswapV3Hypervisor']
+        data = self.gamma_client.query(query, variables)['data']['uniswapV3Hypervisor']
 
         return self._reshape(data)
 
@@ -163,7 +163,7 @@ class BaseLimit:
         }
         """
         variables = {"timestampStart": self.timestamp_start}
-        data = self.visor_client.query(query, variables)['data']['uniswapV3Hypervisors']
+        data = self.gamma_client.query(query, variables)['data']['uniswapV3Hypervisors']
 
         return {hypervisor['id']: self._reshape(hypervisor) for hypervisor in data}
 

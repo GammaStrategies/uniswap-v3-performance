@@ -1,11 +1,11 @@
-from v3data import VisorClient
-from v3data.visor import VisorVaultInfo
-from v3data.constants import RHYPERVISOR_ADDRESS
+from v3data import GammaClient
+from v3data.accounts import AccountInfo
+from v3data.constants import XGAMMA_ADDRESS
 
 
 class UserData:
     def __init__(self, user_address):
-        self.visor_client = VisorClient()
+        self.gamma_client = GammaClient()
         self.address = user_address.lower()
         self.decimal_factor = 10 ** 18
         self.data = {}
@@ -13,17 +13,14 @@ class UserData:
     def _get_data(self):
         query = """
         query userData($userAddress: String!, $rewardHypervisorAddress: String!) {
-            visrToken(id: "0xf938424f7210f31df2aee3011291b658f872e91e"){
-                totalStaked
-            }
             user(
                 id: $userAddress
             ){
-                visorsOwned {
+                accountsOwned {
                     id
-                    owner{ id }
-                    visrDeposited
-                    visrEarnedRealized
+                    parent { id }
+                    gammaDeposited
+                    gammaEarnedRealized
                     hypervisorShares {
                         hypervisor {
                             id
@@ -55,16 +52,16 @@ class UserData:
             rewardHypervisor(
                 id: $rewardHypervisorAddress
             ){
-                totalVisr
+                totalGamma
                 totalSupply
             }
         }
         """
         variables = {
             "userAddress": self.address,
-            "rewardHypervisorAddress": RHYPERVISOR_ADDRESS
+            "rewardHypervisorAddress": XGAMMA_ADDRESS
         }
-        self.data = self.visor_client.query(query, variables)['data']
+        self.data = self.gamma_client.query(query, variables)['data']
 
 
 class UserInfo(UserData):
@@ -76,15 +73,14 @@ class UserInfo(UserData):
         if not self.data.get('user'):
             return {}
 
-        visors = {}
-        for visor in self.data['user']['visorsOwned']:
-            visor_address = visor['id']
-            visor_vault_info = VisorVaultInfo(visor_address)
-            visor_vault_info.data = {
-                'visrToken': self.data['visrToken'],
-                'visor': visor,
+        accounts = {}
+        for account in self.data['user']['accountsOwned']:
+            account_address = account['id']
+            account_info = AccountInfo(account_address)
+            account_info.data = {
+                'account': account,
                 'rewardHypervisor': self.data['rewardHypervisor']
             }
-            visors[visor_address] = visor_vault_info.output(get_data=False)
+            accounts[account_address] = account_info.output(get_data=False)
 
-        return visors
+        return accounts

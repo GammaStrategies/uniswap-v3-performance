@@ -1,17 +1,32 @@
+import logging
+
 from flask import Flask, request, Response
+from flask_caching import Cache
 from flask_cors import CORS
 
+from v3data import IndexNodeClient
 from v3data.pools import pools_from_symbol
 from v3data.bollingerbands import BollingerBand
 from v3data.charts import BaseLimit, Benchmark, DailyChart
 from v3data.hypervisor import HypervisorData
-from v3data.visr import VisrData
-from v3data.users import VisorUser
-from v3data.visor import VisorVaultInfo
+from v3data.eth import EthDistribution
+from v3data.gamma import GammaInfo, GammaDistribution, GammaYield
+from v3data.users import UserInfo
+from v3data.accounts import AccountInfo
 from v3data.toplevel import TopLevelData
-from v3data.config import DEFAULT_TIMEZONE
+from v3data.dashboard import Dashboard
+from v3data.config import DEFAULT_TIMEZONE, CHARTS_CACHE_TIMEOUT, DASHBOARD_CACHE_TIMEOUT
+from v3data.utils import parse_date
+
+logging.basicConfig(
+    format='[%(asctime)s:%(levelname)s]:%(message)s',
+    datefmt='%Y/%m/%d %I:%M:%S',
+    level=logging.INFO
+)
 
 app = Flask(__name__)
+app.config.from_mapping({'CACHE_TYPE': 'SimpleCache'})
+cache = Cache(app)
 CORS(app)
 
 
@@ -20,8 +35,15 @@ def main():
     return "Visor Data"
 
 
+@app.route('/status/subgraph')
+def subgraph_status():
+    client = IndexNodeClient()
+    return client.status()
+
+
 @app.route('/charts/bollingerbands/<string:poolAddress>')
 @app.route('/bollingerBandsChartData/<string:poolAddress>')
+@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def bollingerbands_chart(poolAddress):
     periodHours = int(request.args.get("periodHours", 24))
 
@@ -40,6 +62,7 @@ def bollingerbands_latest(poolAddress):
 
 
 @app.route('/charts/dailyTvl')
+@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def daily_tvl_chart_data():
     days = int(request.args.get("days", 20))
 
@@ -67,6 +90,7 @@ def daily_hypervisor_flows_chart_data(hypervisor_address):
 
 
 @app.route('/charts/baseRange/<string:hypervisor_address>')
+@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def base_range_chart(hypervisor_address):
     hours = int(request.args.get("days", 20)) * 24
     hypervisor_address = hypervisor_address.lower()
@@ -79,6 +103,7 @@ def base_range_chart(hypervisor_address):
 
 
 @app.route('/charts/baseRange/all')
+@cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def base_range_chart_all():
     hours = int(request.args.get("days", 20)) * 24
     baseLimitData = BaseLimit(hours=hours, chart=True)
@@ -87,12 +112,12 @@ def base_range_chart_all():
 
 
 @app.route('/charts/benchmark/<string:hypervisor_address>')
+# @cache.cached(timeout=CHARTS_CACHE_TIMEOUT)
 def benchmark_chart(hypervisor_address):
-    start_year = int(request.args.get("startYear", 2021))
-    start_month = int(request.args.get("startMonth", 6))
-    n_months = int(request.args.get("nMonths", 1))
+    start_date = parse_date(request.args.get("startDate"))
+    end_date = parse_date(request.args.get("endDate"))
     hypervisor_address = hypervisor_address.lower()
-    benchmark = Benchmark(hypervisor_address, start_year, start_month, n_months)
+    benchmark = Benchmark(hypervisor_address, start_date, end_date)
     chart_data = benchmark.chart()
     if chart_data:
         return {hypervisor_address: chart_data}
@@ -102,15 +127,15 @@ def benchmark_chart(hypervisor_address):
 
 @app.route('/user/<string:address>')
 def user_data(address):
-    visor_user = VisorUser(address)
+    user_info = UserInfo(address)
 
-    return visor_user.info()
+    return user_info.output(get_data=True)
 
 
 @app.route('/vault/<string:address>')
 def visor_data(address):
-    visor_vault_info = VisorVaultInfo(address)
-    return visor_vault_info.output()
+    account_info = AccountInfo(address)
+    return account_info.output()
 
 
 @app.route('/pools/<string:token>')
@@ -118,56 +143,43 @@ def uniswap_pools(token):
     return {"pools": pools_from_symbol(token)}
 
 
-@app.route('/dev/v2pools/<string:address>')
-def v2pools(address):
-    hp = HypervisorPerformance()
-    data = hp._get_v2_pricing(address)
-    return {"data": data}
-
-
+@app.route('/gamma/basicStats')
 @app.route('/visr/basicStats')
-def visr_basic_stats():
-    visr = VisrData()
-    token_info = visr.token_info()
-    visr_price_usd = visr.price_usd()
-
-    token_info['priceUSD'] = visr_price_usd
-
-    return token_info
+def gamma_basic_stats():
+    gamma_info = GammaInfo(days=30)
+    return gamma_info.output()
 
 
+@app.route('/gamma/yield')
 @app.route('/visr/yield')
-def visr_yield():
-    visr = VisrData()
-    yield_data = visr.token_yield()
-
-    return yield_data
+def gamma_yield():
+    gamma_yield = GammaYield(days=30)
+    return gamma_yield.output()
 
 
+@app.route('/gamma/dailyDistribution')
 @app.route('/visr/dailyDistribution')
-def visr_distributions():
-    days = int(request.args.get("days", 5))
+def gamma_distributions():
+    days = int(request.args.get("days", 6))
     timezone = request.args.get("timezone", DEFAULT_TIMEZONE).upper()
 
     if timezone not in ['UTC', 'UTC-5']:
         return Response("Only UTC and UTC-5 timezones supported", status=400)
 
-    visr = VisrData()
-    distributions = visr.daily_distribution(timezone, days)
+    gamma_distributions = GammaDistribution(days=days, timezone=timezone)
+    return gamma_distributions.output()
 
-    fee_distributions = []
-    for i, distribution in enumerate(distributions):
-        fee_distributions.append(
-            {
-                'title': distribution['date'],
-                'desc': f"{int(distribution['distributed']):,} VISR Distributed",
-                'id': i + 2
-            }
-        )
 
-    return {
-        'feeDistribution': fee_distributions
-    }
+@app.route('/eth/dailyDistribution')
+def eth_distributions():
+    days = int(request.args.get("days", 6))
+    timezone = request.args.get("timezone", DEFAULT_TIMEZONE).upper()
+
+    if timezone not in ['UTC', 'UTC-5']:
+        return Response("Only UTC and UTC-5 timezones supported", status=400)
+
+    eth_distributions = EthDistribution(days=days, timezone=timezone)
+    return eth_distributions.output()
 
 
 @app.route('/hypervisor/<string:hypervisor_address>/basicStats')
@@ -234,40 +246,9 @@ def hypervisors_all():
 
 
 @app.route('/dashboard')
+@cache.cached(timeout=DASHBOARD_CACHE_TIMEOUT)
 def dashboard():
     period = request.args.get("period", "weekly").lower()
+    dashboard = Dashboard(period)
 
-    visr = VisrData()
-    visr_info = visr.info()
-    token_info = visr_info['info']
-    visr_yield = visr_info['yield']
-    visr_price_usd = visr.price_usd()
-    distributions = visr.daily_distribution(timezone=DEFAULT_TIMEZONE, days=1)
-
-    last_day_distribution = float(distributions[0]['distributed'])
-
-    top_level = TopLevelData()
-    top_level_data = top_level.all_stats()
-    top_level_returns = top_level.calculate_returns()
-
-    dashboard_stats = {
-        "stakedUsdAmount": token_info['totalStaked'] * visr_price_usd,
-        "stakedAmount": token_info['totalStaked'],
-        "feeStatsFeeAccural": last_day_distribution * visr_price_usd,
-        "feeStatsAmountVisr": last_day_distribution,
-        "feeStatsStakingApr": visr_yield[period]['apr'],
-        "feeStatsStakingApy": visr_yield[period]['apy'],
-        "feeStatsStakingDailyYield": visr_yield[period]['yield'],
-        "feeCumulativeFeeUsd": token_info['totalDistributedUSD'],
-        "feeCumulativeFeeUsdAnnual": visr_yield[period]['estimatedAnnualDistributionUSD'],
-        "feeCumulativeFeeDistributed": token_info['totalDistributed'],
-        "feeCumulativeFeeDistributedAnnual": visr_yield[period]['estimatedAnnualDistribution'],
-        "uniswapPairTotalValueLocked": top_level_data['tvl'],
-        "uniswapPairAmountPairs": top_level_data['pool_count'],
-        "uniswapFeesGenerated": top_level_data['fees_claimed'],
-        "uniswapFeesBasedApr": f"{top_level_returns[period]['feeApr']:.0%}",
-        "visrPrice": visr_price_usd,  # End point for price
-        "id": 2  # What is this?
-    }
-
-    return dashboard_stats
+    return dashboard.info('UTC')

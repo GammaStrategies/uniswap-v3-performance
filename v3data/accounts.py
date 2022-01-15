@@ -1,26 +1,23 @@
-from v3data import VisorClient
-from v3data.constants import RHYPERVISOR_ADDRESS
+from v3data import GammaClient
+from v3data.constants import XGAMMA_ADDRESS
 
 
-class VisorVaultData:
+class AccountData:
     def __init__(self, visor_address):
-        self.visor_client = VisorClient()
+        self.gamma_client = GammaClient()
         self.address = visor_address.lower()
-        self.reward_hypervisor_address = RHYPERVISOR_ADDRESS
+        self.reward_hypervisor_address = XGAMMA_ADDRESS
         self.decimal_factor = 10 ** 18
 
     def _get_data(self):
         query = """
-        query visorData($visorAddress: String!, $rewardHypervisorAddress: String!) {
-            visrToken(id: "0xf938424f7210f31df2aee3011291b658f872e91e"){
-                totalStaked
-            }
-            visor(
-                id: $visorAddress
+        query accountData($accountAddress: String!, $rewardHypervisorAddress: String!) {
+            account(
+                id: $accountAddress
             ){
-                owner { id }
-                visrDeposited
-                visrEarnedRealized
+                parent { id }
+                gammaDeposited
+                gammaEarnedRealized
                 hypervisorShares {
                     hypervisor {
                         id
@@ -51,19 +48,19 @@ class VisorVaultData:
             rewardHypervisor(
                 id: $rewardHypervisorAddress
             ){
-                totalVisr
+                totalGamma
                 totalSupply
             }
         }
         """
         variables = {
-            "visorAddress": self.address,
+            "accounAddress": self.address,
             "rewardHypervisorAddress": self.reward_hypervisor_address
         }
-        self.data = self.visor_client.query(query, variables)['data']
+        self.data = self.gamma_client.query(query, variables)['data']
 
 
-class VisorVaultInfo(VisorVaultData):
+class AccountInfo(AccountData):
     def _returns(self):
 
         returns = {}
@@ -108,33 +105,33 @@ class VisorVaultInfo(VisorVaultData):
         if get_data:
             self._get_data()
 
-        if not self.data['visor']:
+        if not self.data['account']:
             return {}
 
         reward_hypervisor_shares = self.data['visor']['rewardHypervisorShares']
-        vvisr_shares = 0
+        xgamma_shares = 0
         for shares in reward_hypervisor_shares:
             if shares.get('rewardHypervisor', {}).get('id') == self.reward_hypervisor_address:
-                vvisr_shares = int(shares['shares'])
+                xgamma_shares = int(shares['shares'])
                 
+        totalGammaStaked = int(self.data['rewardHypervisor']['totalGamma'])
+        xgamma_virtual_price = totalGammaStaked / int(self.data['rewardHypervisor']['totalSupply'])
 
-        vvisr_virtual_price = int(self.data['rewardHypervisor']['totalVisr']) / int(self.data['rewardHypervisor']['totalSupply'])
-
-        visor_owner = self.data['visor']['owner']['id']
-        visrStaked = vvisr_shares * vvisr_virtual_price
-        visrDeposited = int(self.data['visor']['visrDeposited'])
-        visrEarnedRealized = int(self.data['visor']['visrEarnedRealized'])
+        account_owner = self.data['account']['parent']['id']
+        gammaStaked = xgamma_shares * xgamma_virtual_price
+        gammaDeposited = int(self.data['account']['gammaDeposited'])
+        gammaEarnedRealized = int(self.data['account']['gammaEarnedRealized'])
         visor_info = {
-            "owner": visor_owner,
-            "visrStaked": visrStaked / self.decimal_factor,
-            "visrDeposited": visrDeposited / self.decimal_factor,
-            "totalVisrEarned": (visrStaked - visrDeposited + visrEarnedRealized) / self.decimal_factor,
-            "visrStakedShare": f"{visrStaked / int(self.data['visrToken']['totalStaked']):.2%}"
+            "owner": account_owner,
+            "visrStaked": gammaStaked / self.decimal_factor,
+            "visrDeposited": gammaDeposited / self.decimal_factor,
+            "totalVisrEarned": (gammaStaked - gammaDeposited + gammaEarnedRealized) / self.decimal_factor,
+            "visrStakedShare": f"{gammaStaked / totalGammaStaked:.2%}"
         }
 
         returns = self._returns()
 
-        for hypervisor in self.data['visor']['hypervisorShares']:
+        for hypervisor in self.data['account']['hypervisorShares']:
             hypervisor_id = hypervisor['hypervisor']['id']
             shares = int(hypervisor['shares'])
             totalSupply = int(hypervisor['hypervisor']['totalSupply'])

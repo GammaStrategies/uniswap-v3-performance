@@ -1,12 +1,12 @@
 import pandas as pd
 import numpy as np
-from v3data import VisorClient
+from v3data import GammaClient
 
 
 class DailyChart:
     def __init__(self, days=20):
         self.days = days
-        self.visor_client = VisorClient()
+        self.gamma_client = GammaClient()
 
     def _get_all_flows(self):
         """Daily chart flows bar chart for hypervisors"""
@@ -33,7 +33,7 @@ class DailyChart:
         variables = {
             'days': self.days
         }
-        hypervisors = self.visor_client.query(query, variables)['data']['uniswapV3Hypervisors']
+        hypervisors = self.gamma_client.query(query, variables)['data']['uniswapV3Hypervisors']
 
         data = [day_data for hypervisor in hypervisors for day_data in hypervisor['dayData']]
 
@@ -61,7 +61,7 @@ class DailyChart:
             "hypervisor": hypervisor_address.lower(),
             'days': self.days
         }
-        return self.visor_client.query(query, variables)['data']['uniswapV3HypervisorDayDatas']
+        return self.gamma_client.query(query, variables)['data']['uniswapV3HypervisorDayDatas']
 
     def asset_flows(self, hypervisor_address=None):
 
@@ -121,7 +121,7 @@ class DailyChart:
         }
         """
         variables = {'days': self.days}
-        data = self.visor_client.query(query, variables)['data']['uniswapV3Hypervisors']
+        data = self.gamma_client.query(query, variables)['data']['uniswapV3Hypervisors']
 
         df_all = pd.DataFrame()
         for hypervisor in data:

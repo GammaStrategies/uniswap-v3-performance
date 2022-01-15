@@ -1,7 +1,7 @@
 
 import json
 import pytest
-from v3data.visr import VisrCalculations
+from v3data.gamma import GammaCalculations
 
 
 @pytest.fixture
@@ -18,7 +18,7 @@ def visr_data_6days():
     
 
 def test_visr_calculations_basic_info_valid(visr_data_30days):
-    calculations = VisrCalculations(days=30)
+    calculations = GammaCalculations(days=30)
     calculations.data = visr_data_30days
 
     expected = {
@@ -32,7 +32,7 @@ def test_visr_calculations_basic_info_valid(visr_data_30days):
 
 
 def test_visr_calculations_visr_yield_valid(visr_data_30days):
-    calculations = VisrCalculations(days=30)
+    calculations = GammaCalculations(days=30)
     calculations.data = visr_data_30days
 
     expected = {
@@ -63,7 +63,7 @@ def test_visr_calculations_visr_yield_valid(visr_data_30days):
 
 
 def test_visr_calculations_distributions_valid(visr_data_6days):
-    calculations = VisrCalculations(days=6)
+    calculations = GammaCalculations(days=6)
     calculations.data = visr_data_6days
 
     expected = [

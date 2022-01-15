@@ -2,8 +2,8 @@ import numpy as np
 from datetime import timedelta
 from pandas import DataFrame
 
-from v3data import VisorClient
-from v3data.visr import VisrData
+from v3data import GammaClient
+from v3data.gamma import GammaData
 from v3data.hypervisor import HypervisorData
 from v3data.utils import timestamp_ago
 from v3data.config import EXCLUDED_HYPERVISORS
@@ -13,7 +13,7 @@ class TopLevelData:
     """Top level stats"""
 
     def __init__(self):
-        self.visor_client = VisorClient()
+        self.gamma_client = GammaClient()
         self.all_stats_data = {}
         self.all_returns_data = {}
 
@@ -30,7 +30,7 @@ class TopLevelData:
             }
         }
         """
-        return self.visor_client.query(query)['data']['uniswapV3Hypervisors']
+        return self.gamma_client.query(query)['data']['uniswapV3Hypervisors']
 
     def get_pool_data(self):
         query = """
@@ -42,7 +42,7 @@ class TopLevelData:
             }
         }
         """
-        return self.visor_client.query(query)['data']['uniswapV3Pools']
+        return self.gamma_client.query(query)['data']['uniswapV3Pools']
 
     def _get_all_returns_data(self, time_delta):
         query = """
@@ -70,7 +70,7 @@ class TopLevelData:
         }
         """
         variables = {"timestampStart": timestamp_ago(time_delta)}
-        self.all_returns_data = self.visor_client.query(query, variables)['data']['uniswapV3Hypervisors']
+        self.all_returns_data = self.gamma_client.query(query, variables)['data']['uniswapV3Hypervisors']
 
     def _get_all_stats_data(self):
         query = """
@@ -90,7 +90,7 @@ class TopLevelData:
         }
         """
 
-        self.all_stats_data = self.visor_client.query(query)['data']
+        self.all_stats_data = self.gamma_client.query(query)['data']
 
     def get_recent_rebalance_data(self, hours=24):
         query = """
@@ -109,7 +109,7 @@ class TopLevelData:
         """
         timestamp_start = timestamp_ago(timedelta(hours=hours))
         variables = {"timestamp_start": timestamp_start}
-        return self.visor_client.query(query, variables)['data']['uniswapV3Rebalances']
+        return self.gamma_client.query(query, variables)['data']['uniswapV3Rebalances']
 
     def _all_stats(self):
         """
@@ -134,14 +134,14 @@ class TopLevelData:
         return self._all_stats()
 
     def recent_fees(self, hours=24):
-        visr = VisrData()
-        visr_price = visr.price_usd()
+        gamma = GammaData()
+        gamma_price = gamma.price_usd()
         data = self.get_recent_rebalance_data(hours)
         df_fees = DataFrame(data, dtype=np.float64)
 
-        df_fees['grossFeesVISR'] = df_fees.grossFeesUSD / visr_price
-        df_fees['protocolFeesVISR'] = df_fees.protocolFeesUSD / visr_price
-        df_fees['netFeesVISR'] = df_fees.netFeesUSD / visr_price
+        df_fees['grossFeesGAMMA'] = df_fees.grossFeesUSD / gamma_price
+        df_fees['protocolFeesGAMMA'] = df_fees.protocolFeesUSD / gamma_price
+        df_fees['netFeesGAMMA'] = df_fees.netFeesUSD / gamma_price
 
         return df_fees.sum().to_dict()
 
