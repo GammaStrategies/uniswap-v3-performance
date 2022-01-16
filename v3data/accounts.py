@@ -3,9 +3,9 @@ from v3data.constants import XGAMMA_ADDRESS
 
 
 class AccountData:
-    def __init__(self, visor_address):
+    def __init__(self, account_address):
         self.gamma_client = GammaClient()
-        self.address = visor_address.lower()
+        self.address = account_address.lower()
         self.reward_hypervisor_address = XGAMMA_ADDRESS
         self.decimal_factor = 10 ** 18
 
@@ -54,7 +54,7 @@ class AccountData:
         }
         """
         variables = {
-            "accounAddress": self.address,
+            "accountAddress": self.address,
             "rewardHypervisorAddress": self.reward_hypervisor_address
         }
         self.data = self.gamma_client.query(query, variables)['data']
@@ -62,9 +62,10 @@ class AccountData:
 
 class AccountInfo(AccountData):
     def _returns(self):
-
         returns = {}
-        for share in self.data['visor']['hypervisorShares']:
+        for share in self.data['account']['hypervisorShares']:
+            if int(share['shares']) <= 0: # Workaround before fix in subgraph
+                continue
             hypervisor_address = share['hypervisor']['id']
             initial_token0 = int(share['initialToken0'])
             initial_token1 = int(share['initialToken1'])
@@ -108,7 +109,7 @@ class AccountInfo(AccountData):
         if not self.data['account']:
             return {}
 
-        reward_hypervisor_shares = self.data['visor']['rewardHypervisorShares']
+        reward_hypervisor_shares = self.data['account']['rewardHypervisorShares']
         xgamma_shares = 0
         for shares in reward_hypervisor_shares:
             if shares.get('rewardHypervisor', {}).get('id') == self.reward_hypervisor_address:
@@ -121,7 +122,7 @@ class AccountInfo(AccountData):
         gammaStaked = xgamma_shares * xgamma_virtual_price
         gammaDeposited = int(self.data['account']['gammaDeposited'])
         gammaEarnedRealized = int(self.data['account']['gammaEarnedRealized'])
-        visor_info = {
+        account_info = {
             "owner": account_owner,
             "visrStaked": gammaStaked / self.decimal_factor,
             "visrDeposited": gammaDeposited / self.decimal_factor,
@@ -132,6 +133,8 @@ class AccountInfo(AccountData):
         returns = self._returns()
 
         for hypervisor in self.data['account']['hypervisorShares']:
+            if int(hypervisor['shares']) <= 0:  # Workaround before fix in subgraph
+                continue
             hypervisor_id = hypervisor['hypervisor']['id']
             shares = int(hypervisor['shares'])
             totalSupply = int(hypervisor['hypervisor']['totalSupply'])
@@ -142,7 +145,7 @@ class AccountInfo(AccountData):
             tvl0_decimal = float(hypervisor['hypervisor']['tvl0']) / 10 ** decimal0
             tvl1_decimal = float(hypervisor['hypervisor']['tvl1']) / 10 ** decimal1
 
-            visor_info[hypervisor_id] = {
+            account_info[hypervisor_id] = {
                 "shares": shares,
                 "shareOfSupply": shareOfSupply,
                 "balance0": tvl0_decimal * shareOfSupply,
@@ -151,4 +154,4 @@ class AccountInfo(AccountData):
                 "returns": returns[hypervisor_id]
             }
 
-        return visor_info
+        return account_info
