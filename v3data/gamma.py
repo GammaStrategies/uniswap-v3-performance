@@ -69,7 +69,6 @@ class GammaData:
             "timezone": self.timezone
         }
         self.data = self.gamma_client.query(query, variables)['data']
-        print(self.gamma_client._url)
 
 
 class GammaCalculations(GammaData):

@@ -5,8 +5,8 @@ from pandas import DataFrame
 
 from v3data import GammaClient, UniswapV3Client
 from v3data.utils import timestamp_ago, timestamp_to_date
-from v3data.constants import DAYS_IN_PERIOD
-from v3data.config import EXCLUDED_HYPERVISORS
+from v3data.constants import DAYS_IN_PERIOD, SECONDS_IN_DAYS
+from v3data.config import EXCLUDED_HYPERVISORS, FALLBACK_DAYS
 
 DAY_SECONDS = 24 * 60 * 60
 YEAR_SECONDS = 365 * DAY_SECONDS
@@ -116,7 +116,8 @@ class HypervisorData:
             return self.empty_returns()
 
         df_rebalances.sort_values('timestamp', inplace=True)
-
+        latest_rebalance_ts = df_rebalances.loc[df_rebalances.index[-1], 'timestamp']
+        
         # Calculate fee return rate for each rebalance event
         df_rebalances['feeRate'] = df_rebalances.grossFeesUSD / df_rebalances.totalAmountUSD.shift(1)
         df_rebalances['totalRate'] = df_rebalances.totalAmountUSD / df_rebalances.totalAmountUSD.shift(1) - 1
@@ -128,11 +129,14 @@ class HypervisorData:
         results = {}
         for period, days in DAYS_IN_PERIOD.items():
             timestamp_start = timestamp_ago(timedelta(days=days))
+            #  If no items for timestamp larger than timestamp_start
+            n_valid_rows = len(df_rebalances[df_rebalances.timestamp > timestamp_start])
+            if n_valid_rows < 2:
+                timestamp_start = latest_rebalance_ts - (FALLBACK_DAYS * SECONDS_IN_DAYS)
             df_period = df_rebalances.loc[df_rebalances.timestamp > timestamp_start].copy()
 
             if df_period.empty:
                 # if no rebalances in the last 24 hours, calculate using the 24 hours prior to the last rebalance
-                df_rebalances.timestamp.max() - DAY_SECONDS
                 timestamp_start = df_rebalances.timestamp.max() - DAY_SECONDS
                 df_period = df_rebalances.loc[df_rebalances.timestamp > timestamp_start].copy()
 
@@ -160,7 +164,7 @@ class HypervisorData:
         return results
 
     def calculate_returns(self, hypervisor_address):
-        data = self.get_rebalance_data(hypervisor_address, timedelta(days=30))
+        data = self.get_rebalance_data(hypervisor_address, timedelta(days=360))
         return self._calculate_returns(data)
 
     def _all_returns(self):
@@ -168,24 +172,11 @@ class HypervisorData:
         for hypervisor in self.all_rebalance_data:
             if hypervisor['id'] not in EXCLUDED_HYPERVISORS:
                 results[hypervisor['id']] = self._calculate_returns(hypervisor['rebalances'])
-                if hypervisor['id'] == '0x5230371a6d5311b1d7dd30c0f5474c2ef0a24661':
-                    results[hypervisor['id']] = self._taper(results[hypervisor['id']])
-
 
         return results
-
-    def _taper(self, results):
-        total_time = 234000
-        target_date = datetime(2021, 11, 28)
-        time_remaining = max(0, (target_date - datetime.now()).total_seconds())
-        time_factor = time_remaining / total_time
-        results['weekly']['feeApy'] = 0.6 + (2.23 * time_factor)
-        results['weekly']['feeApr'] = 0.6 + (2.23 * time_factor)
-        return results
-
 
     def all_returns(self):
-        self._get_all_rebalance_data(timedelta(days=30))
+        self._get_all_rebalance_data(timedelta(days=360))
         return self._all_returns()
 
     def all_data(self):

@@ -7,3 +7,5 @@ DAYS_IN_PERIOD = {
     "weekly": 7,
     "monthly": 30
 }
+
+SECONDS_IN_DAYS = 3600
