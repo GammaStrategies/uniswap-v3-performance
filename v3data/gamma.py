@@ -98,7 +98,7 @@ class GammaCalculations(GammaData):
         df_dist = DataFrame(self.data['distributionDayDatas'], dtype=np.float64).set_index('date')
         df_rh = DataFrame(self.data['rewardHypervisorDayDatas'], dtype=np.float64).set_index('date')
         df_data = df_dist.join(df_rh)
-        df_data['dailyYield'] = df_data.distributed / df_data.totalStaked
+        df_data['dailyYield'] = df_data.distributed / df_data.totalGamma
         df_data = df_data.sort_values('date')
 
         results = {}

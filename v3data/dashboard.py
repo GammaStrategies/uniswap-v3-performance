@@ -118,7 +118,8 @@ class Dashboard:
             'token': data['token'],
             'protocolDistribution': data['protocolDistribution'],
             'distributionDayDatas': data['distributionDayDatas'],
-            'rewardHypervisor': data['rewardHypervisor']
+            'rewardHypervisor': data['rewardHypervisor'],
+            "rewardHypervisorDayDatas": data['rewardHypervisorDayDatas']
         }
         self.top_level_data = {
             "uniswapV3Hypervisors": data['uniswapV3Hypervisors'],
