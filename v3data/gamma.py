@@ -1,3 +1,4 @@
+from operator import methodcaller
 import numpy as np
 from datetime import timedelta
 from pandas import DataFrame
@@ -97,10 +98,13 @@ class GammaCalculations(GammaData):
 
         df_dist = DataFrame(self.data['distributionDayDatas'], dtype=np.float64).set_index('date')
         df_rh = DataFrame(self.data['rewardHypervisorDayDatas'], dtype=np.float64).set_index('date')
-        df_data = df_dist.join(df_rh)
-        df_data['dailyYield'] = df_data.distributed / df_data.totalGamma
+        df_data = df_dist.join(df_rh, how="outer")
         df_data = df_data.sort_values('date')
-        df_data = df_data.fillna(method='ffill')
+        df_data.totalGamma = df_data.totalGamma.fillna(method='ffill')
+        df_data[['distributed', 'distributedUSD']] = df_data[['distributed', 'distributedUSD']].fillna(value=0)
+        df_data['dailyYield'] = df_data.distributed / df_data.totalGamma
+        
+        
 
         results = {}
         for period, days in DAYS_IN_PERIOD.items():
