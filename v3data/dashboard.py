@@ -141,6 +141,7 @@ class Dashboard:
         gamma_calcs.data = self.gamma_data
         gamma_info = gamma_calcs.basic_info(get_data=False)
         gamma_yield = gamma_calcs.gamma_yield(get_data=False)
+        print(gamma_yield)
         distributions = gamma_calcs.distributions(get_data=False)
         # last_day_distribution = float(distributions[0]['distributed'])
         visr_price = GammaPrice()

@@ -100,6 +100,7 @@ class GammaCalculations(GammaData):
         df_data = df_dist.join(df_rh)
         df_data['dailyYield'] = df_data.distributed / df_data.totalGamma
         df_data = df_data.sort_values('date')
+        df_data = df_data.fillna(method='ffill')
 
         results = {}
         for period, days in DAYS_IN_PERIOD.items():
