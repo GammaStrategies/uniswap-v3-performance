@@ -1,4 +1,5 @@
 from v3data import GammaClient
+from v3data.gamma import GammaPrice
 from v3data.constants import XGAMMA_ADDRESS
 
 
@@ -118,17 +119,37 @@ class AccountInfo(AccountData):
         totalGammaStaked = int(self.data['rewardHypervisor']['totalGamma'])
         xgamma_virtual_price = totalGammaStaked / int(self.data['rewardHypervisor']['totalSupply'])
 
+        # Get pricing
+        gamma_pricing = GammaPrice().output()
+
         account_owner = self.data['account']['parent']['id']
-        gammaStaked = xgamma_shares * xgamma_virtual_price
-        gammaDeposited = int(self.data['account']['gammaDeposited'])
-        gammaEarnedRealized = int(self.data['account']['gammaEarnedRealized'])
+        gammaStaked = (xgamma_shares * xgamma_virtual_price) / self.decimal_factor
+        gammaDeposited = int(self.data['account']['gammaDeposited']) / self.decimal_factor
+        gammaEarnedRealized = int(self.data['account']['gammaEarnedRealized']) / self.decimal_factor
+        gammaStakedShare = gammaStaked / (totalGammaStaked / self.decimal_factor)
+        pendingGammaEarned = gammaStaked - gammaDeposited
+        totalGammaEarned = gammaStaked - gammaDeposited + gammaEarnedRealized
         account_info = {
             "owner": account_owner,
-            "visrStaked": gammaStaked / self.decimal_factor,
-            "visrDeposited": gammaDeposited / self.decimal_factor,
-            "totalVisrEarned": (gammaStaked - gammaDeposited + gammaEarnedRealized) / self.decimal_factor,
-            "visrStakedShare": f"{gammaStaked / totalGammaStaked:.2%}"
+            "gammaStaked": gammaStaked,
+            "gammaStakedUSD": gammaStaked * gamma_pricing['gamma_in_usdc'],
+            "gammaDeposited": gammaDeposited,
+            "pendingGammaEarned": pendingGammaEarned,
+            "pendingGammaEarnedUSD": pendingGammaEarned * gamma_pricing['gamma_in_usdc'],
+            "totalGammaEarned": totalGammaEarned,
+            "totalGammaEarnedUSD": totalGammaEarned * gamma_pricing['gamma_in_usdc'],
+            "gammaStakedShare": f"{gammaStakedShare:.2%}",
+            "xgammaAmount": xgamma_shares / self.decimal_factor
         }
+        # The below for compatability
+        account_info.update(
+            {
+                "visrStaked": account_info['gammaStaked'],
+                "visrDeposited": account_info['gammaDeposited'],
+                "totalVisrEarned": account_info['totalGammaEarned'],
+                "visrStakedShare": account_info['gammaStakedShare']
+            }
+        )
 
         returns = self._returns()
 

@@ -145,7 +145,8 @@ class GammaCalculations(GammaData):
             {
                 "timestamp": day['date'],
                 "date": timestamp_to_date(int(day['date']), '%m/%d/%Y'),
-                "distributed": float(day['distributed']) / self.decimal_factor
+                "distributed": float(day['distributed']) / self.decimal_factor,
+                "distributedUSD": float(day['distributedUSD'])
             }
             for day in self.data['distributionDayDatas']
         ]
@@ -192,9 +193,14 @@ class GammaDistribution(GammaCalculations):
                     'id': i + 2
                 }
             )
-
+        print(distributions[0])
         return {
-            'feeDistribution': fee_distributions
+            'feeDistribution': distributions,
+            'latest': {
+                "timestamp": distributions[0]['timestamp'],
+                "distributed": distributions[0]['distributed'],
+                "distributedUSD": distributions[0]['distributedUSD']
+            }
         }
 
 
