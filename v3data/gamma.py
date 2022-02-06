@@ -15,7 +15,7 @@ class GammaData:
         self.days = days
         self.timezone = timezone
         self.address = GAMMA_ADDRESS
-        self.decimal_factor = 10 ** 18
+        self.decimal_factor = 10**18
         self.data = {}
 
     def _get_data(self):
@@ -67,9 +67,9 @@ class GammaData:
             "gammaAddress": self.address,
             "xgammaAddress": XGAMMA_ADDRESS,
             "days": self.days,
-            "timezone": self.timezone
+            "timezone": self.timezone,
         }
-        self.data = self.gamma_client.query(query, variables)['data']
+        self.data = self.gamma_client.query(query, variables)["data"]
 
 
 class GammaCalculations(GammaData):
@@ -81,10 +81,14 @@ class GammaCalculations(GammaData):
             self._get_data()
 
         return {
-            "totalDistributed": int(self.data['protocolDistribution']['distributed']) / self.decimal_factor,
-            "totalDistributedUSD": float(self.data['protocolDistribution']['distributedUSD']),
-            "totalStaked": int(self.data['rewardHypervisor']['totalGamma']) / self.decimal_factor,
-            "totalSupply": int(self.data['token']['totalSupply']) / self.decimal_factor
+            "totalDistributed": int(self.data["protocolDistribution"]["distributed"])
+            / self.decimal_factor,
+            "totalDistributedUSD": float(
+                self.data["protocolDistribution"]["distributedUSD"]
+            ),
+            "totalStaked": int(self.data["rewardHypervisor"]["totalGamma"])
+            / self.decimal_factor,
+            "totalSupply": int(self.data["token"]["totalSupply"]) / self.decimal_factor,
         }
 
     def gamma_yield(self, get_data=True):
@@ -93,18 +97,22 @@ class GammaCalculations(GammaData):
         if get_data:
             self._get_data()
 
-        if not self.data['distributionDayDatas']:
+        if not self.data["distributionDayDatas"]:
             return self._empty_yield()
 
-        df_dist = DataFrame(self.data['distributionDayDatas'], dtype=np.float64).set_index('date')
-        df_rh = DataFrame(self.data['rewardHypervisorDayDatas'], dtype=np.float64).set_index('date')
+        df_dist = DataFrame(
+            self.data["distributionDayDatas"], dtype=np.float64
+        ).set_index("date")
+        df_rh = DataFrame(
+            self.data["rewardHypervisorDayDatas"], dtype=np.float64
+        ).set_index("date")
         df_data = df_dist.join(df_rh, how="outer")
-        df_data = df_data.sort_values('date')
-        df_data.totalGamma = df_data.totalGamma.fillna(method='ffill')
-        df_data[['distributed', 'distributedUSD']] = df_data[['distributed', 'distributedUSD']].fillna(value=0)
-        df_data['dailyYield'] = df_data.distributed / df_data.totalGamma
-        
-        
+        df_data = df_data.sort_values("date")
+        df_data.totalGamma = df_data.totalGamma.fillna(method="ffill")
+        df_data[["distributed", "distributedUSD"]] = df_data[
+            ["distributed", "distributedUSD"]
+        ].fillna(value=0)
+        df_data["dailyYield"] = df_data.distributed / df_data.totalGamma
 
         results = {}
         for period, days in DAYS_IN_PERIOD.items():
@@ -112,15 +120,21 @@ class GammaCalculations(GammaData):
             n_days = len(df_period)
             annual_scaling_factor = 365 / n_days
 
-            df_period['cumReturn'] = (1 + df_period['dailyYield']).cumprod() - 1
-            period_yield = df_period['cumReturn'].iat[-1]
+            df_period["cumReturn"] = (1 + df_period["dailyYield"]).cumprod() - 1
+            period_yield = df_period["cumReturn"].iat[-1]
 
             results[period] = {}
-            results[period]['yield'] = period_yield
-            results[period]['apr'] = period_yield * annual_scaling_factor
-            results[period]['apy'] = (1 + period_yield / n_days) ** 365 - 1  # compounded daily
-            results[period]['estimatedAnnualDistribution'] = (df_period.distributed.sum() / self.decimal_factor) * annual_scaling_factor
-            results[period]['estimatedAnnualDistributionUSD'] = df_period.distributedUSD.sum() * annual_scaling_factor
+            results[period]["yield"] = period_yield
+            results[period]["apr"] = period_yield * annual_scaling_factor
+            results[period]["apy"] = (
+                1 + period_yield / n_days
+            ) ** 365 - 1  # compounded daily
+            results[period]["estimatedAnnualDistribution"] = (
+                df_period.distributed.sum() / self.decimal_factor
+            ) * annual_scaling_factor
+            results[period]["estimatedAnnualDistributionUSD"] = (
+                df_period.distributedUSD.sum() * annual_scaling_factor
+            )
 
         return results
 
@@ -128,14 +142,13 @@ class GammaCalculations(GammaData):
         results = {}
         for period, days in DAYS_IN_PERIOD.items():
             results[period] = {}
-            results[period]['yield'] = 0
-            results[period]['apr'] = 0
-            results[period]['apy'] = 0
-            results[period]['estimatedAnnualDistribution'] = 0
-            results[period]['estimatedAnnualDistributionUSD'] = 0
+            results[period]["yield"] = 0
+            results[period]["apr"] = 0
+            results[period]["apy"] = 0
+            results[period]["estimatedAnnualDistribution"] = 0
+            results[period]["estimatedAnnualDistributionUSD"] = 0
 
         return results
-
 
     def distributions(self, get_data=True):
         if get_data:
@@ -143,12 +156,12 @@ class GammaCalculations(GammaData):
 
         results = [
             {
-                "timestamp": day['date'],
-                "date": timestamp_to_date(int(day['date']), '%m/%d/%Y'),
-                "distributed": float(day['distributed']) / self.decimal_factor,
-                "distributedUSD": float(day['distributedUSD'])
+                "timestamp": day["date"],
+                "date": timestamp_to_date(int(day["date"]), "%m/%d/%Y"),
+                "distributed": float(day["distributed"]) / self.decimal_factor,
+                "distributedUSD": float(day["distributedUSD"]),
             }
-            for day in self.data['distributionDayDatas']
+            for day in self.data["distributionDayDatas"]
         ]
 
         return results
@@ -165,7 +178,7 @@ class GammaInfo(GammaCalculations):
         return {
             "info": self.basic_info(get_data=False),
             "yield": self.gamma_yield(get_data=False),
-            "priceUSD": gamma_pricing.output()
+            "priceUSD": gamma_pricing.output(),
         }
 
 
@@ -188,19 +201,19 @@ class GammaDistribution(GammaCalculations):
         for i, distribution in enumerate(distributions):
             fee_distributions.append(
                 {
-                    'title': distribution['date'],
-                    'desc': f"{int(distribution['distributed']):,}",
-                    'id': i + 2
+                    "title": distribution["date"],
+                    "desc": f"{int(distribution['distributed']):,}",
+                    "id": i + 2,
                 }
             )
         print(distributions[0])
         return {
-            'feeDistribution': distributions,
-            'latest': {
-                "timestamp": distributions[0]['timestamp'],
-                "distributed": distributions[0]['distributed'],
-                "distributedUSD": distributions[0]['distributedUSD']
-            }
+            "feeDistribution": distributions,
+            "latest": {
+                "timestamp": distributions[0]["timestamp"],
+                "distributed": distributions[0]["distributed"],
+                "distributedUSD": distributions[0]["distributedUSD"],
+            },
         }
 
 
@@ -234,26 +247,22 @@ class GammaPriceData:
         }
         """
         variables = {"id": self.pool}
-        self. data = self.uniswap_client.query(query, variables)['data']
+        self.data = self.uniswap_client.query(query, variables)["data"]
 
 
 class GammaPrice(GammaPriceData):
     def output(self):
         self._get_data()
-        sqrt_priceX96 = float(self.data['pool']['sqrtPrice'])
-        decimal0 = int(self.data['pool']['token0']['decimals'])
-        decimal1 = int(self.data['pool']['token1']['decimals'])
-        eth_in_usdc = float(self.data['bundle']['ethPriceUSD'])
+        sqrt_priceX96 = float(self.data["pool"]["sqrtPrice"])
+        decimal0 = int(self.data["pool"]["token0"]["decimals"])
+        decimal1 = int(self.data["pool"]["token1"]["decimals"])
+        eth_in_usdc = float(self.data["bundle"]["ethPriceUSD"])
 
-        gamma_in_eth = sqrtPriceX96_to_priceDecimal(
-            sqrt_priceX96,
-            decimal0,
-            decimal1
-        )
+        gamma_in_eth = sqrtPriceX96_to_priceDecimal(sqrt_priceX96, decimal0, decimal1)
 
         return {
             "gamma_in_usdc": gamma_in_eth * eth_in_usdc,
-            "gamma_in_eth": gamma_in_eth
+            "gamma_in_eth": gamma_in_eth,
         }
 
 
@@ -279,9 +288,9 @@ class ProtocolFeesData:
         """
         variables = {
             "xgammaAddress": XGAMMA_ADDRESS,
-            "timestamp_start": timestamp_ago(time_delta)
-            }
-        self.data = self.visor_client.query(query, variables)['data']
+            "timestamp_start": timestamp_ago(time_delta),
+        }
+        self.data = self.visor_client.query(query, variables)["data"]
 
 
 class ProtocolFeesCalculations(ProtocolFeesData):
@@ -293,7 +302,7 @@ class ProtocolFeesCalculations(ProtocolFeesData):
         if get_data:
             self._get_data(timedelta(days=self.days))
 
-        rebalances = self.data['uniswapV3Rebalances']
+        rebalances = self.data["uniswapV3Rebalances"]
 
         if not rebalances:
             return 0
@@ -301,13 +310,17 @@ class ProtocolFeesCalculations(ProtocolFeesData):
         df_rebalances = DataFrame(rebalances, dtype=np.float64)
 
         gamma_price = GammaPrice()
-        gamma_in_usd = gamma_price.output()['gamma_in_usdc']
+        gamma_in_usd = gamma_price.output()["gamma_in_usdc"]
 
-        gamma_staked_usd = gamma_in_usd * int(self.data['rewardHypervisor']['totalGamma']) / 10**18
+        gamma_staked_usd = (
+            gamma_in_usd * int(self.data["rewardHypervisor"]["totalGamma"]) / 10**18
+        )
 
         results = {}
         for period, days in DAYS_IN_PERIOD.items():
-            df_period = df_rebalances[df_rebalances.timestamp > timestamp_ago(timedelta(days=days))].copy()
+            df_period = df_rebalances[
+                df_rebalances.timestamp > timestamp_ago(timedelta(days=days))
+            ].copy()
 
             total_fees_in_period = df_period.protocolFeesUSD.sum()
             fees_per_day = total_fees_in_period / days
@@ -317,10 +330,10 @@ class ProtocolFeesCalculations(ProtocolFeesData):
             fees_apy = (1 + daily_yield) ** 365 - 1
 
             results[period] = {}
-            results[period]['collected_usd'] = fees_per_day
-            results[period]['collected_gamma'] = fees_per_day / gamma_staked_usd
-            results[period]['yield'] = daily_yield
-            results[period]['apr'] = fees_apr
-            results[period]['apy'] = fees_apy
+            results[period]["collected_usd"] = fees_per_day
+            results[period]["collected_gamma"] = fees_per_day / gamma_staked_usd
+            results[period]["yield"] = daily_yield
+            results[period]["apr"] = fees_apr
+            results[period]["apy"] = fees_apy
 
         return results

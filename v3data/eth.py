@@ -12,7 +12,7 @@ class EthData:
         self.visor_client = GammaClient()
         self.days = days
         self.timezone = timezone
-        self.decimal_factor = 10 ** 18
+        self.decimal_factor = 10**18
         self.data = {}
 
     def _get_data(self):
@@ -41,12 +41,8 @@ class EthData:
             }
         }
         """
-        variables = {
-            "token": "ETH",
-            "days": self.days,
-            "timezone": self.timezone
-        }
-        self.data = self.visor_client.query(query, variables)['data']
+        variables = {"token": "ETH", "days": self.days, "timezone": self.timezone}
+        self.data = self.visor_client.query(query, variables)["data"]
 
 
 class EthCalculations(EthData):
@@ -57,11 +53,11 @@ class EthCalculations(EthData):
         if get_data:
             self._get_data()
 
-        data = self.data['ethToken']
+        data = self.data["ethToken"]
 
         return {
-            "totalDistributed": int(data['totalDistributed']) / self.decimal_factor,
-            "totalDistributedUSD": float(data['totalDistributedUSD'])
+            "totalDistributed": int(data["totalDistributed"]) / self.decimal_factor,
+            "totalDistributedUSD": float(data["totalDistributedUSD"]),
         }
 
     def distributions(self, get_data=True):
@@ -71,11 +67,11 @@ class EthCalculations(EthData):
 
         results = [
             {
-                "timestamp": day['date'],
-                "date": timestamp_to_date(int(day['date']), '%m/%d/%Y'),
-                "distributed": float(day['distributed']) / self.decimal_factor
+                "timestamp": day["date"],
+                "date": timestamp_to_date(int(day["date"]), "%m/%d/%Y"),
+                "distributed": float(day["distributed"]) / self.decimal_factor,
             }
-            for day in self.data['distributionDayDatas']
+            for day in self.data["distributionDayDatas"]
         ]
 
         return results
@@ -92,12 +88,10 @@ class EthDistribution(EthCalculations):
         for i, distribution in enumerate(distributions):
             fee_distributions.append(
                 {
-                    'title': distribution['date'],
-                    'desc': f"{float(distribution['distributed']):.2f} ETH Distributed",
-                    'id': i + 2
+                    "title": distribution["date"],
+                    "desc": f"{float(distribution['distributed']):.2f} ETH Distributed",
+                    "id": i + 2,
                 }
             )
 
-        return {
-            'feeDistribution': fee_distributions
-        }
+        return {"feeDistribution": fee_distributions}

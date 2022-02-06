@@ -3,7 +3,7 @@ from v3data import UniswapV3Client
 from v3data.data import UniV3Data
 from v3data.utils import sqrtPriceX96_to_priceDecimal
 
-USDC_WETH_03_POOL = '0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8'
+USDC_WETH_03_POOL = "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8"
 
 
 def pools_from_symbol(symbol):
@@ -14,13 +14,14 @@ def pools_from_symbol(symbol):
 
     pools = [
         {
-            "token0Address": pool['token0']['id'],
-            "token1Address": pool['token1']['id'],
-            "poolAddress": pool['id'],
-            'symbol': f"{pool['token0']['symbol']}-{pool['token1']['symbol']}",
-            'feeTier': pool['feeTier'],
-            'volumeUSD': pool['volumeUSD']
-        } for pool in pool_list
+            "token0Address": pool["token0"]["id"],
+            "token1Address": pool["token1"]["id"],
+            "poolAddress": pool["id"],
+            "symbol": f"{pool['token0']['symbol']}-{pool['token1']['symbol']}",
+            "feeTier": pool["feeTier"],
+            "volumeUSD": pool["volumeUSD"],
+        }
+        for pool in pool_list
     ]
 
     return pools
@@ -50,15 +51,18 @@ class Pool:
         }
         """
         if time_delta:
-            timestamp_start = int((datetime.datetime.utcnow() - time_delta).replace(
-                tzinfo=datetime.timezone.utc).timestamp())
+            timestamp_start = int(
+                (datetime.datetime.utcnow() - time_delta)
+                .replace(tzinfo=datetime.timezone.utc)
+                .timestamp()
+            )
         else:
             timestamp_start = 0
 
         variables = {
             "pool": pool_address,
             "timestampStart": timestamp_start,
-            "paginate": ""
+            "paginate": "",
         }
         data = self.client.paginate_query(query, "id", variables)
         return data
@@ -94,19 +98,19 @@ class Pool:
             }
         """
         variables = {"pools": [pool.lower() for pool in pools], "hours": hours}
-        data = self.client.query(query, variables)['data']['pools']
+        data = self.client.query(query, variables)["data"]["pools"]
 
         pool_prices = {
-            pool['id']: [
+            pool["id"]: [
                 {
-                    "timestamp": hour_data['periodStartUnix'],
+                    "timestamp": hour_data["periodStartUnix"],
                     "price": sqrtPriceX96_to_priceDecimal(
-                        float(hour_data['sqrtPrice']),
-                        int(pool['token0']['decimals']),
-                        int(pool['token1']['decimals'])
-                    )
+                        float(hour_data["sqrtPrice"]),
+                        int(pool["token0"]["decimals"]),
+                        int(pool["token1"]["decimals"]),
+                    ),
                 }
-                for hour_data in pool['poolHourData']
+                for hour_data in pool["poolHourData"]
             ]
             for pool in data
         }

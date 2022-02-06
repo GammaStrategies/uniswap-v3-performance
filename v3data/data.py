@@ -14,15 +14,15 @@ class UniV3Data(SubgraphClient):
 
     def get_token_list(self):
         response = requests.get(TOKEN_LIST_URL)
-        token_list = response.json()['tokens']
+        token_list = response.json()["tokens"]
 
         token_addresses = {}
         for token in token_list:
-            symbol = token['symbol']
+            symbol = token["symbol"]
             if token_addresses.get(symbol):
-                token_addresses[symbol].append(token['address'])
+                token_addresses[symbol].append(token["address"])
             else:
-                token_addresses[symbol] = [token['address']]
+                token_addresses[symbol] = [token["address"]]
 
         return token_addresses
 
@@ -78,8 +78,8 @@ class UniV3Data(SubgraphClient):
         }
         """
         variables = {"ids": [address.lower() for address in token_addresses]}
-        pool0 = self.query(query0, variables)['data']['pools']
-        pool1 = self.query(query1, variables)['data']['pools']
+        pool0 = self.query(query0, variables)["data"]["pools"]
+        pool1 = self.query(query1, variables)["data"]["pools"]
 
         return pool0 + pool1
 
@@ -106,7 +106,7 @@ class UniV3Data(SubgraphClient):
         """
 
         variables = {"id": pool_address.lower()}
-        return self.query(query, variables)['data']['pool']
+        return self.query(query, variables)["data"]["pool"]
 
     def get_historical_pool_prices(self, pool_address, time_delta=None):
         pool_address = pool_address.lower()
@@ -130,23 +130,23 @@ class UniV3Data(SubgraphClient):
         """
 
         if time_delta:
-            timestamp_start = int((datetime.datetime.utcnow() - time_delta).replace(
-                tzinfo=datetime.timezone.utc).timestamp())
+            timestamp_start = int(
+                (datetime.datetime.utcnow() - time_delta)
+                .replace(tzinfo=datetime.timezone.utc)
+                .timestamp()
+            )
         else:
             timestamp_start = 0
 
-        variables = {
-            'id': pool_address,
-            "timestamp_start": timestamp_start
-        }
+        variables = {"id": pool_address, "timestamp_start": timestamp_start}
         has_data = True
         all_swaps = []
         while has_data:
-            swaps = (self.query(query, variables))['data']['pool']['swaps']
+            swaps = (self.query(query, variables))["data"]["pool"]["swaps"]
 
             all_swaps.extend(swaps)
-            timestamps = set([int(swap['timestamp']) for swap in swaps])
-            variables['timestamp_start'] = max(timestamps)
+            timestamps = set([int(swap["timestamp"]) for swap in swaps])
+            variables["timestamp_start"] = max(timestamps)
 
             if len(swaps) < 1000:
                 has_data = False
@@ -156,9 +156,10 @@ class UniV3Data(SubgraphClient):
         df_swaps = pd.DataFrame(all_swaps, dtype=np.float64)
         df_swaps.timestamp = df_swaps.timestamp.astype(np.int64)
         df_swaps.drop_duplicates(inplace=True)
-        df_swaps['priceDecimal'] = df_swaps.sqrtPriceX96.apply(
-            sqrtPriceX96_to_priceDecimal, args=(int(pool['token0']['decimals']), int(pool['token1']['decimals']))
+        df_swaps["priceDecimal"] = df_swaps.sqrtPriceX96.apply(
+            sqrtPriceX96_to_priceDecimal,
+            args=(int(pool["token0"]["decimals"]), int(pool["token1"]["decimals"])),
         )
-        data = df_swaps.to_dict('records')
+        data = df_swaps.to_dict("records")
 
         return data

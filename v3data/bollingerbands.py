@@ -7,7 +7,7 @@ from v3data.data import UniV3Data
 class BollingerBand:
     def __init__(self, pool_address, total_period_hours, n_intervals=20):
         self.pool_address = pool_address.lower()
-        self.total_period_hours = total_period_hours  # total_period_hours is how long we want to average over
+        self.total_period_hours = total_period_hours  # how long to average over
         self.n_intervals = n_intervals
         self.client = UniV3Data()
 
@@ -16,38 +16,40 @@ class BollingerBand:
         if not report_hours:
             report_hours = 10 * self.total_period_hours
         data = self.client.get_historical_pool_prices(
-            self.pool_address, datetime.timedelta(hours=1.1 * report_hours))  # 1.1 factor for buffer
+            self.pool_address, datetime.timedelta(hours=1.1 * report_hours)
+        )  # 1.1 factor for buffer
         df = pd.DataFrame(data, dtype=np.float64)
-        df['datetime'] = pd.to_datetime(df.timestamp, unit='s')
+        df["datetime"] = pd.to_datetime(df.timestamp, unit="s")
 
         interval = self.total_period_hours / self.n_intervals
-        df_resampled = df.sort_values('datetime').resample(f"{interval}H", on='datetime').last()
-        df_resampled.fillna(method='ffill', inplace=True)
-        df_resampled['mid'] = df_resampled.priceDecimal.rolling(self.n_intervals).mean()
-        df_resampled['std'] = df_resampled.priceDecimal.rolling(self.n_intervals).std()
-        df_resampled['upper'] = df_resampled['mid'] + 2 * df_resampled['std']
-        df_resampled['lower'] = df_resampled['mid'] - 2 * df_resampled['std']
+        df_resampled = (
+            df.sort_values("datetime").resample(f"{interval}H", on="datetime").last()
+        )
+        df_resampled.fillna(method="ffill", inplace=True)
+        df_resampled["mid"] = df_resampled.priceDecimal.rolling(self.n_intervals).mean()
+        df_resampled["std"] = df_resampled.priceDecimal.rolling(self.n_intervals).std()
+        df_resampled["upper"] = df_resampled["mid"] + 2 * df_resampled["std"]
+        df_resampled["lower"] = df_resampled["mid"] - 2 * df_resampled["std"]
         df_resampled.dropna(inplace=True)
 
-        self.df_resampled = df_resampled[['priceDecimal', 'mid', 'upper', 'lower']]
+        self.df_resampled = df_resampled[["priceDecimal", "mid", "upper", "lower"]]
 
     def chart_data(self):
         pool = self.client.get_pool(self.pool_address)
         self.get_data()
         df = self.df_resampled.reset_index()
-        df.rename(columns={
-            'priceDecimal': 'value',
-            'lower': 'min',
-            'upper': 'max'
-        }, inplace=True)
-        df['group'] = f"{pool['token0']['symbol']}-{pool['token1']['symbol']}"
-        df['date'] = df.datetime.dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+        df.rename(
+            columns={"priceDecimal": "value", "lower": "min", "upper": "max"},
+            inplace=True,
+        )
+        df["group"] = f"{pool['token0']['symbol']}-{pool['token1']['symbol']}"
+        df["date"] = df.datetime.dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        return df[['group', 'date', 'value', 'min', 'max']].to_dict('records')
+        return df[["group", "date", "value", "min", "max"]].to_dict("records")
 
     def latest_bands(self):
         pool = self.client.get_pool(self.pool_address)
         self.get_data(report_hours=self.total_period_hours)
         bands = self.df_resampled.tail(1).reset_index().to_dict("records")[0]
-        bands['datetime'] = bands['datetime'].strftime('%Y-%m-%dT%H:%M:%SZ')
+        bands["datetime"] = bands["datetime"].strftime("%Y-%m-%dT%H:%M:%SZ")
         return {"pool": pool, "bands": bands}

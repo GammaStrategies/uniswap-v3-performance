@@ -7,7 +7,7 @@ class UserData:
     def __init__(self, user_address):
         self.gamma_client = GammaClient()
         self.address = user_address.lower()
-        self.decimal_factor = 10 ** 18
+        self.decimal_factor = 10**18
         self.data = {}
 
     def _get_data(self):
@@ -59,9 +59,9 @@ class UserData:
         """
         variables = {
             "userAddress": self.address,
-            "rewardHypervisorAddress": XGAMMA_ADDRESS
+            "rewardHypervisorAddress": XGAMMA_ADDRESS,
         }
-        self.data = self.gamma_client.query(query, variables)['data']
+        self.data = self.gamma_client.query(query, variables)["data"]
 
 
 class UserInfo(UserData):
@@ -70,16 +70,16 @@ class UserInfo(UserData):
         if get_data:
             self._get_data()
 
-        if not self.data.get('user'):
+        if not self.data.get("user"):
             return {}
 
         accounts = {}
-        for account in self.data['user']['accountsOwned']:
-            account_address = account['id']
+        for account in self.data["user"]["accountsOwned"]:
+            account_address = account["id"]
             account_info = AccountInfo(account_address)
             account_info.data = {
-                'account': account,
-                'rewardHypervisor': self.data['rewardHypervisor']
+                "account": account,
+                "rewardHypervisor": self.data["rewardHypervisor"],
             }
             accounts[account_address] = account_info.output(get_data=False)
 
