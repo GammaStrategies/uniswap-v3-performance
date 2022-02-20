@@ -3,7 +3,7 @@ from datetime import timedelta
 from pandas import DataFrame
 
 from v3data import GammaClient
-from v3data.gamma import GammaData
+from v3data.gamma import GammaPrice
 from v3data.hypervisor import HypervisorData
 from v3data.utils import timestamp_ago
 from v3data.config import EXCLUDED_HYPERVISORS
@@ -150,14 +150,14 @@ class TopLevelData:
         return self._all_stats()
 
     def recent_fees(self, hours=24):
-        gamma = GammaData()
-        gamma_price = gamma.price_usd()
+        gamma_price = GammaPrice()
+        gamma_price_usd = gamma_price.output()["gamma_in_usdc"]
         data = self.get_recent_rebalance_data(hours)
         df_fees = DataFrame(data, dtype=np.float64)
 
-        df_fees["grossFeesGAMMA"] = df_fees.grossFeesUSD / gamma_price
-        df_fees["protocolFeesGAMMA"] = df_fees.protocolFeesUSD / gamma_price
-        df_fees["netFeesGAMMA"] = df_fees.netFeesUSD / gamma_price
+        df_fees["grossFeesGAMMA"] = df_fees.grossFeesUSD / gamma_price_usd
+        df_fees["protocolFeesGAMMA"] = df_fees.protocolFeesUSD / gamma_price_usd
+        df_fees["netFeesGAMMA"] = df_fees.netFeesUSD / gamma_price_usd
 
         return df_fees.sum().to_dict()
 

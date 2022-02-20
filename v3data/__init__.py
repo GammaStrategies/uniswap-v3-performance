@@ -127,15 +127,17 @@ class EthBlocksClient(SubgraphClient):
         return int(self.query(query, variables)['data']['blocks'][0]['number'])
 
 class IndexNodeClient(SubgraphClient):
-    def __init__(self):
+    def __init__(self, url=GAMMA_SUBGRAPH_URL):
         super().__init__(THEGRAPH_INDEX_NODE_URL)
+        self.url = url
         self.set_subgraph_name()
 
     def set_subgraph_name(self):
-        split_visor_url = VISOR_SUBGRAPH_URL.split('/')
-        if not split_visor_url[-1]:
-            split_visor_url.pop(-1)
-        self.subgraph_name = f"{split_visor_url[-2]}/{split_visor_url[-1]}"
+        split_subgraph_url = self.url.split('/')
+        print(split_subgraph_url)
+        if not split_subgraph_url[-1]:
+            split_subgraph_url.pop(-1)
+        self.subgraph_name = f"{split_subgraph_url[-2]}/{split_subgraph_url[-1]}"
 
 
     def status(self):
@@ -153,7 +155,7 @@ class IndexNodeClient(SubgraphClient):
         latestBlock = int(self.query(query)['data']['indexingStatusForCurrentVersion']['chains'][0]['latestBlock']['number'])
 
         return {
-            "url": VISOR_SUBGRAPH_URL,
+            "url": self.url,
             "latestBlock": latestBlock
         }
 
