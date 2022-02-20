@@ -26,11 +26,6 @@ from v3data.utils import parse_date
 
 app = FastAPI()
 
-
-# Allow CORS
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_headers=["*"])
-
-
 @app.get("/")
 def main():
     return "Visor Data"
@@ -101,7 +96,9 @@ async def base_range_chart(hypervisor_address: str, days: int = 20):
 # haven't tested yet
 @app.get("/charts/benchmark/{hypervisor_address}")
 # @cache(expire=CHARTS_CACHE_TIMEOUT)
-async def benchmark_chart(hypervisor_address: str, startDate: str="", endDate: str=""):
+async def benchmark_chart(
+    hypervisor_address: str, startDate: str = "", endDate: str = ""
+):
     start_date = parse_date(startDate)
     end_date = parse_date(endDate)
     hypervisor_address = hypervisor_address.lower()
@@ -243,3 +240,9 @@ async def dashboard(period: str = "weekly"):
 @app.on_event("startup")
 async def startup():
     FastAPICache.init(InMemoryBackend())
+
+
+# Allow CORS
+app.add_middleware(
+    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
+)
