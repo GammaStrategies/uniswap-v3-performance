@@ -1,5 +1,4 @@
 from fastapi import FastAPI, Response, status
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
@@ -240,9 +239,3 @@ async def dashboard(period: str = "weekly"):
 @app.on_event("startup")
 async def startup():
     FastAPICache.init(InMemoryBackend())
-
-
-# Allow CORS
-app.add_middleware(
-    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
-)
