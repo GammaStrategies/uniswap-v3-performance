@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Response, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
@@ -23,7 +24,14 @@ from v3data.toplevel import TopLevelData
 from v3data.users import UserInfo
 from v3data.utils import parse_date
 
+
 app = FastAPI()
+
+# Allow CORS
+app.add_middleware(
+    CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
+)
+
 
 @app.get("/")
 def main():
