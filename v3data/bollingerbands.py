@@ -1,4 +1,5 @@
 import datetime
+import asyncio
 import numpy as np
 import pandas as pd
 from v3data.data import UniV3Data
@@ -11,11 +12,11 @@ class BollingerBand:
         self.n_intervals = n_intervals
         self.client = UniV3Data()
 
-    def get_data(self, report_hours=None):
+    async def get_data(self, report_hours=None):
         # Defaults to 10 times the total_period_hour if no report_hours is given
         if not report_hours:
             report_hours = 10 * self.total_period_hours
-        data = self.client.get_historical_pool_prices(
+        data = await self.client.get_historical_pool_prices(
             self.pool_address, datetime.timedelta(hours=1.1 * report_hours)
         )  # 1.1 factor for buffer
         df = pd.DataFrame(data, dtype=np.float64)
@@ -34,9 +35,12 @@ class BollingerBand:
 
         self.df_resampled = df_resampled[["priceDecimal", "mid", "upper", "lower"]]
 
-    def chart_data(self):
-        pool = self.client.get_pool(self.pool_address)
-        self.get_data()
+    async def chart_data(self):
+        pool, _ = await asyncio.gather(
+            self.client.get_pool(self.pool_address),
+            self.get_data()
+        )
+
         df = self.df_resampled.reset_index()
         df.rename(
             columns={"priceDecimal": "value", "lower": "min", "upper": "max"},
@@ -47,9 +51,11 @@ class BollingerBand:
 
         return df[["group", "date", "value", "min", "max"]].to_dict("records")
 
-    def latest_bands(self):
-        pool = self.client.get_pool(self.pool_address)
-        self.get_data(report_hours=self.total_period_hours)
+    async def latest_bands(self):
+        pool, _ = await asyncio.gather(
+            self.client.get_pool(self.pool_address),
+            self.get_data(report_hours=self.total_period_hours)
+        )
         bands = self.df_resampled.tail(1).reset_index().to_dict("records")[0]
         bands["datetime"] = bands["datetime"].strftime("%Y-%m-%dT%H:%M:%SZ")
         return {"pool": pool, "bands": bands}

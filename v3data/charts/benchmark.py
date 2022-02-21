@@ -70,7 +70,7 @@ class Benchmark:
         self.start_timestamp = date_to_timestamp(start_date)
         self.end_timestamp = date_to_timestamp(end_date)
 
-    def get_data(self):
+    async def get_data(self):
         # Get hypervisor position
         query_hypervisor = """
         query hypervisorPricng($id: String!, $startDate: Int!, $endDate: Int!){
@@ -105,8 +105,9 @@ class Benchmark:
             "endDate": self.end_timestamp
         }
 
-        hypervisor_data = self.gamma_client.query(
-            query_hypervisor, variables_hypervisor)['data']['uniswapV3Hypervisor']
+        hypervisor_response = await self.gamma_client.query(
+            query_hypervisor, variables_hypervisor)
+        hypervisor_data = hypervisor_response['data']['uniswapV3Hypervisor']
 
         if not hypervisor_data['dayData']:
             return None
@@ -190,7 +191,8 @@ class Benchmark:
             "endDate": self.end_timestamp,
             "v2Pair": self.base_pool['pool']
         }
-        v2_data = self.v2_client.query(query_v2, variables_v2)['data']
+        v2_response = await self.v2_client.query(query_v2, variables_v2)
+        v2_data = v2_response['data']
 
         return {
             "token0_symbol": hypervisor_data['pool']['token0']['symbol'],
@@ -199,8 +201,8 @@ class Benchmark:
             "v2": v2_data
         }
 
-    def chart(self):
-        data = self.get_data()
+    async def chart(self):
+        data = await self.get_data()
 
         if not data:
             return []

@@ -35,11 +35,11 @@ class BaseLimit:
         self.pool_hourly = {}
         self.eth_hourly = {}
 
-    def _get_pool_data(self, pool_addresses):
+    async def _get_pool_data(self, pool_addresses):
         pool_addresses.append(USDC_WETH_03_POOL)
 
         pool = Pool()
-        pool_data = pool.hourly_prices(pool_addresses, self.hours)
+        pool_data = await pool.hourly_prices(pool_addresses, self.hours)
 
         self.eth_hourly = pool_data[USDC_WETH_03_POOL]
         self.pool_hourly = pool_data
@@ -79,7 +79,7 @@ class BaseLimit:
 
         return results
 
-    def _get_data(self, hypervisor_address):
+    async def _get_data(self, hypervisor_address):
         """Get data for one hypervisor"""
         hypervisor_address = hypervisor_address.lower()
         query = """
@@ -120,12 +120,12 @@ class BaseLimit:
             "id": hypervisor_address,
             "timestampStart": self.timestamp_start
         }
-
-        data = self.gamma_client.query(query, variables)['data']['uniswapV3Hypervisor']
+        response = await self.gamma_client.query(query, variables)
+        data = response['data']['uniswapV3Hypervisor']
 
         return self._reshape(data)
 
-    def _get_all_data(self):
+    async def _get_all_data(self):
         """Get data for all hypervisors"""
         query = """
         query historicalRanges($timestampStart: Int!){
@@ -163,7 +163,8 @@ class BaseLimit:
         }
         """
         variables = {"timestampStart": self.timestamp_start}
-        data = self.gamma_client.query(query, variables)['data']['uniswapV3Hypervisors']
+        response = await self.gamma_client.query(query, variables)
+        data = response['data']['uniswapV3Hypervisors']
 
         return {hypervisor['id']: self._reshape(hypervisor) for hypervisor in data}
 
@@ -226,14 +227,14 @@ class BaseLimit:
 
         return df_data.to_dict('records')
 
-    def rebalance_ranges(self, hypervisor_address):
+    async def rebalance_ranges(self, hypervisor_address):
         """Get price/rebalance ranges for one hypervisor"""
-        data = self._get_data(hypervisor_address)
-        self._get_pool_data([data['pool']])
+        data = await self._get_data(hypervisor_address)
+        await self._get_pool_data([data['pool']])
         return self._rebalance_ranges(data)
 
-    def all_rebalance_ranges(self):
+    async def all_rebalance_ranges(self):
         """Get price/rebalance ranges for all hypervisor"""
-        data = self._get_all_data()
-        self._get_pool_data([hypervisor_data['pool'] for _, hypervisor_data in data.items()])
+        data = await self._get_all_data()
+        await self._get_pool_data([hypervisor_data['pool'] for _, hypervisor_data in data.items()])
         return {hypervisor_id: self._rebalance_ranges(rebalances) for hypervisor_id, rebalances in data.items()}

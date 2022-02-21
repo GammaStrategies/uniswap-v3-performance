@@ -1,3 +1,4 @@
+import asyncio
 from datetime import timedelta
 
 from v3data import GammaClient
@@ -20,7 +21,7 @@ class Dashboard:
         self.top_level_returns_data = {}
         self.rewards_hypervisor_data = {}
 
-    def _get_data(self, timezone):
+    async def _get_data(self, timezone):
         query = """
         query(
             $gammaAddress: String!,
@@ -113,7 +114,8 @@ class Dashboard:
             "rebalancesStart": timestamp_ago(timedelta(7)),
         }
 
-        data = self.gamma_client.query(query, variables)["data"]
+        response = await self.gamma_client.query(query, variables)
+        data = response['data']
 
         self.gamma_data = {
             "token": data["token"],
@@ -134,20 +136,26 @@ class Dashboard:
         }
         self.rewards_hypervisor_data = {"rewardHypervisor": data["rewardHypervisor"]}
 
-    def info(self, timezone):
-        self._get_data(timezone)
+    async def info(self, timezone):
+
+        gamma_price = GammaPrice()
+
+        _, gamma_prices = await asyncio.gather(
+            self._get_data(timezone),
+            gamma_price.output()
+        )
+
+        gamma_price_usd = gamma_prices["gamma_in_usdc"]
+        gamma_in_eth = gamma_prices["gamma_in_eth"]
+
         gamma_calcs = GammaCalculations(days=30)
         gamma_calcs.data = self.gamma_data
-        gamma_info = gamma_calcs.basic_info(get_data=False)
-        gamma_yield = gamma_calcs.gamma_yield(get_data=False)
-        visr_price = GammaPrice()
-        visr_price_usd = visr_price.output()["gamma_in_usdc"]
+        gamma_info = await gamma_calcs.basic_info(get_data=False)
+        gamma_yield = await gamma_calcs.gamma_yield(get_data=False)
 
         protocol_fees_calcs = ProtocolFeesCalculations(days=7)
         protocol_fees_calcs.data = self.protocol_fees_data
-        collected_fees = protocol_fees_calcs.collected_fees(get_data=False)
-
-        visr_in_eth = visr_price.output()["gamma_in_eth"]
+        collected_fees = await protocol_fees_calcs.collected_fees(get_data=False)
 
         top_level = TopLevelData()
         top_level.all_stats_data = self.top_level_data
@@ -159,10 +167,10 @@ class Dashboard:
 
         rewards = RewardsHypervisorInfo()
         rewards.data = self.rewards_hypervisor_data
-        rewards_info = rewards.output(get_data=False)
+        rewards_info = await rewards.output(get_data=False)
 
         dashboard_stats = {
-            "stakedUsdAmount": rewards_info["gamma_staked"] * visr_price_usd,
+            "stakedUsdAmount": rewards_info["gamma_staked"] * gamma_price_usd,
             "stakedAmount": rewards_info["gamma_staked"],
             "feeStatsFeeAccural": collected_fees["daily"]["collected_usd"],
             "feeStatsAmountGamma": collected_fees["daily"]["collected_gamma"],
@@ -179,8 +187,8 @@ class Dashboard:
             "uniswapPairAmountPairs": top_level_data["pool_count"],
             "uniswapFeesGenerated": top_level_data["fees_claimed"],
             "uniswapFeesBasedApr": f"{top_level_returns[self.period]['feeApr']:.0%}",
-            "gammaPrice": visr_price_usd,
-            "gammaInEth": visr_in_eth,
+            "gammaPrice": gamma_price_usd,
+            "gammaInEth": gamma_in_eth,
             "gammaPerXgamma": rewards_info["gamma_per_xgamma"],
             "id": 2,
         }

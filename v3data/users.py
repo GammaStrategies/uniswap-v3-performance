@@ -10,7 +10,7 @@ class UserData:
         self.decimal_factor = 10**18
         self.data = {}
 
-    def _get_data(self):
+    async def _get_data(self):
         query = """
         query userData($userAddress: String!, $rewardHypervisorAddress: String!) {
             user(
@@ -61,14 +61,15 @@ class UserData:
             "userAddress": self.address,
             "rewardHypervisorAddress": XGAMMA_ADDRESS,
         }
-        self.data = self.gamma_client.query(query, variables)["data"]
+        response = await self.gamma_client.query(query, variables)
+        self.data = response["data"]
 
 
 class UserInfo(UserData):
-    def output(self, get_data=True):
+    async def output(self, get_data=True):
 
         if get_data:
-            self._get_data()
+            await self._get_data()
 
         if not self.data.get("user"):
             return {}
@@ -81,6 +82,6 @@ class UserInfo(UserData):
                 "account": account,
                 "rewardHypervisor": self.data["rewardHypervisor"],
             }
-            accounts[account_address] = account_info.output(get_data=False)
+            accounts[account_address] = await account_info.output(get_data=False)
 
         return accounts

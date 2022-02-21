@@ -8,7 +8,7 @@ class DailyChart:
         self.days = days
         self.gamma_client = GammaClient()
 
-    def _get_all_flows(self):
+    async def _get_all_flows(self):
         """Daily chart flows bar chart for hypervisors"""
         query = """
         query hypervisorDaily($days: Int!){
@@ -33,13 +33,14 @@ class DailyChart:
         variables = {
             'days': self.days
         }
-        hypervisors = self.gamma_client.query(query, variables)['data']['uniswapV3Hypervisors']
+        response = await self.gamma_client.query(query, variables)
+        hypervisors = response['data']['uniswapV3Hypervisors']
 
         data = [day_data for hypervisor in hypervisors for day_data in hypervisor['dayData']]
 
         return data
 
-    def _get_hypervisor_flows(self, hypervisor_address):
+    async def _get_hypervisor_flows(self, hypervisor_address):
         """Daily chart flows bar chart for hypervisors"""
         query = """
         query hypervisorDaily($hypervisor: String!, $days: Int!){
@@ -61,15 +62,16 @@ class DailyChart:
             "hypervisor": hypervisor_address.lower(),
             'days': self.days
         }
-        return self.gamma_client.query(query, variables)['data']['uniswapV3HypervisorDayDatas']
+        response = await self.gamma_client.query(query, variables)
+        return response['data']['uniswapV3HypervisorDayDatas']
 
-    def asset_flows(self, hypervisor_address=None):
+    async def asset_flows(self, hypervisor_address=None):
 
         if hypervisor_address:
-            data = self._get_hypervisor_flows(hypervisor_address)
+            data = await self._get_hypervisor_flows(hypervisor_address)
             df_flows = pd.DataFrame(data, dtype=np.float64)
         else:
-            data = self._get_all_flows()
+            data = await self._get_all_flows()
             df_flows = pd.DataFrame(data, dtype=np.float64)
             df_flows = df_flows.groupby('date').sum().reset_index()
 
@@ -86,7 +88,7 @@ class DailyChart:
 
         return df_flows.melt(id_vars='key', var_name="group").to_dict('records')
 
-    def tvl(self):
+    async def tvl(self):
         """Total TVL chart broken down by hypervisor"""
         query = """
         query hypervisorDaily($days: Int!){
@@ -121,7 +123,8 @@ class DailyChart:
         }
         """
         variables = {'days': self.days}
-        data = self.gamma_client.query(query, variables)['data']['uniswapV3Hypervisors']
+        response = await self.gamma_client.query(query, variables)
+        data = response['data']['uniswapV3Hypervisors']
 
         df_all = pd.DataFrame()
         for hypervisor in data:

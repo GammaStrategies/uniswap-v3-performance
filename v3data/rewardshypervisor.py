@@ -8,7 +8,7 @@ class RewardsHypervisorData:
         self.decimal_factor = 10**18
         self.data = {}
 
-    def _get_data(self):
+    async def _get_data(self):
 
         query = """
         xgammaQuery($xgammaAddres: String!){
@@ -19,13 +19,14 @@ class RewardsHypervisorData:
         }
         """
         variables = {"xgammaAddress": XGAMMA_ADDRESS}
-        self.data = self.client.query(query, variables)["data"]
+        response = await self.client.query(query, variables)
+        self.data = response["data"]
 
 
 class RewardsHypervisorCalculations(RewardsHypervisorData):
-    def basic_info(self, get_data=True):
+    async def basic_info(self, get_data=True):
         if get_data:
-            self._get_data()
+            await self._get_data()
         data = self.data["rewardHypervisor"]
 
         gamma_staked = int(data["totalGamma"]) / self.decimal_factor
@@ -40,5 +41,5 @@ class RewardsHypervisorCalculations(RewardsHypervisorData):
 
 
 class RewardsHypervisorInfo(RewardsHypervisorCalculations):
-    def output(self, get_data=True):
-        return self.basic_info(get_data=get_data)
+    async def output(self, get_data=True):
+        return await self.basic_info(get_data=get_data)

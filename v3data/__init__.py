@@ -1,4 +1,4 @@
-import requests
+import httpx
 
 from v3data.config import (
     VISOR_SUBGRAPH_URL,
@@ -10,21 +10,22 @@ from v3data.config import (
     XGAMMA_SUBGRAPH_URL
 )
 
+async_client = httpx.AsyncClient(timeout=180)
 
 class SubgraphClient:
     def __init__(self, url):
         self._url = url
 
-    def query(self, query: str, variables=None) -> dict:
+    async def query(self, query: str, variables=None) -> dict:
         """Make graphql query to subgraph"""
         if variables:
             params = {'query': query, 'variables': variables}
         else:
             params = {'query': query}
-        response = requests.post(self._url, json=params)
+        response = await async_client.post(self._url, json=params)
         return response.json()
 
-    def paginate_query(self, query, paginate_variable, variables={}):
+    async def paginate_query(self, query, paginate_variable, variables={}):
 
         # if not variables:
         #     variables = {}
@@ -39,7 +40,7 @@ class SubgraphClient:
         has_data = True
         params = {'query': query, 'variables': variables}
         while has_data:
-            response = requests.post(self._url, json=params)
+            response = await async_client.post(self._url, json=params)
             data = next(iter(response.json()['data'].values()))
             has_data = bool(data)
             if has_data:
@@ -140,7 +141,7 @@ class IndexNodeClient(SubgraphClient):
         self.subgraph_name = f"{split_subgraph_url[-2]}/{split_subgraph_url[-1]}"
 
 
-    def status(self):
+    async def status(self):
         query = f"""
         {{ 
             indexingStatusForCurrentVersion(
@@ -152,7 +153,9 @@ class IndexNodeClient(SubgraphClient):
             }}
         }}
         """
-        latestBlock = int(self.query(query)['data']['indexingStatusForCurrentVersion']['chains'][0]['latestBlock']['number'])
+
+        response = await self.query(query)
+        latestBlock = int(response['data']['indexingStatusForCurrentVersion']['chains'][0]['latestBlock']['number'])
 
         return {
             "url": self.url,
@@ -169,7 +172,7 @@ class CoingeckoClient:
     def __init__(self):
         self.base = "https://api.coingecko.com/api/v3/"
 
-    def get_price(self, ids, vs_currencies):
+    async def get_price(self, ids, vs_currencies):
         endpoint = f"{self.base}/simple/price"
 
         params = {
@@ -177,7 +180,7 @@ class CoingeckoClient:
           "vs_currencies": vs_currencies
         }
 
-        response = requests.get(endpoint, params=params)
+        response = await async_client.get(endpoint, params=params)
         if response.status_code == 200:
             return response.json()
         else:

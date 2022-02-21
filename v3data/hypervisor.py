@@ -1,6 +1,6 @@
 import logging
 import numpy as np
-from datetime import timedelta, datetime
+from datetime import timedelta
 from pandas import DataFrame
 
 from v3data import GammaClient, UniswapV3Client
@@ -18,7 +18,7 @@ class HypervisorData:
         self.gamma_client = GammaClient()
         self.uniswap_client = UniswapV3Client()
 
-    def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
+    async def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
         query = """
         query rebalances($hypervisor: String!, $timestamp_start: Int!, $limit: Int!){
             uniswapV3Rebalances(
@@ -43,9 +43,10 @@ class HypervisorData:
             "timestamp_start": timestamp_start,
             "limit": limit
         }
-        return self.gamma_client.query(query, variables)['data']['uniswapV3Rebalances']
+        response = await self.gamma_client.query(query, variables)
+        return response['data']['uniswapV3Rebalances']
 
-    def _get_all_rebalance_data(self, time_delta):
+    async def _get_all_rebalance_data(self, time_delta):
         query = """
         query allRebalances($timestamp_start: Int!){
             uniswapV3Hypervisors(
@@ -68,11 +69,11 @@ class HypervisorData:
             }
         }
         """
-        timestamp_start = timestamp_ago(time_delta)
-        variables = {"timestamp_start": timestamp_start}
-        self.all_rebalance_data = self.gamma_client.query(query, variables)['data']['uniswapV3Hypervisors']
+        variables = {"timestamp_start": timestamp_ago(time_delta)}
+        response = await self.gamma_client.query(query, variables)
+        self.all_rebalance_data = response['data']['uniswapV3Hypervisors']
 
-    def _get_hypervisor_data(self, hypervisor_address):
+    async def _get_hypervisor_data(self, hypervisor_address):
         query = """
         query hypervisor($id: String!){
             uniswapV3Hypervisor(
@@ -87,10 +88,11 @@ class HypervisorData:
         }
         """
         variables = {"id": hypervisor_address.lower()}
-        return self.gamma_client.query(query, variables)['data']['uniswapV3Hypervisor']
+        response = await self.gamma_client.query(query, variables)
+        return response['data']['uniswapV3Hypervisor']
 
-    def basic_stats(self, hypervisor_address):
-        data = self._get_hypervisor_data(hypervisor_address)
+    async def basic_stats(self, hypervisor_address):
+        data = await self._get_hypervisor_data(hypervisor_address)
         return data
 
     def empty_returns(self):
@@ -111,6 +113,8 @@ class HypervisorData:
 
         df_rebalances = DataFrame(data, dtype=np.float64)
         df_rebalances = df_rebalances[df_rebalances.totalAmountUSD > 0]
+
+        print(df_rebalances.dtypes)
 
         if df_rebalances.empty:
             return self.empty_returns()
@@ -163,8 +167,8 @@ class HypervisorData:
 
         return results
 
-    def calculate_returns(self, hypervisor_address):
-        data = self.get_rebalance_data(hypervisor_address, timedelta(days=360))
+    async def calculate_returns(self, hypervisor_address):
+        data = await self.get_rebalance_data(hypervisor_address, timedelta(days=360))
         return self._calculate_returns(data)
 
     def _all_returns(self):
@@ -175,11 +179,11 @@ class HypervisorData:
 
         return results
 
-    def all_returns(self):
-        self._get_all_rebalance_data(timedelta(days=360))
+    async def all_returns(self):
+        await self._get_all_rebalance_data(timedelta(days=360))
         return self._all_returns()
 
-    def all_data(self):
+    async def all_data(self):
         query_basics = """
         {
             uniswapV3Hypervisors(
@@ -218,7 +222,8 @@ class HypervisorData:
         }
         """
 
-        basics = self.gamma_client.query(query_basics)['data']['uniswapV3Hypervisors']
+        basics_response = await self.gamma_client.query(query_basics)
+        basics = basics_response['data']['uniswapV3Hypervisors']
         pool_addresses = [hypervisor['pool']['id'] for hypervisor in basics]
 
         query_pool = """
@@ -238,10 +243,11 @@ class HypervisorData:
         }
         """
         variables = {"pools": pool_addresses}
-        pools_data = self.uniswap_client.query(query_pool, variables)['data']['pools']
+        pools_response = await self.uniswap_client.query(query_pool, variables)
+        pools_data = pools_response['data']['pools']
         pools = {pool.pop('id'): pool for pool in pools_data}
 
-        returns = self.all_returns()
+        returns = await self.all_returns()
 
         results = {}
         for hypervisor in basics:

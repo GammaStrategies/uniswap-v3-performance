@@ -1,3 +1,4 @@
+import asyncio
 import numpy as np
 from datetime import timedelta
 from pandas import DataFrame
@@ -17,7 +18,7 @@ class TopLevelData:
         self.all_stats_data = {}
         self.all_returns_data = {}
 
-    def get_hypervisor_data(self):
+    async def get_hypervisor_data(self):
         """Get hypervisor IDs"""
         query = """
         {
@@ -30,9 +31,10 @@ class TopLevelData:
             }
         }
         """
-        return self.gamma_client.query(query)["data"]["uniswapV3Hypervisors"]
+        response = await self.gamma_client.query(query)
+        return response["data"]["uniswapV3Hypervisors"]
 
-    def get_pool_data(self):
+    async def get_pool_data(self):
         query = """
         {
             uniswapV3Pools(
@@ -42,9 +44,10 @@ class TopLevelData:
             }
         }
         """
-        return self.gamma_client.query(query)["data"]["uniswapV3Pools"]
+        response = await self.gamma_client.query(query)
+        return response["data"]["uniswapV3Pools"]
 
-    def _get_all_returns_data(self, time_delta):
+    async def _get_all_returns_data(self, time_delta):
         query = """
         query allRebalances($timestampStart: Int!){
             uniswapV3Hypervisors(
@@ -70,11 +73,10 @@ class TopLevelData:
         }
         """
         variables = {"timestampStart": timestamp_ago(time_delta)}
-        self.all_returns_data = self.gamma_client.query(query, variables)["data"][
-            "uniswapV3Hypervisors"
-        ]
+        response = await self.gamma_client.query(query, variables)
+        self.all_returns_data = response["data"]["uniswapV3Hypervisors"]
 
-    def _get_all_stats_data(self):
+    async def _get_all_stats_data(self):
         query = """
         {
             uniswapV3Hypervisors(
@@ -92,9 +94,10 @@ class TopLevelData:
         }
         """
 
-        self.all_stats_data = self.gamma_client.query(query)["data"]
+        response = await self.gamma_client.query(query)
+        self.all_stats_data = response["data"]
 
-    def get_recent_rebalance_data(self, hours=24):
+    async def get_recent_rebalance_data(self, hours=24):
         query = """
         query rebalances($timestamp_start: Int!){
             uniswapV3Rebalances(
@@ -111,7 +114,8 @@ class TopLevelData:
         """
         timestamp_start = timestamp_ago(timedelta(hours=hours))
         variables = {"timestamp_start": timestamp_start}
-        return self.gamma_client.query(query, variables)["data"]["uniswapV3Rebalances"]
+        response = await self.gamma_client.query(query, variables)
+        return response["data"]["uniswapV3Rebalances"]
 
     def _all_stats(self):
         """
@@ -145,14 +149,16 @@ class TopLevelData:
             ),
         }
 
-    def all_stats(self):
-        self._get_all_stats_data()
+    async def all_stats(self):
+        await self._get_all_stats_data()
         return self._all_stats()
 
-    def recent_fees(self, hours=24):
-        gamma_price = GammaPrice()
-        gamma_price_usd = gamma_price.output()["gamma_in_usdc"]
-        data = self.get_recent_rebalance_data(hours)
+    async def recent_fees(self, hours=24):
+        data, gamma_prices = await asyncio.gather(
+            self.get_recent_rebalance_data(hours),
+            GammaPrice().output()
+        )
+        gamma_price_usd = gamma_prices["gamma_in_usdc"]
         df_fees = DataFrame(data, dtype=np.float64)
 
         df_fees["grossFeesGAMMA"] = df_fees.grossFeesUSD / gamma_price_usd
@@ -196,6 +202,6 @@ class TopLevelData:
 
         return returns
 
-    def calculate_returns(self):
-        self._get_all_returns_data(timedelta(days=30))
+    async def calculate_returns(self):
+        await self._get_all_returns_data(timedelta(days=30))
         return self._calculate_returns()

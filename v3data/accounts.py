@@ -10,7 +10,7 @@ class AccountData:
         self.reward_hypervisor_address = XGAMMA_ADDRESS
         self.decimal_factor = 10 ** 18
 
-    def _get_data(self):
+    async def _get_data(self):
         query = """
         query accountData($accountAddress: String!, $rewardHypervisorAddress: String!) {
             account(
@@ -58,7 +58,9 @@ class AccountData:
             "accountAddress": self.address,
             "rewardHypervisorAddress": self.reward_hypervisor_address
         }
-        self.data = self.gamma_client.query(query, variables)['data']
+
+        response = await self.gamma_client.query(query, variables)
+        self.data = response['data']
 
 
 class AccountInfo(AccountData):
@@ -102,10 +104,10 @@ class AccountInfo(AccountData):
 
         return returns
 
-    def output(self, get_data=True):
+    async def output(self, get_data=True):
 
         if get_data:
-            self._get_data()
+            await self._get_data()
 
         if not self.data['account']:
             return {}
@@ -120,7 +122,7 @@ class AccountInfo(AccountData):
         xgamma_virtual_price = totalGammaStaked / int(self.data['rewardHypervisor']['totalSupply'])
 
         # Get pricing
-        gamma_pricing = GammaPrice().output()
+        gamma_pricing = await GammaPrice().output()
 
         account_owner = self.data['account']['parent']['id']
         gammaStaked = (xgamma_shares * xgamma_virtual_price) / self.decimal_factor

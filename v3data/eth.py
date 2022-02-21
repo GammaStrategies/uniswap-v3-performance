@@ -9,13 +9,13 @@ from v3data.constants import DAYS_IN_PERIOD
 
 class EthData:
     def __init__(self, days, timezone=DEFAULT_TIMEZONE):
-        self.visor_client = GammaClient()
+        self.gamma_client = GammaClient()
         self.days = days
         self.timezone = timezone
         self.decimal_factor = 10**18
         self.data = {}
 
-    def _get_data(self):
+    async def _get_data(self):
 
         query = """
         query($token: String!, $days: Int!, $timezone: String!){
@@ -42,16 +42,17 @@ class EthData:
         }
         """
         variables = {"token": "ETH", "days": self.days, "timezone": self.timezone}
-        self.data = self.visor_client.query(query, variables)["data"]
+        response = await self.gamma_client.query(query, variables)
+        self.data = response["data"]
 
 
 class EthCalculations(EthData):
     def __init__(self, days=30):
         super().__init__(days=days)
 
-    def basic_info(self, get_data=True):
+    async def basic_info(self, get_data=True):
         if get_data:
-            self._get_data()
+            await self._get_data()
 
         data = self.data["ethToken"]
 
@@ -60,10 +61,10 @@ class EthCalculations(EthData):
             "totalDistributedUSD": float(data["totalDistributedUSD"]),
         }
 
-    def distributions(self, get_data=True):
+    async def distributions(self, get_data=True):
 
         if get_data:
-            self._get_data()
+            await self._get_data()
 
         results = [
             {
@@ -81,8 +82,8 @@ class EthDistribution(EthCalculations):
     def __init__(self, days=6, timezone=DEFAULT_TIMEZONE):
         super().__init__(days=days)
 
-    def output(self):
-        distributions = self.distributions(get_data=True)
+    async def output(self):
+        distributions = await self.distributions(get_data=True)
 
         fee_distributions = []
         for i, distribution in enumerate(distributions):

@@ -1,4 +1,4 @@
-from operator import methodcaller
+import asyncio
 import numpy as np
 from datetime import timedelta
 from pandas import DataFrame
@@ -18,7 +18,7 @@ class GammaData:
         self.decimal_factor = 10**18
         self.data = {}
 
-    def _get_data(self):
+    async def _get_data(self):
 
         query = """
         query($xgammaAddress: String!, $gammaAddress: String!, $days: Int!, $timezone: String!){
@@ -69,16 +69,17 @@ class GammaData:
             "days": self.days,
             "timezone": self.timezone,
         }
-        self.data = self.gamma_client.query(query, variables)["data"]
+        response = await self.gamma_client.query(query, variables)
+        self.data = response["data"]
 
 
 class GammaCalculations(GammaData):
     def __init__(self, days=30):
         super().__init__(days=days)
 
-    def basic_info(self, get_data=True):
+    async def basic_info(self, get_data=True):
         if get_data:
-            self._get_data()
+            await self._get_data()
 
         return {
             "totalDistributed": int(self.data["protocolDistribution"]["distributed"])
@@ -91,11 +92,11 @@ class GammaCalculations(GammaData):
             "totalSupply": int(self.data["token"]["totalSupply"]) / self.decimal_factor,
         }
 
-    def gamma_yield(self, get_data=True):
+    async def gamma_yield(self, get_data=True):
         """Gets estimates such as APY, visor distributed"""
 
         if get_data:
-            self._get_data()
+            await self._get_data()
 
         if not self.data["distributionDayDatas"]:
             return self._empty_yield()
@@ -150,9 +151,9 @@ class GammaCalculations(GammaData):
 
         return results
 
-    def distributions(self, get_data=True):
+    async def distributions(self, get_data=True):
         if get_data:
-            self._get_data()
+            await self._get_data()
 
         results = [
             {
@@ -171,14 +172,16 @@ class GammaInfo(GammaCalculations):
     def __init__(self, days=30):
         super().__init__(days=days)
 
-    def output(self):
-        self._get_data()
-        gamma_pricing = GammaPrice()
+    async def output(self):
+        gamma_pricing, _ = await asyncio.gather(
+            GammaPrice().output(),
+            self._get_data()
+        )
 
         return {
-            "info": self.basic_info(get_data=False),
-            "yield": self.gamma_yield(get_data=False),
-            "priceUSD": gamma_pricing.output(),
+            "info": await self.basic_info(get_data=False),
+            "yield": await self.gamma_yield(get_data=False),
+            "price": gamma_pricing,
         }
 
 
@@ -186,16 +189,16 @@ class GammaYield(GammaCalculations):
     def __init__(self, days=30):
         super().__init__(days=days)
 
-    def output(self):
-        return self.gamma_yield(get_data=True)
+    async def output(self):
+        return await self.gamma_yield(get_data=True)
 
 
 class GammaDistribution(GammaCalculations):
     def __init__(self, days=6, timezone=DEFAULT_TIMEZONE):
         super().__init__(days=days)
 
-    def output(self):
-        distributions = self.distributions(get_data=True)
+    async def output(self):
+        distributions = await self.distributions(get_data=True)
 
         fee_distributions = []
         for i, distribution in enumerate(distributions):
@@ -206,7 +209,7 @@ class GammaDistribution(GammaCalculations):
                     "id": i + 2,
                 }
             )
-        print(distributions[0])
+
         return {
             "feeDistribution": distributions,
             "latest": {
@@ -225,7 +228,7 @@ class GammaPriceData:
         self.pool = "0x4006bed7bf103d70a1c6b7f1cef4ad059193dc25"  # GAMMA/WETH 0.3% pool
         self.data = {}
 
-    def _get_data(self):
+    async def _get_data(self):
         query = """
         query gammaPrice($id: String!){
             pool(
@@ -247,12 +250,13 @@ class GammaPriceData:
         }
         """
         variables = {"id": self.pool}
-        self.data = self.uniswap_client.query(query, variables)["data"]
+        response = await self.uniswap_client.query(query, variables)
+        self.data = response["data"]
 
 
 class GammaPrice(GammaPriceData):
-    def output(self):
-        self._get_data()
+    async def output(self):
+        await self._get_data()
         sqrt_priceX96 = float(self.data["pool"]["sqrtPrice"])
         decimal0 = int(self.data["pool"]["token0"]["decimals"])
         decimal1 = int(self.data["pool"]["token1"]["decimals"])
@@ -298,7 +302,7 @@ class ProtocolFeesCalculations(ProtocolFeesData):
         super().__init__()
         self.days = days
 
-    def collected_fees(self, get_data=True):
+    async def collected_fees(self, get_data=True):
         if get_data:
             self._get_data(timedelta(days=self.days))
 
@@ -310,7 +314,8 @@ class ProtocolFeesCalculations(ProtocolFeesData):
         df_rebalances = DataFrame(rebalances, dtype=np.float64)
 
         gamma_price = GammaPrice()
-        gamma_in_usd = gamma_price.output()["gamma_in_usdc"]
+        gamma_prices = await gamma_price.output()
+        gamma_in_usd = gamma_prices["gamma_in_usdc"]
 
         gamma_staked_usd = (
             gamma_in_usd * int(self.data["rewardHypervisor"]["totalGamma"]) / 10**18
