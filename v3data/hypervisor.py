@@ -111,10 +111,17 @@ class HypervisorData:
         if (not data) or (len(data) < 2):
             return self.empty_returns()
 
-        df_rebalances = DataFrame(data, dtype=np.float64)
+        df_rebalances = DataFrame(data)
+        df_rebalances = df_rebalances[
+            [
+                "timestamp",
+                "grossFeesUSD",
+                "protocolFeesUSD",
+                "netFeesUSD",
+                "totalAmountUSD"
+                ]
+        ].astype(np.float64)
         df_rebalances = df_rebalances[df_rebalances.totalAmountUSD > 0]
-
-        print(df_rebalances.dtypes)
 
         if df_rebalances.empty:
             return self.empty_returns()
