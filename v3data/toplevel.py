@@ -155,8 +155,7 @@ class TopLevelData:
 
     async def recent_fees(self, hours=24):
         data, gamma_prices = await asyncio.gather(
-            self.get_recent_rebalance_data(hours),
-            GammaPrice().output()
+            self.get_recent_rebalance_data(hours), GammaPrice().output()
         )
         gamma_price_usd = gamma_prices["gamma_in_usdc"]
         df_fees = DataFrame(data, dtype=np.float64)

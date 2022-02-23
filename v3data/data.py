@@ -81,8 +81,7 @@ class UniV3Data(SubgraphClient):
         variables = {"ids": [address.lower() for address in token_addresses]}
 
         pool0_response, pool1_response = await asyncio.gather(
-          self.query(query0, variables),
-          self.query(query1, variables)
+            self.query(query0, variables), self.query(query1, variables)
         )
 
         pool0 = pool0_response["data"]["pools"]

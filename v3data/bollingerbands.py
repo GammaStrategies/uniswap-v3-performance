@@ -37,8 +37,7 @@ class BollingerBand:
 
     async def chart_data(self):
         pool, _ = await asyncio.gather(
-            self.client.get_pool(self.pool_address),
-            self.get_data()
+            self.client.get_pool(self.pool_address), self.get_data()
         )
 
         df = self.df_resampled.reset_index()
@@ -54,7 +53,7 @@ class BollingerBand:
     async def latest_bands(self):
         pool, _ = await asyncio.gather(
             self.client.get_pool(self.pool_address),
-            self.get_data(report_hours=self.total_period_hours)
+            self.get_data(report_hours=self.total_period_hours),
         )
         bands = self.df_resampled.tail(1).reset_index().to_dict("records")[0]
         bands["datetime"] = bands["datetime"].strftime("%Y-%m-%dT%H:%M:%SZ")

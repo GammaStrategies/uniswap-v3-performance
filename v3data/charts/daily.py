@@ -30,13 +30,13 @@ class DailyChart:
             }
         }
         """
-        variables = {
-            'days': self.days
-        }
+        variables = {"days": self.days}
         response = await self.gamma_client.query(query, variables)
-        hypervisors = response['data']['uniswapV3Hypervisors']
+        hypervisors = response["data"]["uniswapV3Hypervisors"]
 
-        data = [day_data for hypervisor in hypervisors for day_data in hypervisor['dayData']]
+        data = [
+            day_data for hypervisor in hypervisors for day_data in hypervisor["dayData"]
+        ]
 
         return data
 
@@ -58,12 +58,9 @@ class DailyChart:
             }
         }
         """
-        variables = {
-            "hypervisor": hypervisor_address.lower(),
-            'days': self.days
-        }
+        variables = {"hypervisor": hypervisor_address.lower(), "days": self.days}
         response = await self.gamma_client.query(query, variables)
-        return response['data']['uniswapV3HypervisorDayDatas']
+        return response["data"]["uniswapV3HypervisorDayDatas"]
 
     async def asset_flows(self, hypervisor_address=None):
 
@@ -73,20 +70,25 @@ class DailyChart:
         else:
             data = await self._get_all_flows()
             df_flows = pd.DataFrame(data, dtype=np.float64)
-            df_flows = df_flows.groupby('date').sum().reset_index()
+            df_flows = df_flows.groupby("date").sum().reset_index()
 
-        df_flows['netDepositedUSD'] = df_flows.depositedUSD - df_flows.withdrawnUSD
+        df_flows["netDepositedUSD"] = df_flows.depositedUSD - df_flows.withdrawnUSD
 
-        df_flows.sort_values('date', inplace=True)
-        df_flows['key'] = pd.to_datetime(df_flows.date, unit='s').dt.strftime('%Y-%m-%d')
-        df_flows.drop(columns=['depositedUSD', 'withdrawnUSD', 'date'], inplace=True)
-        df_flows.rename(columns={
-            "feesReinvestedUSD": "Re-invested uniswap fees",
-            "protocolFeesCollectedUSD": "Visor Fees",
-            "netDepositedUSD": "Net deposits & withdraws"
-        }, inplace=True)
+        df_flows.sort_values("date", inplace=True)
+        df_flows["key"] = pd.to_datetime(df_flows.date, unit="s").dt.strftime(
+            "%Y-%m-%d"
+        )
+        df_flows.drop(columns=["depositedUSD", "withdrawnUSD", "date"], inplace=True)
+        df_flows.rename(
+            columns={
+                "feesReinvestedUSD": "Re-invested uniswap fees",
+                "protocolFeesCollectedUSD": "Visor Fees",
+                "netDepositedUSD": "Net deposits & withdraws",
+            },
+            inplace=True,
+        )
 
-        return df_flows.melt(id_vars='key', var_name="group").to_dict('records')
+        return df_flows.melt(id_vars="key", var_name="group").to_dict("records")
 
     async def tvl(self):
         """Total TVL chart broken down by hypervisor"""
@@ -122,22 +124,23 @@ class DailyChart:
             }
         }
         """
-        variables = {'days': self.days}
+        variables = {"days": self.days}
         response = await self.gamma_client.query(query, variables)
-        data = response['data']['uniswapV3Hypervisors']
+        data = response["data"]["uniswapV3Hypervisors"]
 
         df_all = pd.DataFrame()
         for hypervisor in data:
-            df_hypervisor = pd.DataFrame(hypervisor['dayData'], dtype=np.float64)
-            df_hypervisor['hypervisor'] = hypervisor['id']
-            df_hypervisor['name'] = f"{hypervisor['pool']['token0']['symbol']}-{hypervisor['pool']['token1']['symbol']}"
+            df_hypervisor = pd.DataFrame(hypervisor["dayData"], dtype=np.float64)
+            df_hypervisor["hypervisor"] = hypervisor["id"]
+            df_hypervisor[
+                "name"
+            ] = f"{hypervisor['pool']['token0']['symbol']}-{hypervisor['pool']['token1']['symbol']}"
             df_all = pd.concat([df_all, df_hypervisor])
 
-        df_all.date = pd.to_datetime(df_all.date, unit='s').dt.strftime('%Y-%m-%dT%H:%M:%SZ')
+        df_all.date = pd.to_datetime(df_all.date, unit="s").dt.strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
 
-        df_all.rename(columns={
-            "name": "group",
-            "tvlUSD": "value"
-        }, inplace=True)
+        df_all.rename(columns={"name": "group", "tvlUSD": "value"}, inplace=True)
 
-        return df_all[['date', 'group', 'value']].to_dict('records')
+        return df_all[["date", "group", "value"]].to_dict("records")

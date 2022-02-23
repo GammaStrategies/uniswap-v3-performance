@@ -115,7 +115,7 @@ class Dashboard:
         }
 
         response = await self.gamma_client.query(query, variables)
-        data = response['data']
+        data = response["data"]
 
         self.gamma_data = {
             "token": data["token"],
@@ -141,8 +141,7 @@ class Dashboard:
         gamma_price = GammaPrice()
 
         _, gamma_prices = await asyncio.gather(
-            self._get_data(timezone),
-            gamma_price.output()
+            self._get_data(timezone), gamma_price.output()
         )
 
         gamma_price_usd = gamma_prices["gamma_in_usdc"]
@@ -179,10 +178,14 @@ class Dashboard:
             "feeStatsStakingDailyYield": daily_yield,
             "feeCumulativeFeeUsd": legacy_stats["visr_distributed_usd"]
             + gamma_info["totalDistributedUSD"],
-            "feeCumulativeFeeUsdAnnual": legacy_stats["estimated_visr_annual_distribution_usd"],  # gamma_yield[self.period]['estimatedAnnualDistributionUSD'],
+            "feeCumulativeFeeUsdAnnual": legacy_stats[
+                "estimated_visr_annual_distribution_usd"
+            ],  # gamma_yield[self.period]['estimatedAnnualDistributionUSD'],
             "feeCumulativeFeeDistributed": legacy_stats["visr_distributed"]
             + gamma_info["totalDistributed"],
-            "feeCumulativeFeeDistributedAnnual": legacy_stats["estimated_visr_annual_distribution"],  # gamma_yield[self.period]['estimatedAnnualDistribution'],
+            "feeCumulativeFeeDistributedAnnual": legacy_stats[
+                "estimated_visr_annual_distribution"
+            ],  # gamma_yield[self.period]['estimatedAnnualDistribution'],
             "uniswapPairTotalValueLocked": top_level_data["tvl"],
             "uniswapPairAmountPairs": top_level_data["pool_count"],
             "uniswapFeesGenerated": top_level_data["fees_claimed"],

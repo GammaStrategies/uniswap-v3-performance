@@ -7,10 +7,11 @@ from v3data.config import (
     UNI_V3_SUBGRAPH_URL,
     ETH_BLOCKS_SUBGRAPH_URL,
     THEGRAPH_INDEX_NODE_URL,
-    XGAMMA_SUBGRAPH_URL
+    XGAMMA_SUBGRAPH_URL,
 )
 
 async_client = httpx.AsyncClient(timeout=180)
+
 
 class SubgraphClient:
     def __init__(self, url):
@@ -19,9 +20,9 @@ class SubgraphClient:
     async def query(self, query: str, variables=None) -> dict:
         """Make graphql query to subgraph"""
         if variables:
-            params = {'query': query, 'variables': variables}
+            params = {"query": query, "variables": variables}
         else:
-            params = {'query': query}
+            params = {"query": query}
         response = await async_client.post(self._url, json=params)
         return response.json()
 
@@ -33,19 +34,19 @@ class SubgraphClient:
         if f"{paginate_variable}_gt" not in query:
             raise ValueError("Paginate variable missing in query")
 
-        variables['orderBy'] = paginate_variable
-        variables['orderDirection'] = "asc"
+        variables["orderBy"] = paginate_variable
+        variables["orderDirection"] = "asc"
 
         all_data = []
         has_data = True
-        params = {'query': query, 'variables': variables}
+        params = {"query": query, "variables": variables}
         while has_data:
             response = await async_client.post(self._url, json=params)
-            data = next(iter(response.json()['data'].values()))
+            data = next(iter(response.json()["data"].values()))
             has_data = bool(data)
             if has_data:
                 all_data += data
-                params['variables']['paginate'] = data[-1][paginate_variable]
+                params["variables"]["paginate"] = data[-1][paginate_variable]
 
         return all_data
 
@@ -75,22 +76,27 @@ class VisorClient(SubgraphClient):
             }
         }
         """
-        tvls = self.query(query_tvl)['data']['uniswapV3Hypervisors']
+        tvls = self.query(query_tvl)["data"]["uniswapV3Hypervisors"]
 
         return {
-            hypervisor['id']: {
-                "tvl0": hypervisor['tvl0'],
-                "tvl1": hypervisor['tvl1'],
-                "tvlUSD": hypervisor['tvlUSD'],
-                "tvl0Decimal": int(hypervisor['tvl0']) / 10 ** int(hypervisor['pool']['token0']['decimals']),
-                "tvl1Decimal": int(hypervisor['tvl1']) / 10 ** int(hypervisor['pool']['token1']['decimals']),
-                "totalSupply": int(hypervisor['totalSupply'])
-            } for hypervisor in tvls
+            hypervisor["id"]: {
+                "tvl0": hypervisor["tvl0"],
+                "tvl1": hypervisor["tvl1"],
+                "tvlUSD": hypervisor["tvlUSD"],
+                "tvl0Decimal": int(hypervisor["tvl0"])
+                / 10 ** int(hypervisor["pool"]["token0"]["decimals"]),
+                "tvl1Decimal": int(hypervisor["tvl1"])
+                / 10 ** int(hypervisor["pool"]["token1"]["decimals"]),
+                "totalSupply": int(hypervisor["totalSupply"]),
+            }
+            for hypervisor in tvls
         }
+
 
 class GammaClient(SubgraphClient):
     def __init__(self):
         super().__init__(GAMMA_SUBGRAPH_URL)
+
 
 class UniswapV2Client(SubgraphClient):
     def __init__(self):
@@ -122,10 +128,11 @@ class EthBlocksClient(SubgraphClient):
 
         variables = {
             "startTime": timestamp,
-            "endTime": timestamp + ten_minutes_in_seconds
+            "endTime": timestamp + ten_minutes_in_seconds,
         }
 
-        return int(self.query(query, variables)['data']['blocks'][0]['number'])
+        return int(self.query(query, variables)["data"]["blocks"][0]["number"])
+
 
 class IndexNodeClient(SubgraphClient):
     def __init__(self, url=GAMMA_SUBGRAPH_URL):
@@ -134,12 +141,11 @@ class IndexNodeClient(SubgraphClient):
         self.set_subgraph_name()
 
     def set_subgraph_name(self):
-        split_subgraph_url = self.url.split('/')
+        split_subgraph_url = self.url.split("/")
         print(split_subgraph_url)
         if not split_subgraph_url[-1]:
             split_subgraph_url.pop(-1)
         self.subgraph_name = f"{split_subgraph_url[-2]}/{split_subgraph_url[-1]}"
-
 
     async def status(self):
         query = f"""
@@ -155,12 +161,13 @@ class IndexNodeClient(SubgraphClient):
         """
 
         response = await self.query(query)
-        latestBlock = int(response['data']['indexingStatusForCurrentVersion']['chains'][0]['latestBlock']['number'])
+        latestBlock = int(
+            response["data"]["indexingStatusForCurrentVersion"]["chains"][0][
+                "latestBlock"
+            ]["number"]
+        )
 
-        return {
-            "url": self.url,
-            "latestBlock": latestBlock
-        }
+        return {"url": self.url, "latestBlock": latestBlock}
 
 
 class XgammaClient(SubgraphClient):
@@ -175,18 +182,10 @@ class CoingeckoClient:
     async def get_price(self, ids, vs_currencies):
         endpoint = f"{self.base}/simple/price"
 
-        params = {
-          "ids": ids,
-          "vs_currencies": vs_currencies
-        }
+        params = {"ids": ids, "vs_currencies": vs_currencies}
 
         response = await async_client.get(endpoint, params=params)
         if response.status_code == 200:
             return response.json()
         else:
-            return {
-                "gamma-strategies": {
-                    "usd": 0.623285,
-                    "eth": 0.00016391
-                }
-            }
+            return {"gamma-strategies": {"usd": 0.623285, "eth": 0.00016391}}

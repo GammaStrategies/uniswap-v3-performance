@@ -13,6 +13,7 @@ YEAR_SECONDS = 365 * DAY_SECONDS
 
 logger = logging.getLogger(__name__)
 
+
 class HypervisorData:
     def __init__(self):
         self.gamma_client = GammaClient()
@@ -41,10 +42,10 @@ class HypervisorData:
         variables = {
             "hypervisor": hypervisor_address.lower(),
             "timestamp_start": timestamp_start,
-            "limit": limit
+            "limit": limit,
         }
         response = await self.gamma_client.query(query, variables)
-        return response['data']['uniswapV3Rebalances']
+        return response["data"]["uniswapV3Rebalances"]
 
     async def _get_all_rebalance_data(self, time_delta):
         query = """
@@ -71,7 +72,7 @@ class HypervisorData:
         """
         variables = {"timestamp_start": timestamp_ago(time_delta)}
         response = await self.gamma_client.query(query, variables)
-        self.all_rebalance_data = response['data']['uniswapV3Hypervisors']
+        self.all_rebalance_data = response["data"]["uniswapV3Hypervisors"]
 
     async def _get_hypervisor_data(self, hypervisor_address):
         query = """
@@ -89,7 +90,7 @@ class HypervisorData:
         """
         variables = {"id": hypervisor_address.lower()}
         response = await self.gamma_client.query(query, variables)
-        return response['data']['uniswapV3Hypervisor']
+        return response["data"]["uniswapV3Hypervisor"]
 
     async def basic_stats(self, hypervisor_address):
         data = await self._get_hypervisor_data(hypervisor_address)
@@ -101,9 +102,9 @@ class HypervisorData:
                 "cumFeeReturn": 0.0,
                 "feeApr": 0,
                 "feeApy": 0,
-                "totalPeriodSeconds": 0
+                "totalPeriodSeconds": 0,
             }
-            for period in ['daily', 'weekly', 'monthly']
+            for period in ["daily", "weekly", "monthly"]
         }
 
     def _calculate_returns(self, data):
@@ -118,23 +119,27 @@ class HypervisorData:
                 "grossFeesUSD",
                 "protocolFeesUSD",
                 "netFeesUSD",
-                "totalAmountUSD"
-                ]
+                "totalAmountUSD",
+            ]
         ].astype(np.float64)
         df_rebalances = df_rebalances[df_rebalances.totalAmountUSD > 0]
 
         if df_rebalances.empty:
             return self.empty_returns()
 
-        df_rebalances.sort_values('timestamp', inplace=True)
-        latest_rebalance_ts = df_rebalances.loc[df_rebalances.index[-1], 'timestamp']
-        
+        df_rebalances.sort_values("timestamp", inplace=True)
+        latest_rebalance_ts = df_rebalances.loc[df_rebalances.index[-1], "timestamp"]
+
         # Calculate fee return rate for each rebalance event
-        df_rebalances['feeRate'] = df_rebalances.grossFeesUSD / df_rebalances.totalAmountUSD.shift(1)
-        df_rebalances['totalRate'] = df_rebalances.totalAmountUSD / df_rebalances.totalAmountUSD.shift(1) - 1
+        df_rebalances[
+            "feeRate"
+        ] = df_rebalances.grossFeesUSD / df_rebalances.totalAmountUSD.shift(1)
+        df_rebalances["totalRate"] = (
+            df_rebalances.totalAmountUSD / df_rebalances.totalAmountUSD.shift(1) - 1
+        )
 
         # Time since last rebalance
-        df_rebalances['periodSeconds'] = df_rebalances.timestamp.diff()
+        df_rebalances["periodSeconds"] = df_rebalances.timestamp.diff()
 
         # Calculate returns for using last 1, 7, and 30 days data
         results = {}
@@ -143,34 +148,46 @@ class HypervisorData:
             #  If no items for timestamp larger than timestamp_start
             n_valid_rows = len(df_rebalances[df_rebalances.timestamp > timestamp_start])
             if n_valid_rows < 2:
-                timestamp_start = latest_rebalance_ts - (FALLBACK_DAYS * SECONDS_IN_DAYS)
-            df_period = df_rebalances.loc[df_rebalances.timestamp > timestamp_start].copy()
+                timestamp_start = latest_rebalance_ts - (
+                    FALLBACK_DAYS * SECONDS_IN_DAYS
+                )
+            df_period = df_rebalances.loc[
+                df_rebalances.timestamp > timestamp_start
+            ].copy()
 
             if df_period.empty:
                 # if no rebalances in the last 24 hours, calculate using the 24 hours prior to the last rebalance
                 timestamp_start = df_rebalances.timestamp.max() - DAY_SECONDS
-                df_period = df_rebalances.loc[df_rebalances.timestamp > timestamp_start].copy()
+                df_period = df_rebalances.loc[
+                    df_rebalances.timestamp > timestamp_start
+                ].copy()
 
             # Time since first reblance
-            df_period['totalPeriodSeconds'] = df_period.periodSeconds.cumsum()
+            df_period["totalPeriodSeconds"] = df_period.periodSeconds.cumsum()
 
             # Compound fee return rate for each rebalance
-            df_period['cumFeeReturn'] = (1 + df_period.feeRate).cumprod() - 1
-            df_period['cumTotalReturn'] = (1 + df_period.totalRate).cumprod() - 1
+            df_period["cumFeeReturn"] = (1 + df_period.feeRate).cumprod() - 1
+            df_period["cumTotalReturn"] = (1 + df_period.totalRate).cumprod() - 1
 
             # Last row is the cumulative results
-            returns = df_period[['totalPeriodSeconds', 'cumFeeReturn']].tail(1)  # , 'cumTotalReturn'
+            returns = df_period[["totalPeriodSeconds", "cumFeeReturn"]].tail(
+                1
+            )  # , 'cumTotalReturn'
 
             # Extrapolate linearly to annual rate
-            returns['feeApr'] = returns.cumFeeReturn * (YEAR_SECONDS / returns.totalPeriodSeconds)
+            returns["feeApr"] = returns.cumFeeReturn * (
+                YEAR_SECONDS / returns.totalPeriodSeconds
+            )
 
             # Extrapolate by compounding
-            returns['feeApy'] = (1 + returns.cumFeeReturn * (DAY_SECONDS / returns.totalPeriodSeconds)) ** 365 - 1
+            returns["feeApy"] = (
+                1 + returns.cumFeeReturn * (DAY_SECONDS / returns.totalPeriodSeconds)
+            ) ** 365 - 1
 
-            results[period] = returns.to_dict('records')[0]
+            results[period] = returns.to_dict("records")[0]
 
-        if results['monthly']['feeApy'] == np.inf:
-            results['monthly'] = results['weekly']
+        if results["monthly"]["feeApy"] == np.inf:
+            results["monthly"] = results["weekly"]
 
         return results
 
@@ -181,8 +198,10 @@ class HypervisorData:
     def _all_returns(self):
         results = {}
         for hypervisor in self.all_rebalance_data:
-            if hypervisor['id'] not in EXCLUDED_HYPERVISORS:
-                results[hypervisor['id']] = self._calculate_returns(hypervisor['rebalances'])
+            if hypervisor["id"] not in EXCLUDED_HYPERVISORS:
+                results[hypervisor["id"]] = self._calculate_returns(
+                    hypervisor["rebalances"]
+                )
 
         return results
 
@@ -230,8 +249,8 @@ class HypervisorData:
         """
 
         basics_response = await self.gamma_client.query(query_basics)
-        basics = basics_response['data']['uniswapV3Hypervisors']
-        pool_addresses = [hypervisor['pool']['id'] for hypervisor in basics]
+        basics = basics_response["data"]["uniswapV3Hypervisors"]
+        pool_addresses = [hypervisor["pool"]["id"] for hypervisor in basics]
 
         query_pool = """
         query slot0($pools: [String!]!){
@@ -251,53 +270,61 @@ class HypervisorData:
         """
         variables = {"pools": pool_addresses}
         pools_response = await self.uniswap_client.query(query_pool, variables)
-        pools_data = pools_response['data']['pools']
-        pools = {pool.pop('id'): pool for pool in pools_data}
+        pools_data = pools_response["data"]["pools"]
+        pools = {pool.pop("id"): pool for pool in pools_data}
 
         returns = await self.all_returns()
 
         results = {}
         for hypervisor in basics:
             try:
-                hypervisor_id = hypervisor['id']
-                pool_id = hypervisor['pool']['id']
-                decimals0 = hypervisor['pool']['token0']['decimals']
-                decimals1 = hypervisor['pool']['token1']['decimals']
-                tick = int(pools[pool_id]['tick']) if pools[pool_id]['tick'] else 0
-                baseLower = int(hypervisor['baseLower'])
-                baseUpper = int(hypervisor['baseUpper'])
-                totalSupply = int(hypervisor['totalSupply'])
-                maxTotalSupply = int(hypervisor['maxTotalSupply'])
-                capacityUsed = totalSupply / maxTotalSupply if maxTotalSupply > 0 else "No cap"
+                hypervisor_id = hypervisor["id"]
+                pool_id = hypervisor["pool"]["id"]
+                decimals0 = hypervisor["pool"]["token0"]["decimals"]
+                decimals1 = hypervisor["pool"]["token1"]["decimals"]
+                tick = int(pools[pool_id]["tick"]) if pools[pool_id]["tick"] else 0
+                baseLower = int(hypervisor["baseLower"])
+                baseUpper = int(hypervisor["baseUpper"])
+                totalSupply = int(hypervisor["totalSupply"])
+                maxTotalSupply = int(hypervisor["maxTotalSupply"])
+                capacityUsed = (
+                    totalSupply / maxTotalSupply if maxTotalSupply > 0 else "No cap"
+                )
 
                 results[hypervisor_id] = {
-                    'createDate': timestamp_to_date(int(hypervisor['created']), '%d %b, %Y'),
-                    'poolAddress': pool_id,
-                    'decimals0': decimals0,
-                    'decimals1': decimals1,
-                    'depositCap0': int(hypervisor['deposit0Max']) / 10 ** decimals0,
-                    'depositCap1': int(hypervisor['deposit1Max']) / 10 ** decimals1,
-                    'grossFeesClaimed0': int(hypervisor['grossFeesClaimed0']) / 10 ** decimals0,
-                    'grossFeesClaimed1': int(hypervisor['grossFeesClaimed1']) / 10 ** decimals1,
-                    'grossFeesClaimedUSD': hypervisor['grossFeesClaimedUSD'],
-                    'feesReinvested0': int(hypervisor['feesReinvested0']) / 10 ** decimals0,
-                    'feesReinvested1': int(hypervisor['feesReinvested1']) / 10 ** decimals1,
-                    'feesReinvestedUSD': hypervisor['feesReinvestedUSD'],
-                    'tvl0': int(hypervisor['tvl0']) / 10 ** decimals0,
-                    'tvl1': int(hypervisor['tvl1']) / 10 ** decimals1,
-                    'tvlUSD': hypervisor['tvlUSD'],
-                    'totalSupply': totalSupply,
-                    'maxTotalSupply': maxTotalSupply,
-                    'capacityUsed': capacityUsed,
-                    'sqrtPrice': pools[pool_id]['sqrtPrice'],
-                    'tick': tick,
-                    'baseLower': baseLower,
-                    'baseUpper': baseUpper,
-                    'inRange': bool(baseLower <= tick <= baseUpper),
-                    'observationIndex': pools[pool_id]['observationIndex'],
-                    'poolTvlUSD': pools[pool_id]['totalValueLockedUSD'],
-                    'poolFeesUSD': pools[pool_id]['feesUSD'],
-                    'returns': returns.get(hypervisor_id)
+                    "createDate": timestamp_to_date(
+                        int(hypervisor["created"]), "%d %b, %Y"
+                    ),
+                    "poolAddress": pool_id,
+                    "decimals0": decimals0,
+                    "decimals1": decimals1,
+                    "depositCap0": int(hypervisor["deposit0Max"]) / 10**decimals0,
+                    "depositCap1": int(hypervisor["deposit1Max"]) / 10**decimals1,
+                    "grossFeesClaimed0": int(hypervisor["grossFeesClaimed0"])
+                    / 10**decimals0,
+                    "grossFeesClaimed1": int(hypervisor["grossFeesClaimed1"])
+                    / 10**decimals1,
+                    "grossFeesClaimedUSD": hypervisor["grossFeesClaimedUSD"],
+                    "feesReinvested0": int(hypervisor["feesReinvested0"])
+                    / 10**decimals0,
+                    "feesReinvested1": int(hypervisor["feesReinvested1"])
+                    / 10**decimals1,
+                    "feesReinvestedUSD": hypervisor["feesReinvestedUSD"],
+                    "tvl0": int(hypervisor["tvl0"]) / 10**decimals0,
+                    "tvl1": int(hypervisor["tvl1"]) / 10**decimals1,
+                    "tvlUSD": hypervisor["tvlUSD"],
+                    "totalSupply": totalSupply,
+                    "maxTotalSupply": maxTotalSupply,
+                    "capacityUsed": capacityUsed,
+                    "sqrtPrice": pools[pool_id]["sqrtPrice"],
+                    "tick": tick,
+                    "baseLower": baseLower,
+                    "baseUpper": baseUpper,
+                    "inRange": bool(baseLower <= tick <= baseUpper),
+                    "observationIndex": pools[pool_id]["observationIndex"],
+                    "poolTvlUSD": pools[pool_id]["totalValueLockedUSD"],
+                    "poolFeesUSD": pools[pool_id]["feesUSD"],
+                    "returns": returns.get(hypervisor_id),
                 }
             except Exception as e:
                 logger.warning(f"Failed on hypervisor {hypervisor['id']}")

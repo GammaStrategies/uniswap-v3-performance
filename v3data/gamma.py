@@ -173,10 +173,7 @@ class GammaInfo(GammaCalculations):
         super().__init__(days=days)
 
     async def output(self):
-        gamma_pricing, _ = await asyncio.gather(
-            GammaPrice().output(),
-            self._get_data()
-        )
+        gamma_pricing, _ = await asyncio.gather(GammaPrice().output(), self._get_data())
 
         return {
             "info": await self.basic_info(get_data=False),
