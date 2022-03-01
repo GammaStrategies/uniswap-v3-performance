@@ -22,6 +22,7 @@ from v3data.eth import EthDistribution
 from v3data.gamma import GammaDistribution, GammaInfo, GammaYield
 from v3data.hypervisor import HypervisorData
 from v3data.pools import pools_from_symbol
+from v3data.simulator import SimulatorInfo
 from v3data.toplevel import TopLevelData
 from v3data.users import UserInfo
 from v3data.utils import parse_date
@@ -246,6 +247,34 @@ async def dashboard(period: str = "weekly"):
     dashboard = Dashboard(period.lower())
 
     return await dashboard.info("UTC")
+
+
+@app.get("/simulator/tokenList")
+async def token_list():
+    tokens = await SimulatorInfo().token_list()
+
+    return tokens
+
+
+@app.get("/simulator/poolTicks")
+async def pool_ticks(poolAddress: str):
+    ticks = await SimulatorInfo().pool_ticks(poolAddress)
+
+    return ticks
+
+
+@app.get("/simulator/poolFromTokens")
+async def pool_from_tokens(token0: str, token1: str):
+    pools = await SimulatorInfo().pools_from_tokens(token0, token1)
+
+    return pools
+
+
+@app.get("/simulator/pool24HrVolume")
+async def pool_ticks(poolAddress: str):
+    volume = await SimulatorInfo().pool_volume(poolAddress)
+
+    return volume
 
 
 @app.on_event("startup")
