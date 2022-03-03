@@ -2,9 +2,9 @@ import httpx
 
 from v3data.config import (
     VISOR_SUBGRAPH_URL,
-    GAMMA_SUBGRAPH_URL,
+    GAMMA_SUBGRAPH_URLS,
     UNI_V2_SUBGRAPH_URL,
-    UNI_V3_SUBGRAPH_URL,
+    UNI_V3_SUBGRAPH_URLS,
     ETH_BLOCKS_SUBGRAPH_URL,
     THEGRAPH_INDEX_NODE_URL,
     XGAMMA_SUBGRAPH_URL,
@@ -14,8 +14,9 @@ async_client = httpx.AsyncClient(timeout=180)
 
 
 class SubgraphClient:
-    def __init__(self, url):
+    def __init__(self, url: str, chain: str="mainnet"):
         self._url = url
+        self.chain = chain
 
     async def query(self, query: str, variables=None) -> dict:
         """Make graphql query to subgraph"""
@@ -94,8 +95,8 @@ class VisorClient(SubgraphClient):
 
 
 class GammaClient(SubgraphClient):
-    def __init__(self):
-        super().__init__(GAMMA_SUBGRAPH_URL)
+    def __init__(self, chain: str):
+        super().__init__(GAMMA_SUBGRAPH_URLS[chain], chain)
 
 
 class UniswapV2Client(SubgraphClient):
@@ -104,8 +105,8 @@ class UniswapV2Client(SubgraphClient):
 
 
 class UniswapV3Client(SubgraphClient):
-    def __init__(self):
-        super().__init__(UNI_V3_SUBGRAPH_URL)
+    def __init__(self, chain: str):
+        super().__init__(UNI_V3_SUBGRAPH_URLS[chain], chain)
 
 
 class EthBlocksClient(SubgraphClient):
@@ -135,14 +136,13 @@ class EthBlocksClient(SubgraphClient):
 
 
 class IndexNodeClient(SubgraphClient):
-    def __init__(self, url=GAMMA_SUBGRAPH_URL):
+    def __init__(self, url=GAMMA_SUBGRAPH_URLS["mainnet"]):
         super().__init__(THEGRAPH_INDEX_NODE_URL)
         self.url = url
         self.set_subgraph_name()
 
     def set_subgraph_name(self):
         split_subgraph_url = self.url.split("/")
-        print(split_subgraph_url)
         if not split_subgraph_url[-1]:
             split_subgraph_url.pop(-1)
         self.subgraph_name = f"{split_subgraph_url[-2]}/{split_subgraph_url[-1]}"

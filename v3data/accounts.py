@@ -4,8 +4,8 @@ from v3data.constants import XGAMMA_ADDRESS
 
 
 class AccountData:
-    def __init__(self, account_address):
-        self.gamma_client = GammaClient()
+    def __init__(self, chain: str, account_address: str):
+        self.gamma_client = GammaClient(chain)
         self.address = account_address.lower()
         self.reward_hypervisor_address = XGAMMA_ADDRESS
         self.decimal_factor = 10**18

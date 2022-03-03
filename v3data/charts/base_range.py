@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import timedelta
 
 from v3data import GammaClient
-from v3data.pools import Pool, USDC_WETH_03_POOL
+from v3data.pools import Pool, USDC_WETH_POOL
 from v3data.utils import tick_to_priceDecimal, timestamp_ago
 
 
@@ -23,21 +23,22 @@ OVERRIDE_TS = [1625162739, 1625332777, 1627458476]
 
 
 class BaseLimit:
-    def __init__(self, hours, chart=True):
+    def __init__(self, hours, chart=True, chain:str = "mainnet"):
+        self.chain = chain
         self.hours = hours
         self.timestamp_start = timestamp_ago(timedelta(hours=hours))
-        self.gamma_client = GammaClient()
+        self.gamma_client = GammaClient(chain)
         self.chart = chart
         self.pool_hourly = {}
         self.eth_hourly = {}
 
     async def _get_pool_data(self, pool_addresses):
-        pool_addresses.append(USDC_WETH_03_POOL)
+        pool_addresses.append(USDC_WETH_POOL[self.chain])
 
-        pool = Pool()
+        pool = Pool(self.chain)
         pool_data = await pool.hourly_prices(pool_addresses, self.hours)
 
-        self.eth_hourly = pool_data[USDC_WETH_03_POOL]
+        self.eth_hourly = pool_data[USDC_WETH_POOL[self.chain]]
         self.pool_hourly = pool_data
 
     def _reshape(self, data):

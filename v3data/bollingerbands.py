@@ -6,11 +6,17 @@ from v3data.data import UniV3Data
 
 
 class BollingerBand:
-    def __init__(self, pool_address, total_period_hours, n_intervals=20):
+    def __init__(
+        self,
+        pool_address: str,
+        total_period_hours,
+        n_intervals=20,
+        chain: str = "mainnet",
+    ):
         self.pool_address = pool_address.lower()
         self.total_period_hours = total_period_hours  # how long to average over
         self.n_intervals = n_intervals
-        self.client = UniV3Data()
+        self.client = UniV3Data(chain)
 
     async def get_data(self, report_hours=None):
         # Defaults to 10 times the total_period_hour if no report_hours is given
@@ -19,7 +25,7 @@ class BollingerBand:
         data = await self.client.get_historical_pool_prices(
             self.pool_address, datetime.timedelta(hours=1.1 * report_hours)
         )  # 1.1 factor for buffer
-        df = pd.DataFrame(data, dtype=np.float64)
+        df = pd.DataFrame(data, dtype=np.float64)  # Pandas future warning
         df["datetime"] = pd.to_datetime(df.timestamp, unit="s")
 
         interval = self.total_period_hours / self.n_intervals

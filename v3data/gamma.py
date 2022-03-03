@@ -10,8 +10,8 @@ from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
 
 
 class GammaData:
-    def __init__(self, days, timezone=DEFAULT_TIMEZONE):
-        self.gamma_client = GammaClient()
+    def __init__(self, chain: str, days, timezone=DEFAULT_TIMEZONE):
+        self.gamma_client = GammaClient(chain)
         self.days = days
         self.timezone = timezone
         self.address = GAMMA_ADDRESS
@@ -74,8 +74,8 @@ class GammaData:
 
 
 class GammaCalculations(GammaData):
-    def __init__(self, days=30):
-        super().__init__(days=days)
+    def __init__(self, chain: str, days=30):
+        super().__init__(chain=chain, days=days)
 
     async def basic_info(self, get_data=True):
         if get_data:
@@ -169,8 +169,8 @@ class GammaCalculations(GammaData):
 
 
 class GammaInfo(GammaCalculations):
-    def __init__(self, days=30):
-        super().__init__(days=days)
+    def __init__(self, chain: str, days=30):
+        super().__init__(chain=chain, days=days)
 
     async def output(self):
         gamma_pricing, _ = await asyncio.gather(GammaPrice().output(), self._get_data())
@@ -183,16 +183,16 @@ class GammaInfo(GammaCalculations):
 
 
 class GammaYield(GammaCalculations):
-    def __init__(self, days=30):
-        super().__init__(days=days)
+    def __init__(self, chain: str, days=30):
+        super().__init__(chain=chain, days=days)
 
     async def output(self):
         return await self.gamma_yield(get_data=True)
 
 
 class GammaDistribution(GammaCalculations):
-    def __init__(self, days=6, timezone=DEFAULT_TIMEZONE):
-        super().__init__(days=days)
+    def __init__(self, chain: str, days=6, timezone=DEFAULT_TIMEZONE):
+        super().__init__(chain=chain, days=days)
 
     async def output(self):
         distributions = await self.distributions(get_data=True)
@@ -220,8 +220,8 @@ class GammaDistribution(GammaCalculations):
 class GammaPriceData:
     """Class for querying GAMMA related data"""
 
-    def __init__(self):
-        self.uniswap_client = UniswapV3Client()
+    def __init__(self, chain: str = "mainnet"):
+        self.uniswap_client = UniswapV3Client(chain)
         self.pool = "0x4006bed7bf103d70a1c6b7f1cef4ad059193dc25"  # GAMMA/WETH 0.3% pool
         self.data = {}
 
@@ -268,8 +268,8 @@ class GammaPrice(GammaPriceData):
 
 
 class ProtocolFeesData:
-    def __init__(self):
-        self.visor_client = GammaClient()
+    def __init__(self, chain: str = "mainnet"):
+        self.visor_client = GammaClient(chain)
 
     def _get_data(self, time_delta):
         query = """

@@ -11,8 +11,9 @@ from v3data.config import legacy_stats
 
 
 class Dashboard:
-    def __init__(self, period):
-        self.gamma_client = GammaClient()
+    def __init__(self, period: str):
+        self.chain = "mainnet"
+        self.gamma_client = GammaClient(self.chain)
         self.period = period
         self.days = 30
         self.visr_data = {}
@@ -138,7 +139,7 @@ class Dashboard:
 
     async def info(self, timezone):
 
-        gamma_price = GammaPrice()
+        gamma_price = GammaPrice(self.chain)
 
         _, gamma_prices = await asyncio.gather(
             self._get_data(timezone), gamma_price.output()
@@ -147,7 +148,7 @@ class Dashboard:
         gamma_price_usd = gamma_prices["gamma_in_usdc"]
         gamma_in_eth = gamma_prices["gamma_in_eth"]
 
-        gamma_calcs = GammaCalculations(days=30)
+        gamma_calcs = GammaCalculations(self.chain, days=30)
         gamma_calcs.data = self.gamma_data
         gamma_info = await gamma_calcs.basic_info(get_data=False)
         gamma_yield = await gamma_calcs.gamma_yield(get_data=False)
@@ -156,7 +157,7 @@ class Dashboard:
         protocol_fees_calcs.data = self.protocol_fees_data
         collected_fees = await protocol_fees_calcs.collected_fees(get_data=False)
 
-        top_level = TopLevelData()
+        top_level = TopLevelData(self.chain)
         top_level.all_stats_data = self.top_level_data
         top_level.all_returns_data = self.top_level_returns_data
         top_level_data = top_level._all_stats()
