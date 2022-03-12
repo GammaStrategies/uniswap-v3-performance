@@ -136,9 +136,9 @@ class EthBlocksClient(SubgraphClient):
 
 
 class IndexNodeClient(SubgraphClient):
-    def __init__(self, url=GAMMA_SUBGRAPH_URLS["mainnet"]):
+    def __init__(self, chain: str):
         super().__init__(THEGRAPH_INDEX_NODE_URL)
-        self.url = url
+        self.url = GAMMA_SUBGRAPH_URLS[chain]
         self.set_subgraph_name()
 
     def set_subgraph_name(self):

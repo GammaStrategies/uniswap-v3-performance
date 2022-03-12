@@ -1,3 +1,4 @@
+from v3data import IndexNodeClient
 import v3data.common.hypervisor
 from fastapi import APIRouter, Response
 
@@ -11,11 +12,17 @@ def root():
     return "Gamma Strategies - Polygon"
 
 
+@router.get("/status/subgraph")
+async def subgraph_status():
+    return await v3data.common.subgraph_status(CHAIN_POLYGON)
+
+
 @router.get("/charts/bollingerbands/{poolAddress}")
 async def bollingerbands_chart(poolAddress: str, periodHours: int = 24):
     return await v3data.common.charts.bollingerbands_chart(
         CHAIN_POLYGON, poolAddress, periodHours
     )
+
 
 @router.get("/charts/baseRange/all")
 async def base_range_chart_all(days: int = 20):

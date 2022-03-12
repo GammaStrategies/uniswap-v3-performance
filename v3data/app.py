@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
@@ -8,27 +8,14 @@ from fastapi_cache.decorator import cache
 
 from v3data.routers import mainnet, polygon, simulator
 
-from v3data import IndexNodeClient
-from v3data.accounts import AccountInfo
 from v3data.bollingerbands import BollingerBand
 
-# from v3data.charts import BaseLimit
 from v3data.charts.benchmark import Benchmark
 from v3data.charts.daily import DailyChart
-from v3data.config import (
-    CHARTS_CACHE_TIMEOUT,
-    DASHBOARD_CACHE_TIMEOUT,
-    DEFAULT_TIMEZONE,
-)
-from v3data.dashboard import Dashboard
-from v3data.eth import EthDistribution
-from v3data.gamma import GammaDistribution, GammaInfo, GammaYield
-from v3data.hypervisor import HypervisorData
+from v3data.config import CHARTS_CACHE_TIMEOUT
+
 from v3data.pools import pools_from_symbol
 
-# from v3data.simulator import SimulatorInfo
-# from v3data.toplevel import TopLevelData
-from v3data.users import UserInfo
 from v3data.utils import parse_date
 
 logging.basicConfig(
@@ -47,12 +34,6 @@ app.include_router(simulator.router, tags=["Simulator"])
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
-
-
-@app.get("/status/subgraph")
-async def subgraph_status():
-    client = IndexNodeClient()
-    return await client.status()
 
 
 @app.get("/bollingerBandsLatest/{poolAddress}")

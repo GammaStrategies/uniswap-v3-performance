@@ -1,6 +1,4 @@
-import v3data.common.hypervisor
-import v3data.common.charts
-import v3data.common.users
+import v3data.common
 
 from fastapi import APIRouter, Response, status
 from fastapi_cache.decorator import cache
@@ -18,6 +16,11 @@ router = APIRouter()
 @router.get("/")
 def root():
     return "Gamma Strategies"
+
+
+@router.get("/status/subgraph")
+async def subgraph_status():
+    return await v3data.common.subgraph_status(CHAIN_MAINNET)
 
 
 @router.get("/charts/bollingerbands/{poolAddress}")
