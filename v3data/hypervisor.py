@@ -15,9 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 class HypervisorData:
-    def __init__(self):
-        self.gamma_client = GammaClient()
-        self.uniswap_client = UniswapV3Client()
+    def __init__(self, chain: str="mainnet"):
+        self.gamma_client = GammaClient(chain)
+        print(self.gamma_client._url)
+        self.uniswap_client = UniswapV3Client(chain)
 
     async def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
         query = """
