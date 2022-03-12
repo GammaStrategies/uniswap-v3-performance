@@ -1,29 +1,21 @@
 import logging
 
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
 
-from v3data import IndexNodeClient
-from v3data.accounts import AccountInfo
+from v3data.routers import mainnet, polygon, simulator
+
 from v3data.bollingerbands import BollingerBand
-from v3data.charts import BaseLimit
+
 from v3data.charts.benchmark import Benchmark
 from v3data.charts.daily import DailyChart
-from v3data.config import (
-    CHARTS_CACHE_TIMEOUT,
-    DASHBOARD_CACHE_TIMEOUT,
-    DEFAULT_TIMEZONE,
-)
-from v3data.dashboard import Dashboard
-from v3data.eth import EthDistribution
-from v3data.gamma import GammaDistribution, GammaInfo, GammaYield
-from v3data.hypervisor import HypervisorData
+from v3data.config import CHARTS_CACHE_TIMEOUT
+
 from v3data.pools import pools_from_symbol
-from v3data.toplevel import TopLevelData
-from v3data.users import UserInfo
+
 from v3data.utils import parse_date
 
 logging.basicConfig(
@@ -34,29 +26,14 @@ logging.basicConfig(
 
 app = FastAPI()
 
+app.include_router(mainnet.router, tags=["Mainnet"])
+app.include_router(polygon.router, tags=["Polygon"])
+app.include_router(simulator.router, tags=["Simulator"])
+
 # Allow CORS
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
-
-
-@app.get("/")
-def main():
-    return "Visor Data"
-
-
-@app.get("/status/subgraph")
-async def subgraph_status():
-    client = IndexNodeClient()
-    return await client.status()
-
-
-@app.get("/charts/bollingerbands/{poolAddress}")
-@app.get("/bollingerBandsChartData/{poolAddress}")
-@cache(expire=CHARTS_CACHE_TIMEOUT)
-async def bollingerbands_chart(poolAddress: str, periodHours: int = 24):
-    bband = BollingerBand(poolAddress, periodHours)
-    return {"data": await bband.chart_data()}
 
 
 @app.get("/bollingerBandsLatest/{poolAddress}")
@@ -84,28 +61,6 @@ async def daily_hypervisor_flows_chart_data(hypervisor_address: str, days: int =
     return {"data": await daily.asset_flows(hypervisor_address)}
 
 
-@app.get("/charts/baseRange/all")
-@cache(expire=CHARTS_CACHE_TIMEOUT)
-async def base_range_chart_all(days: int = 20):
-    hours = days * 24
-    baseLimitData = BaseLimit(hours=hours, chart=True)
-    chart_data = await baseLimitData.all_rebalance_ranges()
-    return chart_data
-
-
-@app.get("/charts/baseRange/{hypervisor_address}")
-@cache(expire=CHARTS_CACHE_TIMEOUT)
-async def base_range_chart(hypervisor_address: str, days: int = 20):
-    hours = days * 24
-    hypervisor_address = hypervisor_address.lower()
-    baseLimitData = BaseLimit(hours=hours, chart=True)
-    chart_data = await baseLimitData.rebalance_ranges(hypervisor_address)
-    if chart_data:
-        return {hypervisor_address: chart_data}
-    else:
-        return {}
-
-
 @app.get("/charts/benchmark/{hypervisor_address}")
 # @cache(expire=CHARTS_CACHE_TIMEOUT)
 async def benchmark_chart(
@@ -122,130 +77,9 @@ async def benchmark_chart(
         return {}
 
 
-@app.get("/user/{address}")
-async def user_data(address: str):
-    user_info = UserInfo(address)
-    return await user_info.output(get_data=True)
-
-
-@app.get("/vault/{address}")
-async def account_data(address: str):
-    account_info = AccountInfo(address)
-    return await account_info.output()
-
-
 @app.get("/pools/{token}")
 async def uniswap_pools(token: str):
     return {"pools": await pools_from_symbol(token)}
-
-
-@app.get("/gamma/basicStats")
-@app.get("/visr/basicStats")
-async def gamma_basic_stats():
-    gamma_info = GammaInfo(days=30)
-    return await gamma_info.output()
-
-
-@app.get("/gamma/yield")
-@app.get("/visr/yield")
-async def gamma_yield():
-    gamma_yield = GammaYield(days=30)
-    return await gamma_yield.output()
-
-
-@app.get("/{token_symbol}/dailyDistribution")
-async def token_distributions(
-    response: Response,
-    token_symbol: str = "gamma",
-    days: int = 6,
-    timezone: str = DEFAULT_TIMEZONE,
-):
-    timezone = timezone.upper()
-
-    if token_symbol not in ["gamma", "visr", "eth"]:
-        response.status_code = status.HTTP_400_BAD_REQUEST
-        return "Only GAMMA, VISR and ETH supported"
-
-    if timezone not in ["UTC", "UTC-5"]:
-        response.status_code = status.HTTP_400_BAD_REQUEST
-        return "Only UTC and UTC-5 timezones supported"
-
-    distribution_class_map = {
-        "gamma": GammaDistribution,
-        "visr": GammaDistribution,
-        "eth": EthDistribution,
-    }
-
-    token_distributions = distribution_class_map[token_symbol](
-        days=days, timezone=timezone
-    )
-    return await token_distributions.output()
-
-
-@app.get("/hypervisor/{hypervisor_address}/basicStats")
-async def hypervisor_basic_stats(response: Response, hypervisor_address):
-    hypervisor = HypervisorData()
-    basic_stats = await hypervisor.basic_stats(hypervisor_address)
-
-    if basic_stats:
-        return basic_stats
-    else:
-        response.status_code = status.HTTP_400_BAD_REQUEST
-        return "Invalid hypervisor address or not enough data"
-
-
-@app.get("/hypervisor/{hypervisor_address}/returns")
-async def hypervisor_apy(response: Response, hypervisor_address):
-    hypervisor = HypervisorData()
-    returns = await hypervisor.calculate_returns(hypervisor_address)
-
-    if returns:
-        return {"hypervisor": hypervisor_address, "returns": returns}
-    else:
-        response.status_code = status.HTTP_400_BAD_REQUEST
-        return "Invalid hypervisor address or not enough data"
-
-
-@app.get("/hypervisors/aggregateStats")
-async def aggregate_stats():
-    top_level = TopLevelData()
-    top_level_data = await top_level.all_stats()
-
-    return {
-        "totalValueLockedUSD": top_level_data["tvl"],
-        "pairCount": top_level_data["pool_count"],
-        "totalFeesClaimedUSD": top_level_data["fees_claimed"],
-    }
-
-
-@app.get("/hypervisors/recentFees")
-async def recent_fees(hours: int = 24):
-    top_level = TopLevelData()
-    recent_fees = await top_level.recent_fees(hours)
-
-    return {"periodHours": hours, "fees": recent_fees}
-
-
-@app.get("/hypervisors/returns")
-async def hypervisors_return():
-    hypervisor = HypervisorData()
-
-    return await hypervisor.all_returns()
-
-
-@app.get("/hypervisors/allData")
-async def hypervisors_all():
-    hypervisor = HypervisorData()
-
-    return await hypervisor.all_data()
-
-
-@app.get("/dashboard")
-@cache(expire=DASHBOARD_CACHE_TIMEOUT)
-async def dashboard(period: str = "weekly"):
-    dashboard = Dashboard(period.lower())
-
-    return await dashboard.info("UTC")
 
 
 @app.on_event("startup")

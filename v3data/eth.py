@@ -8,8 +8,8 @@ from v3data.constants import DAYS_IN_PERIOD
 
 
 class EthData:
-    def __init__(self, days, timezone=DEFAULT_TIMEZONE):
-        self.gamma_client = GammaClient()
+    def __init__(self, chain: str, days, timezone=DEFAULT_TIMEZONE):
+        self.gamma_client = GammaClient(chain)
         self.days = days
         self.timezone = timezone
         self.decimal_factor = 10**18
@@ -47,8 +47,8 @@ class EthData:
 
 
 class EthCalculations(EthData):
-    def __init__(self, days=30):
-        super().__init__(days=days)
+    def __init__(self, chain: str, days=30):
+        super().__init__(chain, days=days)
 
     async def basic_info(self, get_data=True):
         if get_data:
@@ -79,8 +79,8 @@ class EthCalculations(EthData):
 
 
 class EthDistribution(EthCalculations):
-    def __init__(self, days=6, timezone=DEFAULT_TIMEZONE):
-        super().__init__(days=days)
+    def __init__(self, chain: str, days=6, timezone=DEFAULT_TIMEZONE):
+        super().__init__(chain, days=days)
 
     async def output(self):
         distributions = await self.distributions(get_data=True)

@@ -13,8 +13,8 @@ from v3data.config import EXCLUDED_HYPERVISORS
 class TopLevelData:
     """Top level stats"""
 
-    def __init__(self):
-        self.gamma_client = GammaClient()
+    def __init__(self, chain: str="mainnet"):
+        self.gamma_client = GammaClient(chain)
         self.all_stats_data = {}
         self.all_returns_data = {}
 
