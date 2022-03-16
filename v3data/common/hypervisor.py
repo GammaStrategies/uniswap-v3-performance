@@ -1,14 +1,14 @@
 from fastapi import Response, status
 
-from v3data.hypervisor import HypervisorData
+from v3data.hypervisor import HypervisorInfo
 from v3data.toplevel import TopLevelData
 
 
 async def hypervisor_basic_stats(
     chain: str, hypervisor_address: str, response: Response
 ):
-    hypervisor = HypervisorData(chain)
-    basic_stats = await hypervisor.basic_stats(hypervisor_address)
+    hypervisor_info = HypervisorInfo(chain)
+    basic_stats = await hypervisor_info.basic_stats(hypervisor_address)
 
     if basic_stats:
         return basic_stats
@@ -18,8 +18,8 @@ async def hypervisor_basic_stats(
 
 
 async def hypervisor_apy(chain: str, hypervisor_address, response: Response):
-    hypervisor = HypervisorData(chain)
-    returns = await hypervisor.calculate_returns(hypervisor_address)
+    hypervisor_info = HypervisorInfo(chain)
+    returns = await hypervisor_info.calculate_returns(hypervisor_address)
 
     if returns:
         return {"hypervisor": hypervisor_address, "returns": returns}
@@ -47,12 +47,12 @@ async def recent_fees(chain: str, hours: int = 24):
 
 
 async def hypervisors_return(chain: str):
-    hypervisor = HypervisorData(chain)
+    hypervisor_info = HypervisorInfo(chain)
 
-    return await hypervisor.all_returns()
+    return await hypervisor_info.all_returns()
 
 
 async def hypervisors_all(chain: str):
-    hypervisor = HypervisorData(chain)
+    hypervisor_info = HypervisorInfo(chain)
 
-    return await hypervisor.all_data()
+    return await hypervisor_info.all_data()

@@ -99,9 +99,9 @@ class AccountInfo(AccountData):
                 "initialTokenCurrentUSD": initial_token_current_USD,
                 "currentUSD": current_USD,
                 "netMarketReturns": current_USD - initial_USD,
-                "netMarketReturnsPercentage": f"{1 - (initial_USD / current_USD):.2%}",
+                "netMarketReturnsPercentage": f"{(current_USD /initial_USD) - 1:.2%}" if initial_USD > 0 else "N/A",
                 "hypervisorReturns": current_USD - initial_token_current_USD,
-                "hypervisorReturnsPercentage": f"{1 - (initial_token_current_USD / current_USD):.2%}",
+                "hypervisorReturnsPercentage": f"{(current_USD / initial_token_current_USD) - 1:.2%}" if initial_token_current_USD > 0 else "N/A",
             }
 
         return returns

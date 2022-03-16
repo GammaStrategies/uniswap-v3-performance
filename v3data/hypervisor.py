@@ -15,10 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 class HypervisorData:
-    def __init__(self, chain: str="mainnet"):
+    def __init__(self, chain: str = "mainnet"):
         self.gamma_client = GammaClient(chain)
-        print(self.gamma_client._url)
         self.uniswap_client = UniswapV3Client(chain)
+        self.basics_data = {}
+        self.pools_data = {}
 
     async def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
         query = """
@@ -82,10 +83,34 @@ class HypervisorData:
                 id: $id
             ) {
                 id
+                created
+                baseLower
+                baseUpper
+                totalSupply
+                maxTotalSupply
+                deposit0Max
+                deposit1Max
+                grossFeesClaimed0
+                grossFeesClaimed1
                 grossFeesClaimedUSD
-                protocolFeesCollectedUSD
+                feesReinvested0
+                feesReinvested1
                 feesReinvestedUSD
+                tvl0
+                tvl1
                 tvlUSD
+                pool{
+                    id
+                    fee
+                    token0{
+                        symbol
+                        decimals
+                    }
+                    token1{
+                        symbol
+                        decimals
+                    }
+                }
             }
         }
         """
@@ -93,10 +118,75 @@ class HypervisorData:
         response = await self.gamma_client.query(query, variables)
         return response["data"]["uniswapV3Hypervisor"]
 
-    async def basic_stats(self, hypervisor_address):
-        data = await self._get_hypervisor_data(hypervisor_address)
-        return data
+    async def _get_all_data(self):
+        query_basics = """
+        {
+            uniswapV3Hypervisors(
+                first:1000
+            ){
+                id
+                created
+                baseLower
+                baseUpper
+                totalSupply
+                maxTotalSupply
+                deposit0Max
+                deposit1Max
+                grossFeesClaimed0
+                grossFeesClaimed1
+                grossFeesClaimedUSD
+                feesReinvested0
+                feesReinvested1
+                feesReinvestedUSD
+                tvl0
+                tvl1
+                tvlUSD
+                pool{
+                    id
+                    fee
+                    token0{
+                        symbol
+                        decimals
+                    }
+                    token1{
+                        symbol
+                        decimals
+                    }
+                }
+            }
+        }
+        """
 
+        basics_response = await self.gamma_client.query(query_basics)
+        basics = basics_response["data"]["uniswapV3Hypervisors"]
+        pool_addresses = [hypervisor["pool"]["id"] for hypervisor in basics]
+
+        query_pool = """
+        query slot0($pools: [String!]!){
+            pools(
+                where: {
+                    id_in: $pools
+                }
+            ) {
+                id
+                sqrtPrice
+                tick
+                observationIndex
+                feesUSD
+                totalValueLockedUSD
+            }
+        }
+        """
+        variables = {"pools": pool_addresses}
+        pools_response = await self.uniswap_client.query(query_pool, variables)
+        pools_data = pools_response["data"]["pools"]
+        pools = {pool.pop("id"): pool for pool in pools_data}
+
+        self.basics_data = basics
+        self.pools_data = pools
+
+
+class HypervisorInfo(HypervisorData):
     def empty_returns(self):
         return {
             period: {
@@ -105,7 +195,7 @@ class HypervisorData:
                 "feeApy": 0,
                 "totalPeriodSeconds": 0,
             }
-            for period in ["daily", "weekly", "monthly"]
+            for period in DAYS_IN_PERIOD
         }
 
     def _calculate_returns(self, data):
@@ -192,11 +282,19 @@ class HypervisorData:
 
         return results
 
+    async def basic_stats(self, hypervisor_address):
+        data = await self._get_hypervisor_data(hypervisor_address)
+        return data
+
     async def calculate_returns(self, hypervisor_address):
         data = await self.get_rebalance_data(hypervisor_address, timedelta(days=360))
         return self._calculate_returns(data)
 
-    def _all_returns(self):
+    async def all_returns(self, get_data=True):
+
+        if get_data:
+            await self._get_all_rebalance_data(timedelta(days=360))
+
         results = {}
         for hypervisor in self.all_rebalance_data:
             if hypervisor["id"] not in EXCLUDED_HYPERVISORS:
@@ -206,80 +304,21 @@ class HypervisorData:
 
         return results
 
-    async def all_returns(self):
-        await self._get_all_rebalance_data(timedelta(days=360))
-        return self._all_returns()
+    async def all_data(self, get_data=True):
 
-    async def all_data(self):
-        query_basics = """
-        {
-            uniswapV3Hypervisors(
-                first:1000
-            ){
-                id
-                created
-                baseLower
-                baseUpper
-                totalSupply
-                maxTotalSupply
-                deposit0Max
-                deposit1Max
-                grossFeesClaimed0
-                grossFeesClaimed1
-                grossFeesClaimedUSD
-                feesReinvested0
-                feesReinvested1
-                feesReinvestedUSD
-                tvl0
-                tvl1
-                tvlUSD
-                pool{
-                    id
-                    token0{
-                        symbol
-                        decimals
-                    }
-                    token1{
-                        symbol
-                        decimals
-                    }
-                }
+        if get_data:
+            await self._get_all_data()
 
-            }
-        }
-        """
+        basics = self.basics_data
+        pools = self.pools_data
 
-        basics_response = await self.gamma_client.query(query_basics)
-        basics = basics_response["data"]["uniswapV3Hypervisors"]
-        pool_addresses = [hypervisor["pool"]["id"] for hypervisor in basics]
-
-        query_pool = """
-        query slot0($pools: [String!]!){
-            pools(
-                where: {
-                    id_in: $pools
-                }
-            ) {
-                id
-                sqrtPrice
-                tick
-                observationIndex
-                feesUSD
-                totalValueLockedUSD
-            }
-        }
-        """
-        variables = {"pools": pool_addresses}
-        pools_response = await self.uniswap_client.query(query_pool, variables)
-        pools_data = pools_response["data"]["pools"]
-        pools = {pool.pop("id"): pool for pool in pools_data}
-
-        returns = await self.all_returns()
+        returns = await self.all_returns(get_data=get_data)
 
         results = {}
         for hypervisor in basics:
             try:
                 hypervisor_id = hypervisor["id"]
+                hypervisor_name = f'{hypervisor["pool"]["token0"]["symbol"]}-{hypervisor["pool"]["token1"]["symbol"]}-{hypervisor["pool"]["fee"]}'
                 pool_id = hypervisor["pool"]["id"]
                 decimals0 = hypervisor["pool"]["token0"]["decimals"]
                 decimals1 = hypervisor["pool"]["token1"]["decimals"]
@@ -297,6 +336,7 @@ class HypervisorData:
                         int(hypervisor["created"]), "%d %b, %Y"
                     ),
                     "poolAddress": pool_id,
+                    "name": hypervisor_name,
                     "decimals0": decimals0,
                     "decimals1": decimals1,
                     "depositCap0": int(hypervisor["deposit0Max"]) / 10**decimals0,
