@@ -17,18 +17,12 @@ logger = logging.getLogger(__name__)
 
 
 class HypervisorData:
-<<<<<<< HEAD
     def __init__(self, chain: str = "mainnet"):
         self.gamma_client = GammaClient(chain)
         self.uniswap_client = UniswapV3Client(chain)
         self.basics_data = {}
         self.pools_data = {}
-=======
-    def __init__(self):
-        self.gamma_client = GammaClient()
-        self.uniswap_client = UniswapV3Client()
-        self.fees_data = {}
->>>>>>> Get uncollected fees
+        self.fees_data = {}        
 
     async def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
         query = """
@@ -171,7 +165,6 @@ class HypervisorData:
         basics = basics_response["data"]["uniswapV3Hypervisors"]
         pool_addresses = [hypervisor["pool"]["id"] for hypervisor in basics]
 
-<<<<<<< HEAD
         query_pool = """
         query slot0($pools: [String!]!){
             pools(
@@ -195,10 +188,7 @@ class HypervisorData:
 
         self.basics_data = basics
         self.pools_data = pools
-
-
-class HypervisorInfo(HypervisorData):
-=======
+    
     async def _get_uncollected_fees_data(self, hypervisor_address):
         hypervisor_query = """
         query hypervisor($id: String!){
@@ -228,6 +218,7 @@ class HypervisorInfo(HypervisorData):
         hypervisor_response = await self.gamma_client.query(
             hypervisor_query, hypervisor_variables
         )
+        print(hypervisor_response)
         hypervisor_data = hypervisor_response["data"]["uniswapV3Hypervisor"]
 
         pool_query = """
@@ -299,7 +290,9 @@ class HypervisorInfo(HypervisorData):
         
         return True
 
->>>>>>> Get uncollected fees
+
+class HypervisorInfo(HypervisorData):
+
     def empty_returns(self):
         return {
             period: {

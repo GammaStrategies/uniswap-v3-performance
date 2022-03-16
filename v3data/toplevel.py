@@ -5,7 +5,7 @@ from pandas import DataFrame
 
 from v3data import GammaClient
 from v3data.gamma import GammaPrice
-from v3data.hypervisor import HypervisorData
+from v3data.hypervisor import HypervisorData, HypervisorInfo
 from v3data.utils import timestamp_ago
 from v3data.config import EXCLUDED_HYPERVISORS
 
@@ -166,7 +166,7 @@ class TopLevelData:
 
         return df_fees.sum().to_dict()
 
-    def _calculate_returns(self):
+    async def _calculate_returns(self):
         hypervisors = self.all_returns_data
 
         tvl = sum(
@@ -177,14 +177,15 @@ class TopLevelData:
             ]
         )
 
-        hypervisor_data = HypervisorData()
-        hypervisor_data.all_rebalance_data = hypervisors
-        all_returns = hypervisor_data._all_returns()
+        hypervisor_info = HypervisorInfo()
+        hypervisor_info.all_rebalance_data = hypervisors
+        all_returns = await hypervisor_info.all_returns()
 
         returns = {
             "daily": {"feeApr": 0, "feeApy": 0},
             "weekly": {"feeApr": 0, "feeApy": 0},
             "monthly": {"feeApr": 0, "feeApy": 0},
+            "allTime": {"feeApr": 0, "feeApy": 0},
         }
         for hypervisor in hypervisors:
             if hypervisor["id"] in EXCLUDED_HYPERVISORS:
@@ -203,4 +204,4 @@ class TopLevelData:
 
     async def calculate_returns(self):
         await self._get_all_returns_data(timedelta(days=30))
-        return self._calculate_returns()
+        return await self._calculate_returns()

@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
+from v3data.hypervisor import UncollectedFees
 
 from v3data.routers import mainnet, polygon, simulator
 
@@ -80,6 +81,10 @@ async def benchmark_chart(
 async def uniswap_pools(token: str):
     return {"pools": await pools_from_symbol(token)}
 
+@app.get("/test")
+async def test():
+    uncollected_fees = UncollectedFees()
+    return await uncollected_fees.output("0x97491b65c9c8e8754b5c55ed208ff490b2ee6190")
 
 @app.on_event("startup")
 async def startup():

@@ -161,7 +161,7 @@ class Dashboard:
         top_level.all_stats_data = self.top_level_data
         top_level.all_returns_data = self.top_level_returns_data
         top_level_data = top_level._all_stats()
-        top_level_returns = top_level._calculate_returns()
+        top_level_returns = await top_level._calculate_returns()
 
         daily_yield = gamma_yield[self.period]["yield"] / DAYS_IN_PERIOD[self.period]
 
