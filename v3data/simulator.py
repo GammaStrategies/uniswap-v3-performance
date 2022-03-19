@@ -3,8 +3,8 @@ from v3data import UniswapV3Client
 
 
 class SimulatorData:
-    def __init__(self) -> None:
-        self.uniswap_client = UniswapV3Client()
+    def __init__(self, chain: str) -> None:
+        self.uniswap_client = UniswapV3Client(chain)
 
     async def _get_token_list(self, page: int = 0):
         query = """
