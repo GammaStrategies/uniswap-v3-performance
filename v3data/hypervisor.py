@@ -5,7 +5,7 @@ from datetime import timedelta
 from pandas import DataFrame
 
 from v3data import GammaClient, UniswapV3Client
-from v3data.utils import timestamp_ago, timestamp_to_date
+from v3data.utils import tick_to_priceDecimal, timestamp_ago, timestamp_to_date
 from v3data.constants import DAYS_IN_PERIOD, SECONDS_IN_DAYS
 from v3data.config import EXCLUDED_HYPERVISORS, FALLBACK_DAYS
 
@@ -325,7 +325,7 @@ class HypervisorInfo(HypervisorData):
             return self.empty_returns()
 
         # Add uncollected fees
-        uncollected_fees = UncollectedFees(self.ch)
+        # uncollected_fees = UncollectedFees(self.chain).output()
 
         df_rebalances.sort_values("timestamp", inplace=True)
         latest_rebalance_ts = df_rebalances.loc[df_rebalances.index[-1], "timestamp"]
@@ -524,6 +524,8 @@ class UncollectedFees(HypervisorData):
             fee_growth_inside_last_0=int(data['hypervisor_data']['limitFeeGrowthInside0LastX128']),
             fee_growth_inside_last_1=int(data['hypervisor_data']['limitFeeGrowthInside1LastX128'])
         )
+
+        price = tick_to_priceDecimal(data['tick_data']['pool']['tick'])
 
         return {
             "base_fees_0": base_fees_0,
