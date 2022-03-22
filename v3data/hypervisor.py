@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class HypervisorData:
     def __init__(self, chain: str = "mainnet"):
+        self.chain = chain
         self.gamma_client = GammaClient(chain)
         self.uniswap_client = UniswapV3Client(chain)
         self.basics_data = {}
@@ -218,7 +219,6 @@ class HypervisorData:
         hypervisor_response = await self.gamma_client.query(
             hypervisor_query, hypervisor_variables
         )
-        print(hypervisor_response)
         hypervisor_data = hypervisor_response["data"]["uniswapV3Hypervisor"]
 
         pool_query = """
@@ -323,6 +323,9 @@ class HypervisorInfo(HypervisorData):
 
         if df_rebalances.empty:
             return self.empty_returns()
+
+        # Add uncollected fees
+        uncollected_fees = UncollectedFees(self.ch)
 
         df_rebalances.sort_values("timestamp", inplace=True)
         latest_rebalance_ts = df_rebalances.loc[df_rebalances.index[-1], "timestamp"]
@@ -548,14 +551,22 @@ class UncollectedFees(HypervisorData):
     ):
         X128 = math.pow(2, 128)
 
-        fee_growth_global_0 = fee_growth_global_0 / X128
-        fee_growth_global_1 = fee_growth_global_1 / X128
-        fee_growth_outside_0_lower = fee_growth_outside_0_lower / X128
-        fee_growth_outside_1_lower = fee_growth_outside_1_lower / X128
-        fee_growth_outside_0_upper = fee_growth_outside_0_upper / X128
-        fee_growth_outside_1_upper = fee_growth_outside_1_upper / X128
-        fee_growth_inside_last_0 = fee_growth_inside_last_0 / X128
-        fee_growth_inside_last_1 = fee_growth_inside_last_1 / X128
+        debug = {
+            "decimals_0": decimals_0,
+            "decimals_1": decimals_1,
+            "fee_growth_global_0": fee_growth_global_0,
+            "fee_growth_global_1": fee_growth_global_1,
+            "tick_current": tick_current,
+            "tick_lower": tick_lower,
+            "tick_upper": tick_upper,
+            "fee_growth_outside_0_lower": fee_growth_outside_0_lower,
+            "fee_growth_outside_1_lower": fee_growth_outside_1_lower,
+            "fee_growth_outside_0_upper": fee_growth_outside_0_upper,
+            "fee_growth_outside_1_upper": fee_growth_outside_1_upper,
+            "liquidity": liquidity,
+            "fee_growth_inside_last_0": fee_growth_inside_last_0,
+            "fee_growth_inside_last_1": fee_growth_inside_last_1,
+        }
 
         if tick_current >= tick_lower:
             fee_growth_below_pos_0 = fee_growth_outside_0_lower
@@ -577,17 +588,12 @@ class UncollectedFees(HypervisorData):
         fees_accum_now_1 = (
             fee_growth_global_1 - fee_growth_below_pos_1 - fee_growth_above_pos_1
         )
-        print(liquidity)
-        print(fees_accum_now_0)
-        print(fees_accum_now_1)
-        print(fee_growth_inside_last_0)
-        print(fee_growth_inside_last_1)
 
         uncollectedFees_0 = (
             liquidity * (fees_accum_now_0 - fee_growth_inside_last_0)
-        ) / (10**decimals_0)
+        ) / (10**decimals_0 * X128)
         uncollectedFees_1 = (
             liquidity * (fees_accum_now_1 - fee_growth_inside_last_1)
-        ) / (10**decimals_1)
+        ) / (10**decimals_1 * X128)
 
         return uncollectedFees_0, uncollectedFees_1

@@ -81,13 +81,16 @@ class AccountInfo(AccountData):
             base_token_index = int(conversion["baseTokenIndex"])
             price_token_in_base = float(conversion["priceTokenInBase"])
             price_base_in_usd = float(conversion["priceBaseInUSD"])
-
+            print(hypervisor_address)
             if base_token_index == 0:
                 token = initial_token1
                 base = initial_token0
             elif base_token_index == 1:
                 token = initial_token0
                 base = initial_token1
+            else:
+                token = 0
+                base = 0
 
             initial_token_current_USD = (
                 token * price_token_in_base * price_base_in_usd
