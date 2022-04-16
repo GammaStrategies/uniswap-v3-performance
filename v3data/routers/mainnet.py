@@ -46,6 +46,16 @@ async def base_range_chart(hypervisor_address: str, days: int = 20):
     )
 
 
+@router.get("/charts/benchmark/{hypervisor_address}")
+# @cache(expire=CHARTS_CACHE_TIMEOUT)
+async def benchmark_chart(
+    hypervisor_address: str, startDate: str = "", endDate: str = ""
+):
+    return await v3data.common.charts.benchmark_chart(
+        CHAIN_MAINNET, hypervisor_address, startDate, endDate
+    )
+
+
 @router.get("/hypervisor/{hypervisor_address}/basicStats")
 async def hypervisor_basic_stats(hypervisor_address, response: Response):
     return await v3data.common.hypervisor.hypervisor_basic_stats(
@@ -100,7 +110,7 @@ async def gamma_basic_stats():
 @router.get("/gamma/yield")
 @router.get("/visr/yield")
 async def gamma_yield():
-    gamma_yield = GammaYield(days=30)
+    gamma_yield = GammaYield(CHAIN_MAINNET, days=30)
     return await gamma_yield.output()
 
 
@@ -128,9 +138,9 @@ async def token_distributions(
     }
 
     token_distributions = distribution_class_map[token_symbol](
-        CHAIN_MAINNET, days=days, timezone=timezone
+        CHAIN_MAINNET, days=60, timezone=timezone
     )
-    return await token_distributions.output()
+    return await token_distributions.output(days)
 
 
 @router.get("/dashboard")

@@ -1,7 +1,8 @@
 import asyncio
+from operator import methodcaller
 import numpy as np
 from datetime import timedelta
-from pandas import DataFrame
+from pandas import DataFrame, to_datetime
 
 from v3data import GammaClient, UniswapV3Client
 from v3data.config import DEFAULT_TIMEZONE
@@ -92,6 +93,25 @@ class GammaCalculations(GammaData):
             "totalSupply": int(self.data["token"]["totalSupply"]) / self.decimal_factor,
         }
 
+    def yield_table(self):
+        df_dist = DataFrame(
+            self.data["distributionDayDatas"], dtype=np.float64
+        ).set_index("date")
+        df_rh = DataFrame(
+            self.data["rewardHypervisorDayDatas"], dtype=np.float64
+        ).set_index("date")
+        df_data = df_dist.join(df_rh, how="outer")
+        df_data = df_data.sort_values("date")
+        df_data.totalGamma = df_data.totalGamma.fillna(method="ffill").fillna(
+            method="bfill"
+        )
+        df_data[["distributed", "distributedUSD"]] = df_data[
+            ["distributed", "distributedUSD"]
+        ].fillna(value=0)
+        df_data["dailyYield"] = df_data.distributed / df_data.totalGamma
+
+        return df_data
+
     async def gamma_yield(self, get_data=True):
         """Gets estimates such as APY, visor distributed"""
 
@@ -101,19 +121,7 @@ class GammaCalculations(GammaData):
         if not self.data["distributionDayDatas"]:
             return self._empty_yield()
 
-        df_dist = DataFrame(
-            self.data["distributionDayDatas"], dtype=np.float64
-        ).set_index("date")
-        df_rh = DataFrame(
-            self.data["rewardHypervisorDayDatas"], dtype=np.float64
-        ).set_index("date")
-        df_data = df_dist.join(df_rh, how="outer")
-        df_data = df_data.sort_values("date")
-        df_data.totalGamma = df_data.totalGamma.fillna(method="ffill")
-        df_data[["distributed", "distributedUSD"]] = df_data[
-            ["distributed", "distributedUSD"]
-        ].fillna(value=0)
-        df_data["dailyYield"] = df_data.distributed / df_data.totalGamma
+        df_data = self.yield_table()
 
         results = {}
         for period, days in DAYS_IN_PERIOD.items():
@@ -151,19 +159,41 @@ class GammaCalculations(GammaData):
 
         return results
 
-    async def distributions(self, get_data=True):
+    async def distributions(self, days, get_data=True):
         if get_data:
             await self._get_data()
 
-        results = [
-            {
-                "timestamp": day["date"],
-                "date": timestamp_to_date(int(day["date"]), "%m/%d/%Y"),
-                "distributed": float(day["distributed"]) / self.decimal_factor,
-                "distributedUSD": float(day["distributedUSD"]),
-            }
-            for day in self.data["distributionDayDatas"]
-        ]
+        df_data = self.yield_table()
+        df_data = df_data[df_data.distributed > 0]
+
+        df_data.reset_index(inplace=True)
+        df_data.rename(columns={"date": "timestamp"}, inplace=True)
+        df_data["date"] = to_datetime(df_data.timestamp, unit="s").dt.strftime(
+            "%m/%d/%Y"
+        )
+        df_data['apr'] = df_data.dailyYield * 365
+        df_data['apy']  =  (1 + df_data.dailyYield) ** 365 - 1
+        df_data.distributed = df_data.distributed / self.decimal_factor
+
+
+        results = df_data[[
+            "timestamp",
+            "date",
+            "distributed",
+            "distributedUSD",
+            "apr",
+            "apy"
+        ]].tail(days).to_dict("records")
+
+        # results = [
+        #     {
+        #         "timestamp": day["date"],
+        #         "date": timestamp_to_date(int(day["date"]), "%m/%d/%Y"),
+        #         "distributed": float(day["distributed"]) / self.decimal_factor,
+        #         "distributedUSD": float(day["distributedUSD"]),
+        #     }
+        #     for day in self.data["distributionDayDatas"]
+        # ]
 
         return results
 
@@ -191,28 +221,18 @@ class GammaYield(GammaCalculations):
 
 
 class GammaDistribution(GammaCalculations):
-    def __init__(self, chain: str, days=6, timezone=DEFAULT_TIMEZONE):
+    def __init__(self, chain: str, days=60, timezone=DEFAULT_TIMEZONE):
         super().__init__(chain=chain, days=days)
 
-    async def output(self):
-        distributions = await self.distributions(get_data=True)
-
-        fee_distributions = []
-        for i, distribution in enumerate(distributions):
-            fee_distributions.append(
-                {
-                    "title": distribution["date"],
-                    "desc": f"{int(distribution['distributed']):,}",
-                    "id": i + 2,
-                }
-            )
+    async def output(self, days):
+        distributions = await self.distributions(days=days, get_data=True)
 
         return {
             "feeDistribution": distributions,
             "latest": {
-                "timestamp": distributions[0]["timestamp"],
-                "distributed": distributions[0]["distributed"],
-                "distributedUSD": distributions[0]["distributedUSD"],
+                "timestamp": distributions[-1]["timestamp"],
+                "distributed": distributions[-1]["distributed"],
+                "distributedUSD": distributions[-1]["distributedUSD"],
             },
         }
 

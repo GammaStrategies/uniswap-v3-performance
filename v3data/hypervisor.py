@@ -23,7 +23,7 @@ class HypervisorData:
         self.uniswap_client = UniswapV3Client(chain)
         self.basics_data = {}
         self.pools_data = {}
-        self.fees_data = {}        
+        self.fees_data = {}
 
     async def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
         query = """
@@ -36,6 +36,7 @@ class HypervisorData:
                 }
             ) {
                 id
+                hypervisor
                 timestamp
                 grossFeesUSD
                 protocolFeesUSD
@@ -67,6 +68,7 @@ class HypervisorData:
                     orderDirection: desc
                 ) {
                     id
+                    hypervisor
                     timestamp
                     grossFeesUSD
                     protocolFeesUSD
@@ -120,8 +122,7 @@ class HypervisorData:
         """
         variables = {"id": hypervisor_address.lower()}
         response = await self.gamma_client.query(query, variables)
-        print(response)
-        return response  # ["data"]["uniswapV3Hypervisor"]
+        return response["data"]["uniswapV3Hypervisor"]
 
     async def _get_all_data(self):
         query_basics = """
@@ -189,7 +190,7 @@ class HypervisorData:
 
         self.basics_data = basics
         self.pools_data = pools
-    
+
     async def _get_uncollected_fees_data(self, hypervisor_address):
         hypervisor_query = """
         query hypervisor($id: String!){
@@ -212,6 +213,12 @@ class HypervisorData:
                 limitFeeGrowthInside1LastX128
                 limitLower
                 limitUpper
+                conversion {
+                    baseTokenIndex
+                    priceTokenInBase
+                    priceBaseInUSD
+                }
+                tvlUSD
             }
         }
         """
@@ -287,12 +294,11 @@ class HypervisorData:
         tick_data = pool_response["data"]
 
         self.fees_data = {"hypervisor_data": hypervisor_data, "tick_data": tick_data}
-        
+
         return True
 
 
 class HypervisorInfo(HypervisorData):
-
     def empty_returns(self):
         return {
             period: {
@@ -304,8 +310,16 @@ class HypervisorInfo(HypervisorData):
             for period in DAYS_IN_PERIOD
         }
 
-    def _calculate_returns(self, data):
+    def _calculate_returns(self, rebalance_data, uncollected_fees_data=None):
         # Calculations require more than 1 rebalance
+
+        if rebalance_data:
+            data = rebalance_data.copy()
+            if uncollected_fees_data:
+                data.append(uncollected_fees_data)
+        else:
+            data = [uncollected_fees_data]
+
         if (not data) or (len(data) < 2):
             return self.empty_returns()
 
@@ -324,9 +338,6 @@ class HypervisorInfo(HypervisorData):
         if df_rebalances.empty:
             return self.empty_returns()
 
-        # Add uncollected fees
-        # uncollected_fees = UncollectedFees(self.chain).output()
-
         df_rebalances.sort_values("timestamp", inplace=True)
         latest_rebalance_ts = df_rebalances.loc[df_rebalances.index[-1], "timestamp"]
 
@@ -341,7 +352,7 @@ class HypervisorInfo(HypervisorData):
         # Time since last rebalance
         df_rebalances["periodSeconds"] = df_rebalances.timestamp.diff()
 
-        # Calculate returns for using last 1, 7, and 30 days data
+         # Calculate returns for using last 1, 7, and 30 days data
         results = {}
         for period, days in DAYS_IN_PERIOD.items():
             timestamp_start = timestamp_ago(timedelta(days=days))
@@ -396,8 +407,14 @@ class HypervisorInfo(HypervisorData):
         return data
 
     async def calculate_returns(self, hypervisor_address):
-        data = await self.get_rebalance_data(hypervisor_address, timedelta(days=360))
-        return self._calculate_returns(data)
+        rebalance_data = await self.get_rebalance_data(
+            hypervisor_address, timedelta(days=360)
+        )
+        # uncollected_fees_data = await UncollectedFees(
+        #     self.chain
+        # ).output_for_returns_calc(hypervisor_address)
+        uncollected_fees_data = None
+        return self._calculate_returns(rebalance_data, uncollected_fees_data)
 
     async def all_returns(self, get_data=True):
 
@@ -407,8 +424,12 @@ class HypervisorInfo(HypervisorData):
         results = {}
         for hypervisor in self.all_rebalance_data:
             if hypervisor["id"] not in EXCLUDED_HYPERVISORS:
+                # uncollected_fees_data = await UncollectedFees(
+                #     self.chain
+                # ).output_for_returns_calc(hypervisor["id"])
+                uncollected_fees_data = None
                 results[hypervisor["id"]] = self._calculate_returns(
-                    hypervisor["rebalances"]
+                    hypervisor["rebalances"], uncollected_fees_data
                 )
 
         return results
@@ -488,50 +509,147 @@ class UncollectedFees(HypervisorData):
     async def output(self, hypervisor_address, get_data=True):
         if get_data:
             await self._get_uncollected_fees_data(hypervisor_address)
-        
+
         data = self.fees_data
 
-        base_fees_0, base_fees_1 = self.calc_fees(
-            decimals_0=int(data['hypervisor_data']['pool']['token0']['decimals']),
-            decimals_1=int(data['hypervisor_data']['pool']['token1']['decimals']),
-            fee_growth_global_0=int(data['tick_data']['pool']['feeGrowthGlobal0X128']),
-            fee_growth_global_1=int(data['tick_data']['pool']['feeGrowthGlobal1X128']),
-            tick_current=int(data['tick_data']['pool']['tick']),
-            tick_lower=int(data['hypervisor_data']['baseLower']),
-            tick_upper=int(data['hypervisor_data']['baseUpper']),
-            fee_growth_outside_0_lower=int(data['tick_data']['baseLower'][0]['feeGrowthOutside0X128']),
-            fee_growth_outside_1_lower=int(data['tick_data']['baseLower'][0]['feeGrowthOutside1X128']),
-            fee_growth_outside_0_upper=int(data['tick_data']['baseUpper'][0]['feeGrowthOutside0X128']),
-            fee_growth_outside_1_upper=int(data['tick_data']['baseUpper'][0]['feeGrowthOutside1X128']),
-            liquidity=int(data['hypervisor_data']['baseLiquidity']),
-            fee_growth_inside_last_0=int(data['hypervisor_data']['baseFeeGrowthInside0LastX128']),
-            fee_growth_inside_last_1=int(data['hypervisor_data']['baseFeeGrowthInside1LastX128'])
-        )
+        decimals_0 = int(data["hypervisor_data"]["pool"]["token0"]["decimals"])
+        decimals_1 = int(data["hypervisor_data"]["pool"]["token1"]["decimals"])
 
-        limit_fees_0, limit_fees_1 = self.calc_fees(
-            decimals_0=int(data['hypervisor_data']['pool']['token0']['decimals']),
-            decimals_1=int(data['hypervisor_data']['pool']['token1']['decimals']),
-            fee_growth_global_0=int(data['tick_data']['pool']['feeGrowthGlobal0X128']),
-            fee_growth_global_1=int(data['tick_data']['pool']['feeGrowthGlobal1X128']),
-            tick_current=int(data['tick_data']['pool']['tick']),
-            tick_lower=int(data['hypervisor_data']['limitLower']),
-            tick_upper=int(data['hypervisor_data']['limitUpper']),
-            fee_growth_outside_0_lower=int(data['tick_data']['limitLower'][0]['feeGrowthOutside0X128']),
-            fee_growth_outside_1_lower=int(data['tick_data']['limitLower'][0]['feeGrowthOutside1X128']),
-            fee_growth_outside_0_upper=int(data['tick_data']['limitUpper'][0]['feeGrowthOutside0X128']),
-            fee_growth_outside_1_upper=int(data['tick_data']['limitUpper'][0]['feeGrowthOutside1X128']),
-            liquidity=int(data['hypervisor_data']['limitLiquidity']),
-            fee_growth_inside_last_0=int(data['hypervisor_data']['limitFeeGrowthInside0LastX128']),
-            fee_growth_inside_last_1=int(data['hypervisor_data']['limitFeeGrowthInside1LastX128'])
-        )
+        try:
+            base_fees_0, base_fees_1 = self.calc_fees(
+                decimals_0=decimals_0,
+                decimals_1=decimals_1,
+                fee_growth_global_0=int(
+                    data["tick_data"]["pool"]["feeGrowthGlobal0X128"]
+                ),
+                fee_growth_global_1=int(
+                    data["tick_data"]["pool"]["feeGrowthGlobal1X128"]
+                ),
+                tick_current=int(data["tick_data"]["pool"]["tick"]),
+                tick_lower=int(data["hypervisor_data"]["baseLower"]),
+                tick_upper=int(data["hypervisor_data"]["baseUpper"]),
+                fee_growth_outside_0_lower=int(
+                    data["tick_data"]["baseLower"][0]["feeGrowthOutside0X128"]
+                ),
+                fee_growth_outside_1_lower=int(
+                    data["tick_data"]["baseLower"][0]["feeGrowthOutside1X128"]
+                ),
+                fee_growth_outside_0_upper=int(
+                    data["tick_data"]["baseUpper"][0]["feeGrowthOutside0X128"]
+                ),
+                fee_growth_outside_1_upper=int(
+                    data["tick_data"]["baseUpper"][0]["feeGrowthOutside1X128"]
+                ),
+                liquidity=int(data["hypervisor_data"]["baseLiquidity"]),
+                fee_growth_inside_last_0=int(
+                    data["hypervisor_data"]["baseFeeGrowthInside0LastX128"]
+                ),
+                fee_growth_inside_last_1=int(
+                    data["hypervisor_data"]["baseFeeGrowthInside1LastX128"]
+                ),
+            )
+        except IndexError:
+            base_fees_0 = 0
+            base_fees_1 = 0
 
-        price = tick_to_priceDecimal(data['tick_data']['pool']['tick'])
+        base_fees_0 = max(base_fees_0, 0)
+        base_fees_1 = max(base_fees_1, 0)
+
+        try:
+            limit_fees_0, limit_fees_1 = self.calc_fees(
+                decimals_0=decimals_0,
+                decimals_1=decimals_1,
+                fee_growth_global_0=int(
+                    data["tick_data"]["pool"]["feeGrowthGlobal0X128"]
+                ),
+                fee_growth_global_1=int(
+                    data["tick_data"]["pool"]["feeGrowthGlobal1X128"]
+                ),
+                tick_current=int(data["tick_data"]["pool"]["tick"]),
+                tick_lower=int(data["hypervisor_data"]["limitLower"]),
+                tick_upper=int(data["hypervisor_data"]["limitUpper"]),
+                fee_growth_outside_0_lower=int(
+                    data["tick_data"]["limitLower"][0]["feeGrowthOutside0X128"]
+                ),
+                fee_growth_outside_1_lower=int(
+                    data["tick_data"]["limitLower"][0]["feeGrowthOutside1X128"]
+                ),
+                fee_growth_outside_0_upper=int(
+                    data["tick_data"]["limitUpper"][0]["feeGrowthOutside0X128"]
+                ),
+                fee_growth_outside_1_upper=int(
+                    data["tick_data"]["limitUpper"][0]["feeGrowthOutside1X128"]
+                ),
+                liquidity=int(data["hypervisor_data"]["limitLiquidity"]),
+                fee_growth_inside_last_0=int(
+                    data["hypervisor_data"]["limitFeeGrowthInside0LastX128"]
+                ),
+                fee_growth_inside_last_1=int(
+                    data["hypervisor_data"]["limitFeeGrowthInside1LastX128"]
+                ),
+            )
+        except IndexError:
+            limit_fees_0 = 0
+            limit_fees_1 = 0
+
+        limit_fees_0 = max(limit_fees_0, 0)
+        limit_fees_1 = max(limit_fees_1, 0)
+
+        # Convert to USD
+        baseTokenIndex = int(data["hypervisor_data"]["conversion"]["baseTokenIndex"])
+        priceTokenInBase = float(
+            data["hypervisor_data"]["conversion"]["priceTokenInBase"]
+        )
+        priceBaseInUSD = float(data["hypervisor_data"]["conversion"]["priceBaseInUSD"])
+
+        if baseTokenIndex == 0:
+            base_fees_0_usd = base_fees_0 * priceBaseInUSD
+            base_fees_1_usd = base_fees_1 * priceTokenInBase * priceBaseInUSD
+            limit_fees_0_usd = limit_fees_0 * priceBaseInUSD
+            limit_fees_1_usd = limit_fees_1 * priceTokenInBase * priceBaseInUSD
+        elif baseTokenIndex == 1:
+            base_fees_0_usd = base_fees_0 * priceTokenInBase * priceBaseInUSD
+            base_fees_1_usd = base_fees_1 * priceBaseInUSD
+            limit_fees_0_usd = limit_fees_0 * priceTokenInBase * priceBaseInUSD
+            limit_fees_1_usd = limit_fees_1 * priceBaseInUSD
+        else:
+            base_fees_0_usd = 0
+            base_fees_1_usd = 0
+            limit_fees_0_usd = 0
+            limit_fees_1_usd = 0
 
         return {
-            "base_fees_0": base_fees_0,
-            "base_fees_1": base_fees_1,
-            "limit_fees_0": limit_fees_0,
-            "limit_fees_1": limit_fees_1
+            "base_fees_0": base_fees_0 / 10**decimals_0,
+            "base_fees_1": base_fees_1 / 10**decimals_1,
+            "limit_fees_0": limit_fees_0 / 10**decimals_0,
+            "limit_fees_1": limit_fees_1 / 10**decimals_1,
+            "base_fees_0_usd": base_fees_0_usd,
+            "base_fees_1_usd": base_fees_1_usd,
+            "limit_fees_0_usd": limit_fees_0_usd,
+            "limit_fees_1_usd": limit_fees_1_usd,
+            "tvl_usd": float(data["hypervisor_data"]["tvlUSD"]),
+        }
+
+    async def output_for_returns_calc(self, hypervisor_address, get_data=True):
+        fees = await self.output(hypervisor_address, get_data)
+
+        gross_fees = max(
+            (
+                fees["base_fees_0_usd"]
+                + fees["base_fees_1_usd"]
+                + fees["limit_fees_0_usd"]
+                + fees["limit_fees_1_usd"]
+            ),
+            0,
+        )
+
+        return {
+            "id": "uncollected_fees",
+            "timestamp": timestamp_ago(timedelta(0)),
+            "grossFeesUSD": gross_fees,
+            "protocolFeesUSD": gross_fees * 0.1,
+            "netFeesUSD": gross_fees * 0.9,
+            "totalAmountUSD": fees["tvl_usd"],
         }
 
     @staticmethod
@@ -593,9 +711,9 @@ class UncollectedFees(HypervisorData):
 
         uncollectedFees_0 = (
             liquidity * (fees_accum_now_0 - fee_growth_inside_last_0)
-        ) / (10**decimals_0 * X128)
+        ) / X128
         uncollectedFees_1 = (
             liquidity * (fees_accum_now_1 - fee_growth_inside_last_1)
-        ) / (10**decimals_1 * X128)
+        ) / X128
 
         return uncollectedFees_0, uncollectedFees_1

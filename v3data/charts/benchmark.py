@@ -41,8 +41,8 @@ V2_BASE_POOLS = {
 
 
 class Benchmark:
-    def __init__(self, address, start_date, end_date):
-        self.gamma_client = GammaClient()
+    def __init__(self, chain: str, address, start_date, end_date):
+        self.gamma_client = GammaClient(chain)
         self.v2_client = UniswapV2Client()
         self.address = address
         self._init_dates(start_date, end_date)

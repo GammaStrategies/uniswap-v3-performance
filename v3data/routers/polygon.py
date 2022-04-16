@@ -38,6 +38,14 @@ async def base_range_chart(hypervisor_address: str, days: int = 20):
         CHAIN_POLYGON, hypervisor_address, days
     )
 
+@router.get("/charts/benchmark/{hypervisor_address}")
+# @cache(expire=CHARTS_CACHE_TIMEOUT)
+async def benchmark_chart(
+    hypervisor_address: str, startDate: str = "", endDate: str = ""
+):
+    return await v3data.common.charts.benchmark_chart(
+        CHAIN_POLYGON, hypervisor_address, startDate, endDate
+    )
 
 @router.get("/hypervisor/{hypervisor_address}/basicStats")
 async def hypervisor_basic_stats(hypervisor_address, response: Response):
