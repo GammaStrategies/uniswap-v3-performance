@@ -228,12 +228,8 @@ class GammaDistribution(GammaCalculations):
         distributions = await self.distributions(days=days, get_data=True)
 
         return {
-            "feeDistribution": distributions,
-            "latest": {
-                "timestamp": distributions[-1]["timestamp"],
-                "distributed": distributions[-1]["distributed"],
-                "distributedUSD": distributions[-1]["distributedUSD"],
-            },
+            "feeDistribution": distributions[::-1],
+            "latest": distributions[-1]
         }
 
 
