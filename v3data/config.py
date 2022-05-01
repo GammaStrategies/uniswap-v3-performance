@@ -11,6 +11,12 @@ uniswap_subgraphs = {
     "polygon": {
         "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-polygon"
     },
+    "arbitrum": {
+        "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/arbitrum-dev"
+    },
+    "optimism": {
+        "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/optimism-post-regenesis"
+    },
 }
 
 visor_subgraphs = {
@@ -29,6 +35,14 @@ gamma_subgraphs = {
         "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/polygon",
         "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-polygon",
     },
+    "arbitrum": {
+        "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/arbitrum",
+        "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-arbitrum",
+    },
+    "optimism": {
+        "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/optimism",
+        "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-optimism",
+    },
 }
 
 THEGRAPH_INDEX_NODE_URL = "https://api.thegraph.com/index-node/graphql"
@@ -45,6 +59,12 @@ UNI_V3_SUBGRAPH_URLS = {
     "polygon": uniswap_subgraphs["polygon"][
         os.environ.get("UNISWAP_SUBGRAPH_POLYGON", "prod")
     ],
+    "arbitrum": uniswap_subgraphs["arbitrum"][
+        os.environ.get("UNISWAP_SUBGRAPH_ARBITRUM", "prod")
+    ],
+    "optimism": uniswap_subgraphs["optimism"][
+        os.environ.get("UNISWAP_SUBGRAPH_OPTIMISM", "prod")
+    ],
 }
 
 VISOR_SUBGRAPH_URL = visor_subgraphs[os.environ.get("VISOR_SUBGRAPH", "prod")]
@@ -55,6 +75,12 @@ GAMMA_SUBGRAPH_URLS = {
     ],
     "polygon": gamma_subgraphs["polygon"][
         os.environ.get("GAMMA_SUBGRAPH_POLYGON", "prod")
+    ],
+    "arbitrum": gamma_subgraphs["arbitrum"][
+        os.environ.get("GAMMA_SUBGRAPH_ARBITRUM", "prod")
+    ],
+    "optimism": gamma_subgraphs["optimism"][
+        os.environ.get("GAMMA_SUBGRAPH_OPTIMISM", "prod")
     ],
 }
 
