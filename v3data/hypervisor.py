@@ -52,6 +52,24 @@ class HypervisorData:
             "limit": limit,
         }
         response = await self.gamma_client.query(query, variables)
+
+        if hypervisor_address == "0x0ec4a47065bf52e1874d2491d4deeed3c638c75f":
+            for rebalance in response["data"]["uniswapV3Rebalances"]:
+                if (
+                    rebalance["id"]
+                    == "0x9144d5c6a7e8ffd335c837c5877397e96ea3abbc77c9598b07255add6db3fc13-15"
+                ):
+                    rebalance["grossFeesUSD"] = str(
+                        float(rebalance["grossFeesUSD"]) * 0.08
+                    )
+                    rebalance["protocolFeesUSD"] = str(
+                        float(rebalance["protocolFeesUSD"]) * 0.08
+                    )
+                    rebalance["netFeesUSD"] = str(float(rebalance["netFeesUSD"]) * 0.08)
+                    rebalance["totalAmountUSD"] = str(
+                        float(rebalance["totalAmountUSD"]) * 0.08
+                    )
+
         return response["data"]["uniswapV3Rebalances"]
 
     async def _get_all_rebalance_data(self, time_delta):
@@ -80,6 +98,27 @@ class HypervisorData:
         """
         variables = {"timestamp_start": timestamp_ago(time_delta)}
         response = await self.gamma_client.query(query, variables)
+
+        for hypervisor in response["data"]["uniswapV3Hypervisors"]:
+            if hypervisor["id"] == "0x0ec4a47065bf52e1874d2491d4deeed3c638c75f":
+                for rebalance in hypervisor["rebalances"]:
+                    if (
+                        rebalance["id"]
+                        == "0x9144d5c6a7e8ffd335c837c5877397e96ea3abbc77c9598b07255add6db3fc13-15"
+                    ):
+                        rebalance["grossFeesUSD"] = str(
+                            float(rebalance["grossFeesUSD"]) * 0.08
+                        )
+                        rebalance["protocolFeesUSD"] = str(
+                            float(rebalance["protocolFeesUSD"]) * 0.08
+                        )
+                        rebalance["netFeesUSD"] = str(
+                            float(rebalance["netFeesUSD"]) * 0.08
+                        )
+                        rebalance["totalAmountUSD"] = str(
+                            float(rebalance["totalAmountUSD"]) * 0.08
+                        )
+
         self.all_rebalance_data = response["data"]["uniswapV3Hypervisors"]
 
     async def _get_hypervisor_data(self, hypervisor_address):
@@ -122,6 +161,17 @@ class HypervisorData:
         """
         variables = {"id": hypervisor_address.lower()}
         response = await self.gamma_client.query(query, variables)
+
+        if hypervisor_address == "0x0ec4a47065bf52e1874d2491d4deeed3c638c75f":
+            response["data"]["uniswapV3Hypervisor"]["grossFeesClaimedUSD"] = str(
+                float(response["data"]["uniswapV3Hypervisor"]["grossFeesClaimedUSD"])
+                - 238300
+            )
+            response["data"]["uniswapV3Hypervisor"]["feesReinvestedUSD"] = str(
+                float(response["data"]["uniswapV3Hypervisor"]["feesReinvestedUSD"])
+                - 214470
+            )
+
         return response["data"]["uniswapV3Hypervisor"]
 
     async def _get_all_data(self):
@@ -164,6 +214,16 @@ class HypervisorData:
         """
 
         basics_response = await self.gamma_client.query(query_basics)
+
+        for hypervisor in basics_response["data"]["uniswapV3Hypervisors"]:
+            if hypervisor["id"] == "0x0ec4a47065bf52e1874d2491d4deeed3c638c75f":
+                hypervisor["grossFeesClaimedUSD"] = str(
+                    float(hypervisor["grossFeesClaimedUSD"]) - 238300
+                )
+                hypervisor["feesReinvestedUSD"] = str(
+                    float(hypervisor["feesReinvestedUSD"]) - 214470
+                )
+
         basics = basics_response["data"]["uniswapV3Hypervisors"]
         pool_addresses = [hypervisor["pool"]["id"] for hypervisor in basics]
 
@@ -352,7 +412,7 @@ class HypervisorInfo(HypervisorData):
         # Time since last rebalance
         df_rebalances["periodSeconds"] = df_rebalances.timestamp.diff()
 
-         # Calculate returns for using last 1, 7, and 30 days data
+        # Calculate returns for using last 1, 7, and 30 days data
         results = {}
         for period, days in DAYS_IN_PERIOD.items():
             timestamp_start = timestamp_ago(timedelta(days=days))
