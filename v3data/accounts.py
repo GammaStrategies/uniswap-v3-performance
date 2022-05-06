@@ -1,3 +1,4 @@
+import asyncio
 from v3data import GammaClient
 from v3data.gamma import GammaPrice
 from v3data.constants import XGAMMA_ADDRESS
@@ -6,19 +7,18 @@ from v3data.constants import XGAMMA_ADDRESS
 class AccountData:
     def __init__(self, chain: str, account_address: str):
         self.gamma_client = GammaClient(chain)
+        self.gamma_client_mainnet = GammaClient("mainnet")
         self.address = account_address.lower()
         self.reward_hypervisor_address = XGAMMA_ADDRESS
         self.decimal_factor = 10**18
 
     async def _get_data(self):
         query = """
-        query accountData($accountAddress: String!, $rewardHypervisorAddress: String!) {
+        query accountHypervisor($accountAddress: String!) {
             account(
                 id: $accountAddress
             ){
                 parent { id }
-                gammaDeposited
-                gammaEarnedRealized
                 hypervisorShares {
                     hypervisor {
                         id
@@ -41,6 +41,21 @@ class AccountData:
                     initialToken1
                     initialUSD
                 }
+            }
+        }
+        """
+        variables = {
+            "accountAddress": self.address,
+        }
+
+        query_xgamma = """
+        query accountXgamma($accountAddress: String!, $rewardHypervisorAddress: String!) {
+            account(
+                id: $accountAddress
+            ){
+                parent { id }
+                gammaDeposited
+                gammaEarnedRealized
                 rewardHypervisorShares{
                     rewardHypervisor { id }
                     shares
@@ -54,19 +69,26 @@ class AccountData:
             }
         }
         """
-        variables = {
+        variables_xgamma = {
             "accountAddress": self.address,
             "rewardHypervisorAddress": self.reward_hypervisor_address,
         }
 
-        response = await self.gamma_client.query(query, variables)
-        self.data = response["data"]
+        hypervisor_response, xgamma_response = await asyncio.gather(
+            self.gamma_client.query(query, variables),
+            self.gamma_client_mainnet.query(query_xgamma, variables_xgamma),
+        )
+
+        self.data = {
+            "hypervisor": hypervisor_response["data"],
+            "xgamma": xgamma_response["data"],
+        }
 
 
 class AccountInfo(AccountData):
     def _returns(self):
         returns = {}
-        for share in self.data["account"]["hypervisorShares"]:
+        for share in self.data["hypervisor"]["account"]["hypervisorShares"]:
             if int(share["shares"]) <= 0:  # Workaround before fix in subgraph
                 continue
             hypervisor_address = share["hypervisor"]["id"]
@@ -102,9 +124,13 @@ class AccountInfo(AccountData):
                 "initialTokenCurrentUSD": initial_token_current_USD,
                 "currentUSD": current_USD,
                 "netMarketReturns": current_USD - initial_USD,
-                "netMarketReturnsPercentage": f"{(current_USD /initial_USD) - 1:.2%}" if initial_USD > 0 else "N/A",
+                "netMarketReturnsPercentage": f"{(current_USD /initial_USD) - 1:.2%}"
+                if initial_USD > 0
+                else "N/A",
                 "hypervisorReturns": current_USD - initial_token_current_USD,
-                "hypervisorReturnsPercentage": f"{(current_USD / initial_token_current_USD) - 1:.2%}" if initial_token_current_USD > 0 else "N/A",
+                "hypervisorReturnsPercentage": f"{(current_USD / initial_token_current_USD) - 1:.2%}"
+                if initial_token_current_USD > 0
+                else "N/A",
             }
 
         return returns
@@ -114,10 +140,13 @@ class AccountInfo(AccountData):
         if get_data:
             await self._get_data()
 
-        if not self.data["account"]:
+        hypervisor_data = self.data["hypervisor"]
+        xgamma_data = self.data["xgamma"]
+
+        if not (hypervisor_data.get("account") or xgamma_data.get("account")):
             return {}
 
-        reward_hypervisor_shares = self.data["account"]["rewardHypervisorShares"]
+        reward_hypervisor_shares = xgamma_data["account"]["rewardHypervisorShares"]
         xgamma_shares = 0
         for shares in reward_hypervisor_shares:
             if (
@@ -126,21 +155,21 @@ class AccountInfo(AccountData):
             ):
                 xgamma_shares = int(shares["shares"])
 
-        totalGammaStaked = int(self.data["rewardHypervisor"]["totalGamma"])
+        totalGammaStaked = int(xgamma_data["rewardHypervisor"]["totalGamma"])
         xgamma_virtual_price = totalGammaStaked / int(
-            self.data["rewardHypervisor"]["totalSupply"]
+            xgamma_data["rewardHypervisor"]["totalSupply"]
         )
 
         # Get pricing
         gamma_pricing = await GammaPrice().output()
 
-        account_owner = self.data["account"]["parent"]["id"]
+        account_owner = hypervisor_data["account"]["parent"]["id"]
         gammaStaked = (xgamma_shares * xgamma_virtual_price) / self.decimal_factor
         gammaDeposited = (
-            int(self.data["account"]["gammaDeposited"]) / self.decimal_factor
+            int(xgamma_data["account"]["gammaDeposited"]) / self.decimal_factor
         )
         gammaEarnedRealized = (
-            int(self.data["account"]["gammaEarnedRealized"]) / self.decimal_factor
+            int(xgamma_data["account"]["gammaEarnedRealized"]) / self.decimal_factor
         )
         gammaStakedShare = gammaStaked / (totalGammaStaked / self.decimal_factor)
         pendingGammaEarned = gammaStaked - gammaDeposited
@@ -170,7 +199,7 @@ class AccountInfo(AccountData):
 
         returns = self._returns()
 
-        for hypervisor in self.data["account"]["hypervisorShares"]:
+        for hypervisor in hypervisor_data["account"]["hypervisorShares"]:
             if int(hypervisor["shares"]) <= 0:  # Workaround before fix in subgraph
                 continue
             hypervisor_id = hypervisor["hypervisor"]["id"]

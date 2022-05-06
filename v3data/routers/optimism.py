@@ -76,11 +76,11 @@ async def hypervisors_all():
     return await v3data.common.hypervisor.hypervisors_all(CHAIN_OPTIMISM)
 
 
-# @router.get("/user/{address}")
-# async def user_data(address: str):
-#     return await v3data.common.users.user_data(CHAIN_OPTIMISM, address)
+@router.get("/user/{address}")
+async def user_data(address: str):
+    return await v3data.common.users.user_data(CHAIN_OPTIMISM, address)
 
 
-# @router.get("/vault/{address}")
-# async def account_data(address: str):
-#     return await v3data.common.users.account_data(CHAIN_OPTIMISM, address)
+@router.get("/vault/{address}")
+async def account_data(address: str):
+    return await v3data.common.users.account_data(CHAIN_OPTIMISM, address)
