@@ -169,13 +169,22 @@ class Dashboard:
         rewards.data = self.rewards_hypervisor_data
         rewards_info = await rewards.output(get_data=False)
 
+        gamma_staked_usd = rewards_info["gamma_staked"] * gamma_price_usd
+
+
+        # Use fees for gamma yield
+        fees_per_day = collected_fees['weekly']["collected_usd"]
+        gamma_fees_apr = 365 * fees_per_day / gamma_staked_usd
+        gamma_fees_apy = (1 + fees_per_day / gamma_staked_usd) ** 365 - 1
+
+
         dashboard_stats = {
-            "stakedUsdAmount": rewards_info["gamma_staked"] * gamma_price_usd,
+            "stakedUsdAmount": gamma_staked_usd,
             "stakedAmount": rewards_info["gamma_staked"],
             "feeStatsFeeAccural": collected_fees["daily"]["collected_usd"],
             "feeStatsAmountGamma": collected_fees["daily"]["collected_gamma"],
-            "feeStatsStakingApr": gamma_yield[self.period]["apr"],
-            "feeStatsStakingApy": gamma_yield[self.period]["apy"],
+            "feeStatsStakingApr": gamma_fees_apr,  # gamma_yield[self.period]["apr"],
+            "feeStatsStakingApy": gamma_fees_apy,  # gamma_yield[self.period]["apy"],
             "feeStatsStakingDailyYield": daily_yield,
             "feeCumulativeFeeUsd": legacy_stats["visr_distributed_usd"]
             + gamma_info["totalDistributedUSD"],
