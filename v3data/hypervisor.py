@@ -402,16 +402,23 @@ class HypervisorInfo(HypervisorData):
         latest_rebalance_ts = df_rebalances.loc[df_rebalances.index[-1], "timestamp"]
 
         # Calculate fee return rate for each rebalance event
+        shift = 1 if self.chain == "mainnet" else 0
+
         df_rebalances[
             "feeRate"
-        ] = df_rebalances.grossFeesUSD / df_rebalances.totalAmountUSD.shift(1)
+        ] = df_rebalances.grossFeesUSD / df_rebalances.totalAmountUSD.shift(shift)
         df_rebalances["totalRate"] = (
-            df_rebalances.totalAmountUSD / df_rebalances.totalAmountUSD.shift(1) - 1
+            df_rebalances.totalAmountUSD / df_rebalances.totalAmountUSD.shift(shift) - 1
         )
 
         # Time since last rebalance
         df_rebalances["periodSeconds"] = df_rebalances.timestamp.diff()
-
+        print(df_rebalances[[
+            "timestamp",
+            "feeRate",
+            "grossFeesUSD",
+            "totalAmountUSD"
+        ]])
         # Calculate returns for using last 1, 7, and 30 days data
         results = {}
         for period, days in DAYS_IN_PERIOD.items():
