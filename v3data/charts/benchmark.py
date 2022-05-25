@@ -249,20 +249,31 @@ class Benchmark:
 
         df_all["tokenPriceUsdc"] = df_all.tokenPriceInBase * df_all.basePriceUsdc
 
-        df_all = df_all[["close", "v2lpPrice", "tokenPriceUsdc", "basePriceUsdc"]]
+        # df_all = df_all[["close", "v2lpPrice", "tokenPriceUsdc", "basePriceUsdc"]]
+        df_all = df_all[["close", "tokenPriceUsdc", "basePriceUsdc"]]
         df_all = df_all.div(df_all.iloc[0])  # Normalise to first value
-        df_all = df_all.rename(
-            columns={
-                "close": "Hypervisor",
-                "v2lpPrice": "Uniswap V2 LP",
-                "tokenPriceUsdc": data["token0_symbol"]
-                if self.base_token_index == 1
-                else data["token1_symbol"],
-                "basePriceUsdc": data["token1_symbol"]
-                if self.base_token_index == 1
-                else data["token0_symbol"],
-            }
-        )
+
+        if df_all.iloc[-1]["tokenPriceUsdc"] >= df_all.iloc[-1]["basePriceUsdc"]:
+            df_all = df_all.drop(columns="tokenPriceUsdc")
+            df_all = df_all.rename(
+                columns={
+                    "close": "Hypervisor",
+                    "basePriceUsdc": data["token1_symbol"]
+                    if self.base_token_index == 1
+                    else data["token0_symbol"]
+                }
+            )
+        else:
+            df_all = df_all.drop(columns="basePriceUsdc")
+            df_all = df_all.rename(
+                columns={
+                    "close": "Hypervisor",
+                    "tokenPriceUsdc": data["token0_symbol"]
+                    if self.base_token_index == 1
+                    else data["token1_symbol"]
+                }
+            )
+
         df_all = pd.melt(df_all.reset_index(), ["date"], var_name="group")
         df_all["date"] = pd.to_datetime(df_all.date, unit="s").dt.strftime(
             "%Y-%m-%dT%H:%M:%SZ"
