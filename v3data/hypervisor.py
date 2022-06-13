@@ -36,7 +36,7 @@ class HypervisorData:
                 }
             ) {
                 id
-                hypervisor
+                hypervisor {id}
                 timestamp
                 grossFeesUSD
                 protocolFeesUSD
@@ -86,7 +86,7 @@ class HypervisorData:
                     orderDirection: desc
                 ) {
                     id
-                    hypervisor
+                    hypervisor {id}
                     timestamp
                     grossFeesUSD
                     protocolFeesUSD
@@ -481,7 +481,9 @@ class HypervisorInfo(HypervisorData):
         #     self.chain
         # ).output_for_returns_calc(hypervisor_address)
         uncollected_fees_data = None
-        return self._calculate_returns(rebalance_data, uncollected_fees_data)
+        returns = self._calculate_returns(rebalance_data, uncollected_fees_data)
+
+        return self.apply_returns_overrides(hypervisor_address, returns)
 
     async def all_returns(self, get_data=True):
 
@@ -495,9 +497,10 @@ class HypervisorInfo(HypervisorData):
                 #     self.chain
                 # ).output_for_returns_calc(hypervisor["id"])
                 uncollected_fees_data = None
-                results[hypervisor["id"]] = self._calculate_returns(
+                returns = self._calculate_returns(
                     hypervisor["rebalances"], uncollected_fees_data
                 )
+                results[hypervisor["id"]] = self.apply_returns_overrides(hypervisor["id"], returns)
 
         return results
 
@@ -570,6 +573,13 @@ class HypervisorInfo(HypervisorData):
                 pass
 
         return results
+    
+    def apply_returns_overrides(self, hypervisor_address, returns):
+        if hypervisor_address == "0x3cca05926af387f1ab4cd45ce8975d31f0469927":
+            print("override")
+            returns["weekly"] = returns["daily"]
+        
+        return returns
 
 
 class UncollectedFees(HypervisorData):
