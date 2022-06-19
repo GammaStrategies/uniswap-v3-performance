@@ -54,11 +54,10 @@ class UniV3Price(UniV3PriceData):
 
 
 async def token_price(token: str):
-    match token:
-        case "GAMMA":
-            pool_address = "0x4006bed7bf103d70a1c6b7f1cef4ad059193dc25"
-        case _:
-            return None
+    if token == "GAMMA":
+        pool_address = "0x4006bed7bf103d70a1c6b7f1cef4ad059193dc25"
+    else:
+        return None
     
     pricing = UniV3Price(pool_address, "mainnet")
     return await pricing.output()
