@@ -65,7 +65,7 @@ class MasterchefData:
         variables = {"userAddress": user_address}
 
         response = await self.gamma_client.query(query, variables)
-        self.data = response["data"]["account"]["masterChefPoolAccounts"]
+        self.data = response["data"]["account"]
 
 
 class MasterchefInfo(MasterchefData):
@@ -116,9 +116,11 @@ class UserRewards(MasterchefData):
         if get_data:
             await self._get_user_data(self.user_address)
 
-        info = {}
+        if not self.data:
+            return {}
 
-        for pool in self.data:
+        info = {}
+        for pool in self.data["masterChefPoolAccounts"]:
             hypervisor_id = pool["masterChefPool"]["hypervisor"]["id"]
             hypervisor_symbol = pool["masterChefPool"]["hypervisor"]["symbol"]
             hypervisor_decimal = 18
