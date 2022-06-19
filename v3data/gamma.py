@@ -1,12 +1,12 @@
 import asyncio
-from operator import methodcaller
 import numpy as np
 from datetime import timedelta
 from pandas import DataFrame, to_datetime
 
-from v3data import GammaClient, UniswapV3Client
+from v3data import GammaClient
 from v3data.config import DEFAULT_TIMEZONE
-from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal, timestamp_ago
+from v3data.pricing import token_price
+from v3data.utils import timestamp_ago
 from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
 
 
@@ -203,7 +203,7 @@ class GammaInfo(GammaCalculations):
         super().__init__(chain=chain, days=days)
 
     async def output(self):
-        gamma_pricing, _ = await asyncio.gather(GammaPrice().output(), self._get_data())
+        gamma_pricing, _ = await asyncio.gather(token_price("GAMMA"), self._get_data())
 
         return {
             "info": await self.basic_info(get_data=False),
@@ -230,56 +230,6 @@ class GammaDistribution(GammaCalculations):
         return {
             "feeDistribution": distributions[::-1],
             "latest": distributions[-1]
-        }
-
-
-class GammaPriceData:
-    """Class for querying GAMMA related data"""
-
-    def __init__(self, chain: str = "mainnet"):
-        self.uniswap_client = UniswapV3Client(chain)
-        self.pool = "0x4006bed7bf103d70a1c6b7f1cef4ad059193dc25"  # GAMMA/WETH 0.3% pool
-        self.data = {}
-
-    async def _get_data(self):
-        query = """
-        query gammaPrice($id: String!){
-            pool(
-                id: $id
-            ){
-                sqrtPrice
-                token0{
-                    symbol
-                    decimals
-                }
-                token1{
-                    symbol
-                    decimals
-                }
-            }
-            bundle(id:1){
-                ethPriceUSD
-            }
-        }
-        """
-        variables = {"id": self.pool}
-        response = await self.uniswap_client.query(query, variables)
-        self.data = response["data"]
-
-
-class GammaPrice(GammaPriceData):
-    async def output(self):
-        await self._get_data()
-        sqrt_priceX96 = float(self.data["pool"]["sqrtPrice"])
-        decimal0 = int(self.data["pool"]["token0"]["decimals"])
-        decimal1 = int(self.data["pool"]["token1"]["decimals"])
-        eth_in_usdc = float(self.data["bundle"]["ethPriceUSD"])
-
-        gamma_in_eth = sqrtPriceX96_to_priceDecimal(sqrt_priceX96, decimal0, decimal1)
-
-        return {
-            "gamma_in_usdc": gamma_in_eth * eth_in_usdc,
-            "gamma_in_eth": gamma_in_eth,
         }
 
 
@@ -326,9 +276,8 @@ class ProtocolFeesCalculations(ProtocolFeesData):
 
         df_rebalances = DataFrame(rebalances, dtype=np.float64)
 
-        gamma_price = GammaPrice()
-        gamma_prices = await gamma_price.output()
-        gamma_in_usd = gamma_prices["gamma_in_usdc"]
+        gamma_prices = await token_price("GAMMA")
+        gamma_in_usd = gamma_prices["token_in_usdc"]
 
         gamma_staked_usd = (
             gamma_in_usd * int(self.data["rewardHypervisor"]["totalGamma"]) / 10**18

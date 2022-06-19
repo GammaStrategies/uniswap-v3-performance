@@ -1,7 +1,7 @@
 import asyncio
 from v3data import GammaClient
-from v3data.gamma import GammaPrice
 from v3data.constants import XGAMMA_ADDRESS
+from v3data.pricing import token_price
 
 
 class AccountData:
@@ -161,7 +161,7 @@ class AccountInfo(AccountData):
         )
 
         # Get pricing
-        gamma_pricing = await GammaPrice().output()
+        gamma_pricing = await token_price("GAMMA")
 
         account_owner = hypervisor_data["account"]["parent"]["id"]
         gammaStaked = (xgamma_shares * xgamma_virtual_price) / self.decimal_factor
@@ -177,13 +177,13 @@ class AccountInfo(AccountData):
         account_info = {
             "owner": account_owner,
             "gammaStaked": gammaStaked,
-            "gammaStakedUSD": gammaStaked * gamma_pricing["gamma_in_usdc"],
+            "gammaStakedUSD": gammaStaked * gamma_pricing["token_in_usdc"],
             "gammaDeposited": gammaDeposited,
             "pendingGammaEarned": pendingGammaEarned,
             "pendingGammaEarnedUSD": pendingGammaEarned
-            * gamma_pricing["gamma_in_usdc"],
+            * gamma_pricing["token_in_usdc"],
             "totalGammaEarned": totalGammaEarned,
-            "totalGammaEarnedUSD": totalGammaEarned * gamma_pricing["gamma_in_usdc"],
+            "totalGammaEarnedUSD": totalGammaEarned * gamma_pricing["token_in_usdc"],
             "gammaStakedShare": f"{gammaStakedShare:.2%}",
             "xgammaAmount": xgamma_shares / self.decimal_factor,
         }

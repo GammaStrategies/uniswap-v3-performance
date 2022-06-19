@@ -99,8 +99,6 @@ class UserInfo(UserData):
         hypervisor_data = self.data["hypervisor"]
         xgamma_data = self.data["xgamma"]
 
-        print(self.data)
-
         if not (hypervisor_data.get('user') or xgamma_data.get('user')):
             return {}
 

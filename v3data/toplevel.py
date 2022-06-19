@@ -4,8 +4,8 @@ from datetime import timedelta
 from pandas import DataFrame
 
 from v3data import GammaClient
-from v3data.gamma import GammaPrice
 from v3data.hypervisor import HypervisorData, HypervisorInfo
+from v3data.pricing import token_price
 from v3data.utils import timestamp_ago
 from v3data.config import EXCLUDED_HYPERVISORS
 
@@ -155,7 +155,7 @@ class TopLevelData:
 
     async def recent_fees(self, hours=24):
         data, gamma_prices = await asyncio.gather(
-            self.get_recent_rebalance_data(hours), GammaPrice().output()
+            self.get_recent_rebalance_data(hours), token_price("GAMMA")
         )
         gamma_price_usd = gamma_prices["gamma_in_usdc"]
         df_fees = DataFrame(data, dtype=np.float64)

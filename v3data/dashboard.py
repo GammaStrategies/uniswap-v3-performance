@@ -2,7 +2,8 @@ import asyncio
 from datetime import timedelta
 
 from v3data import GammaClient
-from v3data.gamma import GammaCalculations, GammaPrice, ProtocolFeesCalculations
+from v3data.gamma import GammaCalculations, ProtocolFeesCalculations
+from v3data.pricing import token_price
 from v3data.toplevel import TopLevelData
 from v3data.rewardshypervisor import RewardsHypervisorInfo
 from v3data.utils import timestamp_ago
@@ -139,14 +140,12 @@ class Dashboard:
 
     async def info(self, timezone):
 
-        gamma_price = GammaPrice(self.chain)
-
         _, gamma_prices = await asyncio.gather(
-            self._get_data(timezone), gamma_price.output()
+            self._get_data(timezone), token_price("GAMMA")
         )
 
-        gamma_price_usd = gamma_prices["gamma_in_usdc"]
-        gamma_in_eth = gamma_prices["gamma_in_eth"]
+        gamma_price_usd = gamma_prices["token_in_usdc"]
+        gamma_in_eth = gamma_prices["token_in_eth"]
 
         gamma_calcs = GammaCalculations(self.chain, days=30)
         gamma_calcs.data = self.gamma_data

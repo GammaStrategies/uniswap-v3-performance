@@ -1,4 +1,5 @@
 import httpx
+from web3 import Web3
 
 from v3data.config import (
     VISOR_SUBGRAPH_URL,
@@ -9,6 +10,8 @@ from v3data.config import (
     THEGRAPH_INDEX_NODE_URL,
     XGAMMA_SUBGRAPH_URL,
 )
+
+from v3data import abi
 
 async_client = httpx.AsyncClient(timeout=180)
 
@@ -189,3 +192,12 @@ class CoingeckoClient:
             return response.json()
         else:
             return {"gamma-strategies": {"usd": 0.623285, "eth": 0.00016391}}
+
+
+class MasterChefContract:
+    def __init__(self, address):
+        w3 = Web3(Web3.HTTPProvider("https://polygon-mainnet.g.alchemy.com/v2/s4oXFo4dqnTZyYd9JlDAbaOrlJECSf3f"))
+        self.contract = w3.eth.contract(address=Web3.toChecksumAddress(address), abi=abi.MASTERCHEF_ABI)
+
+    def pending_rewards(self, pool_id, user_address):
+        return self.contract.functions.pendingSushi(pool_id, Web3.toChecksumAddress(user_address))

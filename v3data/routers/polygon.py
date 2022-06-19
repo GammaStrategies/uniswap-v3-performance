@@ -2,6 +2,7 @@ import v3data.common
 import v3data.common.charts
 import v3data.common.hypervisor
 import v3data.common.users
+import v3data.common.masterchef
 
 from fastapi import APIRouter, Response
 
@@ -74,6 +75,16 @@ async def hypervisors_return():
 @router.get("/hypervisors/allData")
 async def hypervisors_all():
     return await v3data.common.hypervisor.hypervisors_all(CHAIN_POLYGON)
+
+
+@router.get("/allRewards")
+async def all_rewards():
+    return await v3data.common.masterchef.info(CHAIN_POLYGON)
+
+
+@router.get("/userRewards/{user_address}")
+async def user_rewards(user_address):
+    return await v3data.common.masterchef.user_rewards(CHAIN_POLYGON, user_address)
 
 
 # @router.get("/user/{address}")

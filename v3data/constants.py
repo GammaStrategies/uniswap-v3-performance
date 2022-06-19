@@ -5,3 +5,7 @@ XGAMMA_ADDRESS = "0x26805021988f1a45dc708b5fb75fc75f21747d8c"
 DAYS_IN_PERIOD = {"daily": 1, "weekly": 7, "monthly": 30, "allTime": 2000}
 
 SECONDS_IN_DAYS = 3600
+
+BLOCKS_IN_YEAR = {
+    "polygon": 43200
+}
