@@ -87,11 +87,11 @@ async def user_rewards(user_address):
     return await v3data.common.masterchef.user_rewards(CHAIN_POLYGON, user_address)
 
 
-# @router.get("/user/{address}")
-# async def user_data(address: str):
-#     return await v3data.common.users.user_data(CHAIN_POLYGON, address)
+@router.get("/user/{address}")
+async def user_data(address: str):
+    return await v3data.common.users.user_data(CHAIN_POLYGON, address)
 
 
-# @router.get("/vault/{address}")
-# async def account_data(address: str):
-#     return await v3data.common.users.account_data(CHAIN_POLYGON, address)
+@router.get("/vault/{address}")
+async def account_data(address: str):
+    return await v3data.common.users.account_data(CHAIN_POLYGON, address)
