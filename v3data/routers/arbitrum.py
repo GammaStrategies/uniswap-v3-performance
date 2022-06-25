@@ -29,7 +29,7 @@ async def bollingerbands_chart(poolAddress: str, periodHours: int = 24):
 
 
 @router.get("/charts/baseRange/all")
-@cache(expire=CHARTS_CACHE_TIMEOUT)
+# @cache(expire=CHARTS_CACHE_TIMEOUT)
 async def base_range_chart_all(days: int = 20):
     return await v3data.common.charts.base_range_chart_all(CHAIN_ARBITRUM, days)
 
