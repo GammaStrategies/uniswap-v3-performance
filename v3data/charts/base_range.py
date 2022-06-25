@@ -99,7 +99,6 @@ class BaseLimit:
                 }
                 rebalances(
                     first: 1000
-                    where: {timestamp_gte: $timestampStart}
                     orderBy: timestamp
                     orderDirection: desc
                 ){
@@ -142,7 +141,6 @@ class BaseLimit:
                 }
                 rebalances(
                     first: 1000
-                    where: {timestamp_gte: $timestampStart}
                     orderBy: timestamp
                     orderDirection: desc
                 ){

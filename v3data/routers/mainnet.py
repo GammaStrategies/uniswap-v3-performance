@@ -5,7 +5,7 @@ import v3data.common.users
 
 from fastapi import APIRouter, Response, status
 from fastapi_cache.decorator import cache
-from v3data.config import DASHBOARD_CACHE_TIMEOUT, DEFAULT_TIMEZONE
+from v3data.config import CHARTS_CACHE_TIMEOUT, DASHBOARD_CACHE_TIMEOUT, DEFAULT_TIMEZONE
 from v3data.dashboard import Dashboard
 from v3data.eth import EthDistribution
 
@@ -35,6 +35,7 @@ async def bollingerbands_chart(poolAddress: str, periodHours: int = 24):
 
 
 @router.get("/charts/baseRange/all")
+@cache(expire=CHARTS_CACHE_TIMEOUT)
 async def base_range_chart_all(days: int = 20):
     return await v3data.common.charts.base_range_chart_all(CHAIN_MAINNET, days)
 
