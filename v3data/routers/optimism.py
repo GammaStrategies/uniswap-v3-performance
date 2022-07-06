@@ -4,6 +4,7 @@ import v3data.common.hypervisor
 import v3data.common.users
 
 from fastapi import APIRouter, Response
+from fastapi_cache.decorator import cache
 from v3data.config import APY_CACHE_TIMEOUT, CHARTS_CACHE_TIMEOUT
 
 CHAIN_OPTIMISM = "optimism"

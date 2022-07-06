@@ -5,6 +5,7 @@ import v3data.common.users
 import v3data.common.masterchef
 
 from fastapi import APIRouter, Response
+from fastapi_cache.decorator import cache
 from v3data.config import APY_CACHE_TIMEOUT, CHARTS_CACHE_TIMEOUT
 
 CHAIN_POLYGON = "polygon"
