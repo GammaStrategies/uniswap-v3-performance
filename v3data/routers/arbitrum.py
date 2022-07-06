@@ -4,7 +4,7 @@ import v3data.common.hypervisor
 import v3data.common.users
 
 from fastapi import APIRouter, Response
-from v3data.config import CHARTS_CACHE_TIMEOUT
+from v3data.config import APY_CACHE_TIMEOUT, CHARTS_CACHE_TIMEOUT
 
 CHAIN_ARBITRUM = "arbitrum"
 
@@ -57,6 +57,7 @@ async def hypervisor_basic_stats(hypervisor_address, response: Response):
 
 
 @router.get("/hypervisor/{hypervisor_address}/returns")
+@cache(expire=APY_CACHE_TIMEOUT)
 async def hypervisor_apy(response: Response, hypervisor_address):
     return await v3data.common.hypervisor.hypervisor_apy(
         CHAIN_ARBITRUM, hypervisor_address, response
@@ -69,6 +70,7 @@ async def aggregate_stats():
 
 
 @router.get("/hypervisors/returns")
+@cache(expire=APY_CACHE_TIMEOUT)
 async def hypervisors_return():
     return await v3data.common.hypervisor.hypervisors_return(CHAIN_ARBITRUM)
 
