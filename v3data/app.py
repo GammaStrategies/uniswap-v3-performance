@@ -63,22 +63,6 @@ async def daily_hypervisor_flows_chart_data(hypervisor_address: str, days: int =
     return {"data": await daily.asset_flows(hypervisor_address)}
 
 
-@app.get("/charts/benchmark/{hypervisor_address}")
-# @cache(expire=CHARTS_CACHE_TIMEOUT)
-async def benchmark_chart(
-    hypervisor_address: str, startDate: str = "", endDate: str = ""
-):
-    start_date = parse_date(startDate)
-    end_date = parse_date(endDate)
-    hypervisor_address = hypervisor_address.lower()
-    benchmark = Benchmark(hypervisor_address, start_date, end_date)
-    chart_data = await benchmark.chart()
-    if chart_data:
-        return {hypervisor_address: chart_data}
-    else:
-        return {}
-
-
 @app.get("/pools/{token}")
 async def uniswap_pools(token: str):
     return {"pools": await pools_from_symbol(token)}
