@@ -1,8 +1,16 @@
 BASE_POOLS_CONFIG = {
     "mainnet": {
+        # OCEAN 
+        "0x967da4048cd07ab37855c090aaf366e4ce1b9f48": {
+            "priority": 1,
+            "v3": {
+                "pool": "0x283e2e83b7f3e297c4b7c02114ab0196b001a109",
+                "usdc_token_index": 3,
+            }
+        },
         # WBTC
         "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599": {
-            "priority": 1,
+            "priority": 2,
             "v2": {
                 "pool": "0x004375dff511095cc5a197a54140a24efef3a416",
                 "usdc_token_index": 1,
@@ -14,7 +22,7 @@ BASE_POOLS_CONFIG = {
         },
         # WETH
         "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2": {
-            "priority": 2,
+            "priority": 3,
             "v2": {
                 "pool": "0xb4e16d0168e52d35cacd2c6185b44281ec28c9dc",
                 "usdc_token_index": 0,
@@ -26,7 +34,7 @@ BASE_POOLS_CONFIG = {
         },
         # DAI
         "0x6b175474e89094c44da98b954eedeac495271d0f": {
-            "priority": 3,
+            "priority": 4,
             "v2": {
                 "pool": "0xae461ca67b15dc8dc81ce7615e0320da1a9ab8d5",
                 "usdc_token_index": 1,
@@ -38,7 +46,7 @@ BASE_POOLS_CONFIG = {
         },
         # USDT
         "0xdac17f958d2ee523a2206206994597c13d831ec7": {
-            "priority": 4,
+            "priority": 5,
             "v2": {
                 "pool": "0x3041cbd36888becc7bbcbc0045e3b1f144466f5f",
                 "usdc_token_index": 0,
@@ -50,7 +58,7 @@ BASE_POOLS_CONFIG = {
         },
         # USDC
         "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": {
-            "priority": 5,
+            "priority": 6,
             "v2": {
                 "pool": "0x3041cbd36888becc7bbcbc0045e3b1f144466f5f",  # Use a dummy pool
                 "usdc_token_index": None,

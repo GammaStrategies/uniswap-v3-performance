@@ -109,6 +109,16 @@ class Benchmark:
                 token0Price
                 token1Price
             }
+            ethDayData: poolDayDatas(
+                where: {
+                    pool: "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8"
+                    date_gte: $startDate
+                    date_lt: $endDate
+                }
+            ){
+                date
+                ethPriceUsdc: token0Price
+            }
         }
         """
 
@@ -258,10 +268,18 @@ class Benchmark:
         df_base = pd.DataFrame(data["v3"]["baseDayData"], dtype=np.float64).set_index(
             "date"
         )
+        df_eth = pd.DataFrame(data["v3"]["ethDayData"], dtype=np.float64).set_index(
+            "date"
+        )
+        df_base = df_base.join(df_eth)
         if self.base_pool["v3"]["usdc_token_index"] == 0:
             df_base["basePriceUsdc"] = df_base.token0Price
         elif self.base_pool["v3"]["usdc_token_index"] == 1:
             df_base["basePriceUsdc"] = df_base.token1Price
+        elif self.base_pool["v3"]["usdc_token_index"] == 2:
+            df_base["basePriceUsdc"] = df_base.token0Price * df_base.ethPriceUsdc
+        elif self.base_pool["v3"]["usdc_token_index"] == 3:
+            df_base["basePriceUsdc"] = df_base.token1Price * df_base.ethPriceUsdc
         else:
             df_base["basePriceUsdc"] = 1
 
