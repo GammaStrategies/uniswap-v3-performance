@@ -17,6 +17,9 @@ uniswap_subgraphs = {
     "optimism": {
         "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/optimism-post-regenesis"
     },
+    "celo": {
+        "prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"
+    }
 }
 
 visor_subgraphs = {
@@ -43,6 +46,10 @@ gamma_subgraphs = {
         "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/optimism",
         "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-optimism",
     },
+    "celo": {
+        "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/celo",
+        "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-celo",
+    },
 }
 
 THEGRAPH_INDEX_NODE_URL = "https://api.thegraph.com/index-node/graphql"
@@ -65,6 +72,9 @@ UNI_V3_SUBGRAPH_URLS = {
     "optimism": uniswap_subgraphs["optimism"][
         os.environ.get("UNISWAP_SUBGRAPH_OPTIMISM", "prod")
     ],
+    "celo": uniswap_subgraphs["celo"][
+        os.environ.get("UNISWAP_SUBGRAPH_CELO", "prod")
+    ],
 }
 
 VISOR_SUBGRAPH_URL = visor_subgraphs[os.environ.get("VISOR_SUBGRAPH", "prod")]
@@ -81,6 +91,9 @@ GAMMA_SUBGRAPH_URLS = {
     ],
     "optimism": gamma_subgraphs["optimism"][
         os.environ.get("GAMMA_SUBGRAPH_OPTIMISM", "prod")
+    ],
+    "celo": gamma_subgraphs["celo"][
+        os.environ.get("GAMMA_SUBGRAPH_CELO", "prod")
     ],
 }
 
@@ -108,3 +121,6 @@ legacy_stats = {
     "estimated_visr_annual_distribution": 1237782.0442017058,
     "estimated_visr_annual_distribution_usd": 1197097.0895269862,
 }
+
+
+ALCHEMY_POLYGON_URL = "https://polygon-mainnet.g.alchemy.com/v2/s4oXFo4dqnTZyYd9JlDAbaOrlJECSf3f"

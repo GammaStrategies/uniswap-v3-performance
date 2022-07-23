@@ -4,11 +4,6 @@ from v3data import UniswapV3Client
 from v3data.data import UniV3Data
 from v3data.utils import sqrtPriceX96_to_priceDecimal
 
-USDC_WETH_POOL = {
-    "mainnet": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
-    "polygon": "0x45dda9cb7c25131df268515131f647d726f50608"
-}
-
 
 async def pools_from_symbol(symbol):
     client = UniV3Data()

@@ -194,5 +194,39 @@ BASE_POOLS_CONFIG = {
                 "usdc_token_index": 1,
             }
         },
+    },
+    "celo": {
+        # WETH
+        # "0x66803fb87abd4aac3cbb3fad7c3aa01f6f3fb207": {
+        #     "priority": 1,
+        #     "v3": {
+        #         "pool": "0xc31e54c7a869b9fcbecc14363cf510d1c41fa443",
+        #         "usdc_token_index": 1,
+        #     }
+        # },
+        # CELO
+        "0xda10009cbd5d07dd0cecc66161fc93d7c9000da1": {
+            "priority": 2,
+            "v3": {
+                "pool": "0x079e7a44f42e9cd2442c3b9536244be634e8f888",
+                "usdc_token_index": 1,
+            }
+        },
+        # cUSD
+        "0x765de816845861e75a25fca122bb6898b8b1282a": {
+            "priority": 3,
+            "v3": {
+                "pool": "0xea3fb6e3313a2a90757e4ca3d6749efd0107b0b6",
+                "usdc_token_index": 0,
+            }
+        },
+        # USDC
+        "0x37f750b7cc259a2f741af45294f6a16572cf5cad": {
+            "priority": 4,
+            "v3": {
+                "pool": "0xea3fb6e3313a2a90757e4ca3d6749efd0107b0b6",  # Dummy
+                "usdc_token_index": 0,
+            }
+        },
     }
 }
