@@ -24,6 +24,7 @@ class MasterchefData:
                 pools {
                     id
                     allocPoint
+                    lastRewardBlock
                     hypervisor{
                         id
                         symbol
@@ -91,6 +92,7 @@ class MasterchefInfo(MasterchefData):
                     pool["hypervisor"]["id"]: {
                         "hypervisorSymbol": pool["hypervisor"]["symbol"],
                         "allocPoint": pool["allocPoint"],
+                        "lastRewardBlock": pool["lastRewardBlock"],
                         "apr": (
                             rewardTokenPriceUsdc
                             / (float(pool["hypervisor"]["pricePerShare"])
