@@ -1,6 +1,6 @@
 from v3data import GammaClient, MasterChefContract
 from v3data.constants import BLOCKS_IN_YEAR
-from v3data.pricing import token_price
+from v3data.pricing import token_price_from_address
 
 
 class MasterchefData:
@@ -77,7 +77,9 @@ class MasterchefInfo(MasterchefData):
         info = {}
 
         for masterchef in self.data:
-            rewardTokenPrice = await token_price("GAMMA")
+            rewardTokenPrice = await token_price_from_address(
+                self.chain, masterchef["rewardToken"]["id"]
+            )
             rewardTokenPriceUsdc = rewardTokenPrice["token_in_usdc"]
             reward_per_block = (
                 int(masterchef["rewardPerBlock"])
@@ -95,8 +97,7 @@ class MasterchefInfo(MasterchefData):
                         "lastRewardBlock": pool["lastRewardBlock"],
                         "apr": (
                             rewardTokenPriceUsdc
-                            / (float(pool["hypervisor"]["pricePerShare"])
-                            * 10**18)
+                            / (float(pool["hypervisor"]["pricePerShare"]) * 10**18)
                         )
                         * (int(pool["allocPoint"]) / int(masterchef["totalAllocPoint"]))
                         * reward_per_block

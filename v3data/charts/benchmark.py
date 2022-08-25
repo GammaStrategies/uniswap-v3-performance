@@ -5,7 +5,7 @@ import pandas as pd
 from v3data import GammaClient, UniswapV2Client, UniswapV3Client
 from v3data.utils import date_to_timestamp
 from v3data.constants import WETH_ADDRESS
-from v3data.charts.config import BASE_POOLS_CONFIG
+from v3data.charts.config import BASE_POOLS_CONFIG, WETH_USDC_POOL
 
 
 class Benchmark:
@@ -84,6 +84,7 @@ class Benchmark:
         query v3pricing(
             $lpPool: String!,
             $basePool: String!,
+            $ethPool: String!,
             $startDate: Int!,
             $endDate: Int!,
         ){
@@ -111,7 +112,7 @@ class Benchmark:
             }
             ethDayData: poolDayDatas(
                 where: {
-                    pool: "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8"
+                    pool: $ethPool
                     date_gte: $startDate
                     date_lt: $endDate
                 }
@@ -125,6 +126,7 @@ class Benchmark:
         variables = {
             "lpPool": lp_pool,
             "basePool": self.base_pool["v3"]["pool"],
+            "ethPool": WETH_USDC_POOL[self.chain],
             "startDate": self.start_timestamp,
             "endDate": self.end_timestamp,
         }

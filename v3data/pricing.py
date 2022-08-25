@@ -38,7 +38,7 @@ class UniV3PriceData:
 
 
 class UniV3Price(UniV3PriceData):
-    async def output(self):
+    async def output(self, inverse=False):
         await self._get_data()
         sqrt_priceX96 = float(self.data["pool"]["sqrtPrice"])
         decimal0 = int(self.data["pool"]["token0"]["decimals"])
@@ -46,6 +46,8 @@ class UniV3Price(UniV3PriceData):
         eth_in_usdc = float(self.data["bundle"]["ethPriceUSD"])
 
         token_in_eth = sqrtPriceX96_to_priceDecimal(sqrt_priceX96, decimal0, decimal1)
+        if inverse:
+            token_in_eth = 1 / token_in_eth
 
         return {
             "token_in_usdc": token_in_eth * eth_in_usdc,
@@ -61,3 +63,22 @@ async def token_price(token: str):
     
     pricing = UniV3Price(pool_address, "mainnet")
     return await pricing.output()
+
+
+async def token_price_from_address(chain: str, token_address: str):
+    inverse = False
+    pool_address = None
+    if chain == "optimism":
+        if token_address == "0x4200000000000000000000000000000000000042":
+            pool_address = "0x68f5c0a2de713a54991e01858fd27a3832401849"
+            inverse = True
+
+    if pool_address:
+        pricing = UniV3Price(pool_address, chain)
+        price = await pricing.output(inverse=inverse)
+    else:
+        price = {
+            "token_in_usdc": 0,
+            "token_in_eth": 0,
+        }
+    return await pricing.output(inverse=inverse)

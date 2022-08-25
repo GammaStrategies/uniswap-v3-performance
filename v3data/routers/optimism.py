@@ -81,6 +81,16 @@ async def hypervisors_all():
     return await v3data.common.hypervisor.hypervisors_all(CHAIN_OPTIMISM)
 
 
+@router.get("/allRewards")
+async def all_rewards():
+    return await v3data.common.masterchef.info(CHAIN_OPTIMISM)
+
+
+@router.get("/userRewards/{user_address}")
+async def user_rewards(user_address):
+    return await v3data.common.masterchef.user_rewards(CHAIN_OPTIMISM, user_address)
+
+
 @router.get("/user/{address}")
 async def user_data(address: str):
     return await v3data.common.users.user_data(CHAIN_OPTIMISM, address)
