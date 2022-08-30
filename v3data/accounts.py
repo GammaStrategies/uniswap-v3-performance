@@ -142,7 +142,7 @@ class AccountInfo(AccountData):
 
         hypervisor_data = self.data["hypervisor"]
         xgamma_data = self.data["xgamma"]
-        print(xgamma_data.get("account"))
+
         if not (hypervisor_data.get("account") or xgamma_data.get("account")):
             return {}
 
