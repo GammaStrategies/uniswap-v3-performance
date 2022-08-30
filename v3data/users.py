@@ -102,10 +102,13 @@ class UserInfo(UserData):
         if not (hypervisor_data.get('user') or xgamma_data.get('user')):
             return {}
 
-        xgamma_lookup = {
-            account.pop("id"): account
-            for account in self.data["xgamma"]["user"]["accountsOwned"]
-        }
+        if xgamma_data.get('user'):
+            xgamma_lookup = {
+                account.pop("id"): account
+                for account in self.data["xgamma"]["user"]["accountsOwned"]
+            }
+        else:
+            xgamma_lookup = {}
 
         accounts = {}
         for accountHypervisor in hypervisor_data["user"]["accountsOwned"]:
@@ -114,7 +117,7 @@ class UserInfo(UserData):
             account_info.data = {
                 "hypervisor": {"account": accountHypervisor},
                 "xgamma": {
-                    "account": xgamma_lookup[account_address],
+                    "account": xgamma_lookup.get(account_address),
                     "rewardHypervisor": xgamma_data["rewardHypervisor"],
                 },
             }

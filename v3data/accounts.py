@@ -142,60 +142,74 @@ class AccountInfo(AccountData):
 
         hypervisor_data = self.data["hypervisor"]
         xgamma_data = self.data["xgamma"]
-
+        print(xgamma_data.get("account"))
         if not (hypervisor_data.get("account") or xgamma_data.get("account")):
             return {}
 
-        reward_hypervisor_shares = xgamma_data["account"]["rewardHypervisorShares"]
-        xgamma_shares = 0
-        for shares in reward_hypervisor_shares:
-            if (
-                shares.get("rewardHypervisor", {}).get("id")
-                == self.reward_hypervisor_address
-            ):
-                xgamma_shares = int(shares["shares"])
-
-        totalGammaStaked = int(xgamma_data["rewardHypervisor"]["totalGamma"])
-        xgamma_virtual_price = totalGammaStaked / int(
-            xgamma_data["rewardHypervisor"]["totalSupply"]
-        )
-
-        # Get pricing
-        gamma_pricing = await token_price("GAMMA")
-
-        account_owner = hypervisor_data["account"]["parent"]["id"]
-        gammaStaked = (xgamma_shares * xgamma_virtual_price) / self.decimal_factor
-        gammaDeposited = (
-            int(xgamma_data["account"]["gammaDeposited"]) / self.decimal_factor
-        )
-        gammaEarnedRealized = (
-            int(xgamma_data["account"]["gammaEarnedRealized"]) / self.decimal_factor
-        )
-        gammaStakedShare = gammaStaked / (totalGammaStaked / self.decimal_factor)
-        pendingGammaEarned = gammaStaked - gammaDeposited
-        totalGammaEarned = gammaStaked - gammaDeposited + gammaEarnedRealized
         account_info = {
-            "owner": account_owner,
-            "gammaStaked": gammaStaked,
-            "gammaStakedUSD": gammaStaked * gamma_pricing["token_in_usdc"],
-            "gammaDeposited": gammaDeposited,
-            "pendingGammaEarned": pendingGammaEarned,
-            "pendingGammaEarnedUSD": pendingGammaEarned
-            * gamma_pricing["token_in_usdc"],
-            "totalGammaEarned": totalGammaEarned,
-            "totalGammaEarnedUSD": totalGammaEarned * gamma_pricing["token_in_usdc"],
-            "gammaStakedShare": f"{gammaStakedShare:.2%}",
-            "xgammaAmount": xgamma_shares / self.decimal_factor,
+            "owner": hypervisor_data["account"]["parent"]["id"],
+            "gammaStaked": 0,
+            "gammaStakedUSD": 0,
+            "gammaDeposited": 0,
+            "pendingGammaEarned": 0,
+            "pendingGammaEarnedUSD": 0,
+            "totalGammaEarned": 0,
+            "totalGammaEarnedUSD": 0,
+            "gammaStakedShare": 0,
+            "xgammaAmount": 0,
         }
-        # The below for compatability
-        account_info.update(
-            {
-                "visrStaked": account_info["gammaStaked"],
-                "visrDeposited": account_info["gammaDeposited"],
-                "totalVisrEarned": account_info["totalGammaEarned"],
-                "visrStakedShare": account_info["gammaStakedShare"],
-            }
-        )
+
+        if xgamma_data.get("account"):
+            reward_hypervisor_shares = xgamma_data["account"]["rewardHypervisorShares"]
+            xgamma_shares = 0
+            for shares in reward_hypervisor_shares:
+                if (
+                    shares.get("rewardHypervisor", {}).get("id")
+                    == self.reward_hypervisor_address
+                ):
+                    xgamma_shares = int(shares["shares"])
+
+            totalGammaStaked = int(xgamma_data["rewardHypervisor"]["totalGamma"])
+            xgamma_virtual_price = totalGammaStaked / int(
+                xgamma_data["rewardHypervisor"]["totalSupply"]
+            )
+
+            # Get pricing
+            gamma_pricing = await token_price("GAMMA")
+
+            gammaStaked = (xgamma_shares * xgamma_virtual_price) / self.decimal_factor
+            gammaDeposited = (
+                int(xgamma_data["account"]["gammaDeposited"]) / self.decimal_factor
+            )
+            gammaEarnedRealized = (
+                int(xgamma_data["account"]["gammaEarnedRealized"]) / self.decimal_factor
+            )
+            gammaStakedShare = gammaStaked / (totalGammaStaked / self.decimal_factor)
+            pendingGammaEarned = gammaStaked - gammaDeposited
+            totalGammaEarned = gammaStaked - gammaDeposited + gammaEarnedRealized
+            account_info.update(
+                {
+                    "gammaStaked": gammaStaked,
+                    "gammaStakedUSD": gammaStaked * gamma_pricing["token_in_usdc"],
+                    "gammaDeposited": gammaDeposited,
+                    "pendingGammaEarned": pendingGammaEarned,
+                    "pendingGammaEarnedUSD": pendingGammaEarned
+                    * gamma_pricing["token_in_usdc"],
+                    "totalGammaEarned": totalGammaEarned,
+                    "totalGammaEarnedUSD": totalGammaEarned * gamma_pricing["token_in_usdc"],
+                    "gammaStakedShare": f"{gammaStakedShare:.2%}",
+                    "xgammaAmount": xgamma_shares / self.decimal_factor,
+                }
+            )
+            # The below for compatability
+            account_info.update(
+                {
+                    "visrStaked": account_info["gammaStaked"],
+                    "visrDeposited": account_info["gammaDeposited"],
+                    "totalVisrEarned": account_info["totalGammaEarned"],
+                    "visrStakedShare": account_info["gammaStakedShare"],
+                }
+            )
 
         returns = self._returns()
 
