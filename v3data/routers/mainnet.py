@@ -111,7 +111,7 @@ async def account_data(address: str):
 @router.get("/gamma/basicStats")
 @router.get("/visr/basicStats")
 async def gamma_basic_stats():
-    gamma_info = GammaInfo(days=30)
+    gamma_info = GammaInfo(CHAIN_MAINNET, days=30)
     return await gamma_info.output()
 
 
