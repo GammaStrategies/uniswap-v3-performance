@@ -81,4 +81,4 @@ async def token_price_from_address(chain: str, token_address: str):
             "token_in_usdc": 0,
             "token_in_eth": 0,
         }
-    return await pricing.output(inverse=inverse)
+    return price
