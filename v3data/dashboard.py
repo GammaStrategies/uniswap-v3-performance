@@ -184,6 +184,8 @@ class Dashboard:
             "feeStatsAmountGamma": collected_fees["daily"]["collected_gamma"],
             "feeStatsStakingApr": gamma_fees_apr,  # gamma_yield[self.period]["apr"],
             "feeStatsStakingApy": gamma_fees_apy,  # gamma_yield[self.period]["apy"],
+            "stakingDistributionApr": gamma_yield[self.period]["apr"],
+            "stakingDistributionApy": gamma_yield[self.period]["apy"],
             "feeStatsStakingDailyYield": daily_yield,
             "feeCumulativeFeeUsd": legacy_stats["visr_distributed_usd"]
             + gamma_info["totalDistributedUSD"],
