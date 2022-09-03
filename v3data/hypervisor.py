@@ -413,12 +413,7 @@ class HypervisorInfo(HypervisorData):
 
         # Time since last rebalance
         df_rebalances["periodSeconds"] = df_rebalances.timestamp.diff()
-        print(df_rebalances[[
-            "timestamp",
-            "feeRate",
-            "grossFeesUSD",
-            "totalAmountUSD"
-        ]])
+        print(df_rebalances[["timestamp", "feeRate", "grossFeesUSD", "totalAmountUSD"]])
         # Calculate returns for using last 1, 7, and 30 days data
         results = {}
         for period, days in DAYS_IN_PERIOD.items():
@@ -500,7 +495,9 @@ class HypervisorInfo(HypervisorData):
                 returns = self._calculate_returns(
                     hypervisor["rebalances"], uncollected_fees_data
                 )
-                results[hypervisor["id"]] = self.apply_returns_overrides(hypervisor["id"], returns)
+                results[hypervisor["id"]] = self.apply_returns_overrides(
+                    hypervisor["id"], returns
+                )
 
         return results
 
@@ -573,12 +570,22 @@ class HypervisorInfo(HypervisorData):
                 pass
 
         return results
-    
+
     def apply_returns_overrides(self, hypervisor_address, returns):
-        if hypervisor_address == "0x3cca05926af387f1ab4cd45ce8975d31f0469927":
+        if hypervisor_address == "0x717a3276bd6f9e2f0ae447e0ffb45d0fa1c2dc57":
+            returns["daily"] = {
+            "totalPeriodSeconds": 629817,
+            "cumFeeReturn": 6.317775,
+            "feeApr": 0.0168880097306676,
+            "feeApy": 0.01703102099
+            }
+        if hypervisor_address in [
+            "0x3cca05926af387f1ab4cd45ce8975d31f0469927",
+            "0x717a3276bd6f9e2f0ae447e0ffb45d0fa1c2dc57",
+        ]:
             print("override")
             returns["weekly"] = returns["daily"]
-        
+
         return returns
 
 
