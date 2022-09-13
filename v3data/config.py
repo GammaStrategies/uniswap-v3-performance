@@ -122,5 +122,7 @@ legacy_stats = {
     "estimated_visr_annual_distribution_usd": 1197097.0895269862,
 }
 
-
-ALCHEMY_POLYGON_URL = "https://polygon-mainnet.g.alchemy.com/v2/s4oXFo4dqnTZyYd9JlDAbaOrlJECSf3f"
+ALCHEMY_URLS = {
+    "polygon": f"https://polygon-mainnet.g.alchemy.com/v2/{os.environ.get('ALCHEMY_POLYGON_KEY', '')}",
+    "optimism": f"https://opt-mainnet.g.alchemy.com/v2/{os.environ.get('ALCHEMY_OPTIMISM_KEY', '')}"
+}

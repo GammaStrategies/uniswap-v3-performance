@@ -15,6 +15,7 @@ from v3data.dashboard import Dashboard
 from v3data.eth import EthDistribution
 
 from v3data.gamma import GammaDistribution, GammaInfo, GammaYield
+from v3data.hypervisor import UncollectedFees
 
 CHAIN_MAINNET = "mainnet"
 

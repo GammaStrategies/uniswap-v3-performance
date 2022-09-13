@@ -25,6 +25,7 @@ class MasterchefData:
                     id
                     allocPoint
                     lastRewardBlock
+                    totalStaked
                     hypervisor{
                         id
                         symbol
@@ -95,13 +96,14 @@ class MasterchefInfo(MasterchefData):
                         "hypervisorSymbol": pool["hypervisor"]["symbol"],
                         "allocPoint": pool["allocPoint"],
                         "lastRewardBlock": pool["lastRewardBlock"],
-                        "apr": (
-                            rewardTokenPriceUsdc
-                            / (float(pool["hypervisor"]["pricePerShare"]) * 10**18)
-                        )
-                        * (int(pool["allocPoint"]) / int(masterchef["totalAllocPoint"]))
+                        "apr": rewardTokenPriceUsdc
                         * reward_per_block
-                        * BLOCKS_IN_YEAR[self.chain],
+                        * (int(pool["allocPoint"]) / int(masterchef["totalAllocPoint"]))
+                        * BLOCKS_IN_YEAR[self.chain]
+                        / (
+                            int(pool["totalStaked"])
+                            * float(pool["hypervisor"]["pricePerShare"])
+                        ),
                     }
                     for pool in masterchef["pools"]
                 },
@@ -152,5 +154,5 @@ class UserRewards(MasterchefData):
         return info
 
     def _get_pending_reward(self, masterchef, pool_id):
-        masterchef_contract = MasterChefContract(masterchef)
+        masterchef_contract = MasterChefContract(masterchef, self.chain)
         return masterchef_contract.pending_rewards(pool_id, self.user_address).call()

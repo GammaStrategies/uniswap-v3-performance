@@ -72,6 +72,9 @@ async def token_price_from_address(chain: str, token_address: str):
         if token_address == "0x4200000000000000000000000000000000000042":
             pool_address = "0x68f5c0a2de713a54991e01858fd27a3832401849"
             inverse = True
+        elif token_address == "0x601e471de750cdce1d5a2b8e6e671409c8eb2367":
+            pool_address = "0x68f5c0a2de713a54991e01858fd27a3832401849"
+            inverse = True
 
     if pool_address:
         pricing = UniV3Price(pool_address, chain)

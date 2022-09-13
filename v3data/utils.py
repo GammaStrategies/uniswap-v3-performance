@@ -54,3 +54,11 @@ def sqrtPriceX96_to_priceDecimal(sqrtPriceX96, token0_decimal, token1_decimal):
 
 def tick_to_priceDecimal(tick, token0_decimal, token1_decimal):
     return 1.0001**tick * 10 ** (token0_decimal - token1_decimal)
+
+
+def sub_in_256(x, y):
+    difference = x - y
+    if difference < 0:
+        difference += 2 ** 256
+
+    return difference

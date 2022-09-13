@@ -2,6 +2,7 @@ import httpx
 from web3 import Web3
 
 from v3data.config import (
+    ALCHEMY_URLS,
     VISOR_SUBGRAPH_URL,
     GAMMA_SUBGRAPH_URLS,
     UNI_V2_SUBGRAPH_URL,
@@ -9,7 +10,6 @@ from v3data.config import (
     ETH_BLOCKS_SUBGRAPH_URL,
     THEGRAPH_INDEX_NODE_URL,
     XGAMMA_SUBGRAPH_URL,
-    ALCHEMY_POLYGON_URL,
 )
 
 from v3data import abi
@@ -196,8 +196,8 @@ class CoingeckoClient:
 
 
 class MasterChefContract:
-    def __init__(self, address):
-        w3 = Web3(Web3.HTTPProvider(ALCHEMY_POLYGON_URL))
+    def __init__(self, address, chain: str):
+        w3 = Web3(Web3.HTTPProvider(ALCHEMY_URLS[chain]))
         self.contract = w3.eth.contract(address=Web3.toChecksumAddress(address), abi=abi.MASTERCHEF_ABI)
 
     def pending_rewards(self, pool_id, user_address):

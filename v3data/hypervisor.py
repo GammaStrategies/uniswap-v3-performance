@@ -5,7 +5,7 @@ from datetime import timedelta
 from pandas import DataFrame
 
 from v3data import GammaClient, UniswapV3Client
-from v3data.utils import tick_to_priceDecimal, timestamp_ago, timestamp_to_date
+from v3data.utils import sub_in_256, timestamp_ago, timestamp_to_date
 from v3data.constants import DAYS_IN_PERIOD, SECONDS_IN_DAYS
 from v3data.config import EXCLUDED_HYPERVISORS, FALLBACK_DAYS
 
@@ -290,7 +290,7 @@ class HypervisorData:
 
         pool_query = """
         query pool(
-            $poolAddress: String!,
+            $poolAddress: String!
             $baseLower: Int!
             $baseUpper: Int!
             $limitLower: Int!
@@ -753,51 +753,34 @@ class UncollectedFees(HypervisorData):
         fee_growth_inside_last_0,
         fee_growth_inside_last_1,
     ):
-        X128 = math.pow(2, 128)
-
-        debug = {
-            "decimals_0": decimals_0,
-            "decimals_1": decimals_1,
-            "fee_growth_global_0": fee_growth_global_0,
-            "fee_growth_global_1": fee_growth_global_1,
-            "tick_current": tick_current,
-            "tick_lower": tick_lower,
-            "tick_upper": tick_upper,
-            "fee_growth_outside_0_lower": fee_growth_outside_0_lower,
-            "fee_growth_outside_1_lower": fee_growth_outside_1_lower,
-            "fee_growth_outside_0_upper": fee_growth_outside_0_upper,
-            "fee_growth_outside_1_upper": fee_growth_outside_1_upper,
-            "liquidity": liquidity,
-            "fee_growth_inside_last_0": fee_growth_inside_last_0,
-            "fee_growth_inside_last_1": fee_growth_inside_last_1,
-        }
+        X128 = 2 ** 128
 
         if tick_current >= tick_lower:
             fee_growth_below_pos_0 = fee_growth_outside_0_lower
             fee_growth_below_pos_1 = fee_growth_outside_1_lower
         else:
-            fee_growth_below_pos_0 = fee_growth_global_0 - fee_growth_outside_0_lower
-            fee_growth_below_pos_1 = fee_growth_global_1 - fee_growth_outside_1_lower
+            fee_growth_below_pos_0 = sub_in_256(fee_growth_global_0, fee_growth_outside_0_lower)
+            fee_growth_below_pos_1 = sub_in_256(fee_growth_global_1, fee_growth_outside_1_lower)
 
         if tick_current >= tick_upper:
-            fee_growth_above_pos_0 = fee_growth_global_0 - fee_growth_outside_0_upper
-            fee_growth_above_pos_1 = fee_growth_global_1 - fee_growth_outside_1_upper
+            fee_growth_above_pos_0 = sub_in_256(fee_growth_global_0, fee_growth_outside_0_upper)
+            fee_growth_above_pos_1 = sub_in_256(fee_growth_global_1, fee_growth_outside_1_upper)
         else:
             fee_growth_above_pos_0 = fee_growth_outside_0_upper
             fee_growth_above_pos_1 = fee_growth_outside_1_upper
 
         fees_accum_now_0 = (
-            fee_growth_global_0 - fee_growth_below_pos_0 - fee_growth_above_pos_0
+            sub_in_256(sub_in_256(fee_growth_global_0, fee_growth_below_pos_0), fee_growth_above_pos_0)
         )
         fees_accum_now_1 = (
-            fee_growth_global_1 - fee_growth_below_pos_1 - fee_growth_above_pos_1
+            sub_in_256(sub_in_256(fee_growth_global_1, fee_growth_below_pos_1), fee_growth_above_pos_1)
         )
 
         uncollectedFees_0 = (
-            liquidity * (fees_accum_now_0 - fee_growth_inside_last_0)
+            liquidity * (sub_in_256(fees_accum_now_0, fee_growth_inside_last_0))
         ) / X128
         uncollectedFees_1 = (
-            liquidity * (fees_accum_now_1 - fee_growth_inside_last_1)
+            liquidity * (sub_in_256(fees_accum_now_1,fee_growth_inside_last_1))
         ) / X128
 
         return uncollectedFees_0, uncollectedFees_1
