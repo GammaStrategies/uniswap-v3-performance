@@ -1,6 +1,6 @@
 from fastapi import Response, status
 
-from v3data.hypervisor import HypervisorInfo
+from v3data.hypervisor import HypervisorInfo, UncollectedFees
 from v3data.toplevel import TopLevelData
 
 
@@ -56,3 +56,8 @@ async def hypervisors_all(chain: str):
     hypervisor_info = HypervisorInfo(chain)
 
     return await hypervisor_info.all_data()
+
+
+async def uncollected_fees(chain: str, hypervisor_address: str):
+    fees = UncollectedFees(chain)
+    return await fees.output(hypervisor_address)

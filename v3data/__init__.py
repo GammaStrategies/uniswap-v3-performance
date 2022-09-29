@@ -195,6 +195,26 @@ class CoingeckoClient:
             return {"gamma-strategies": {"usd": 0.623285, "eth": 0.00016391}}
 
 
+class LlamaClient:
+    def __init__(self, chain):
+        self.base = "https://coin.llama.fi/"
+        self.chain = self._translate_chain_name(chain)
+
+    def _translate_chain_name(self, chain):
+        mapping = {
+            "mainnet": "ethereum"
+        }
+        return mapping.get(chain, chain)
+        
+    async def block_from_timestamp(self, timestamp):
+        endpoint = f"{self.base}/blocks/{self.chain}/{timestamp}"
+
+        response = await async_client.get(endpoint)
+        if response.status_code == 200:
+            return response.json()["height"]
+        
+        return None
+
 class MasterChefContract:
     def __init__(self, address, chain: str):
         w3 = Web3(Web3.HTTPProvider(ALCHEMY_URLS[chain]))

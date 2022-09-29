@@ -266,13 +266,17 @@ class HypervisorData:
                 baseLiquidity
                 baseLower
                 baseUpper
+                baseTokensOwed0
+                baseTokensOwed1
                 baseFeeGrowthInside0LastX128
                 baseFeeGrowthInside1LastX128
                 limitLiquidity
-                limitFeeGrowthInside0LastX128
-                limitFeeGrowthInside1LastX128
                 limitLower
                 limitUpper
+                limitTokensOwed0
+                limitTokensOwed1
+                limitFeeGrowthInside0LastX128
+                limitFeeGrowthInside1LastX128
                 conversion {
                     baseTokenIndex
                     priceTokenInBase
@@ -574,10 +578,10 @@ class HypervisorInfo(HypervisorData):
     def apply_returns_overrides(self, hypervisor_address, returns):
         if hypervisor_address == "0x717a3276bd6f9e2f0ae447e0ffb45d0fa1c2dc57":
             returns["daily"] = {
-            "totalPeriodSeconds": 629817,
-            "cumFeeReturn": 6.317775,
-            "feeApr": 0.0168880097306676,
-            "feeApy": 0.01703102099
+                "totalPeriodSeconds": 629817,
+                "cumFeeReturn": 6.317775,
+                "feeApr": 0.0168880097306676,
+                "feeApy": 0.01703102099,
             }
         if hypervisor_address in [
             "0x3cca05926af387f1ab4cd45ce8975d31f0469927",
@@ -601,8 +605,6 @@ class UncollectedFees(HypervisorData):
 
         try:
             base_fees_0, base_fees_1 = self.calc_fees(
-                decimals_0=decimals_0,
-                decimals_1=decimals_1,
                 fee_growth_global_0=int(
                     data["tick_data"]["pool"]["feeGrowthGlobal0X128"]
                 ),
@@ -636,13 +638,11 @@ class UncollectedFees(HypervisorData):
             base_fees_0 = 0
             base_fees_1 = 0
 
-        base_fees_0 = max(base_fees_0, 0)
-        base_fees_1 = max(base_fees_1, 0)
+        base_tokens_owed_0 = float(data["hypervisor_data"]["baseTokensOwed0"])
+        base_tokens_owed_1 = float(data["hypervisor_data"]["baseTokensOwed1"])
 
         try:
             limit_fees_0, limit_fees_1 = self.calc_fees(
-                decimals_0=decimals_0,
-                decimals_1=decimals_1,
                 fee_growth_global_0=int(
                     data["tick_data"]["pool"]["feeGrowthGlobal0X128"]
                 ),
@@ -676,8 +676,8 @@ class UncollectedFees(HypervisorData):
             limit_fees_0 = 0
             limit_fees_1 = 0
 
-        limit_fees_0 = max(limit_fees_0, 0)
-        limit_fees_1 = max(limit_fees_1, 0)
+        limit_tokens_owed_0 = float(data["hypervisor_data"]["limitTokensOwed0"])
+        limit_tokens_owed_1 = float(data["hypervisor_data"]["limitTokensOwed1"])
 
         # Convert to USD
         baseTokenIndex = int(data["hypervisor_data"]["conversion"]["baseTokenIndex"])
@@ -689,29 +689,68 @@ class UncollectedFees(HypervisorData):
         if baseTokenIndex == 0:
             base_fees_0_usd = base_fees_0 * priceBaseInUSD
             base_fees_1_usd = base_fees_1 * priceTokenInBase * priceBaseInUSD
+            base_tokens_owed_0_usd = base_tokens_owed_0 * priceBaseInUSD
+            base_tokens_owed_1_usd = (
+                base_tokens_owed_1 * priceTokenInBase * priceBaseInUSD
+            )
             limit_fees_0_usd = limit_fees_0 * priceBaseInUSD
             limit_fees_1_usd = limit_fees_1 * priceTokenInBase * priceBaseInUSD
+            limit_tokens_owed_0_usd = limit_tokens_owed_0 * priceBaseInUSD
+            limit_tokens_owed_1_usd = (
+                limit_tokens_owed_1 * priceTokenInBase * priceBaseInUSD
+            )
         elif baseTokenIndex == 1:
             base_fees_0_usd = base_fees_0 * priceTokenInBase * priceBaseInUSD
             base_fees_1_usd = base_fees_1 * priceBaseInUSD
+            base_tokens_owed_0_usd = (
+                base_tokens_owed_0 * priceTokenInBase * priceBaseInUSD
+            )
+            base_tokens_owed_1_usd = base_tokens_owed_1 * priceBaseInUSD
             limit_fees_0_usd = limit_fees_0 * priceTokenInBase * priceBaseInUSD
             limit_fees_1_usd = limit_fees_1 * priceBaseInUSD
+            limit_tokens_owed_0_usd = (
+                limit_tokens_owed_0 * priceTokenInBase * priceBaseInUSD
+            )
+            limit_tokens_owed_1_usd = limit_tokens_owed_1 * priceBaseInUSD
         else:
             base_fees_0_usd = 0
             base_fees_1_usd = 0
+            base_tokens_owed_0_usd = 0
+            base_tokens_owed_1_usd = 1
             limit_fees_0_usd = 0
             limit_fees_1_usd = 0
+            limit_tokens_owed_0_usd = 0
+            limit_tokens_owed_1_usd = 0
+
+        uncollected_fees_total = (
+            base_fees_0_usd
+            + base_fees_1_usd
+            + base_tokens_owed_0_usd
+            + base_tokens_owed_1_usd
+            + limit_fees_0_usd
+            + limit_fees_1_usd
+            + limit_tokens_owed_0_usd
+            + limit_tokens_owed_1_usd
+        )
 
         return {
-            "base_fees_0": base_fees_0 / 10**decimals_0,
-            "base_fees_1": base_fees_1 / 10**decimals_1,
-            "limit_fees_0": limit_fees_0 / 10**decimals_0,
-            "limit_fees_1": limit_fees_1 / 10**decimals_1,
-            "base_fees_0_usd": base_fees_0_usd,
-            "base_fees_1_usd": base_fees_1_usd,
-            "limit_fees_0_usd": limit_fees_0_usd,
-            "limit_fees_1_usd": limit_fees_1_usd,
-            "tvl_usd": float(data["hypervisor_data"]["tvlUSD"]),
+            "baseFees0": base_fees_0 / 10**decimals_0,
+            "baseFees1": base_fees_1 / 10**decimals_1,
+            "baseTokensOwed0": base_tokens_owed_0 / 10**decimals_0,
+            "baseTokensOwed1": base_tokens_owed_1 / 10**decimals_1,
+            "limitFees0": limit_fees_0 / 10**decimals_0,
+            "limitFees1": limit_fees_1 / 10**decimals_1,
+            "limitTokensOwed0": limit_tokens_owed_0 / 10**decimals_0,
+            "limitTokensOwed1": limit_tokens_owed_1 / 10**decimals_1,
+            "baseFees0USD": base_fees_0_usd,
+            "baseFees1USD": base_fees_1_usd,
+            "baseTokensOwed0USD": base_tokens_owed_0_usd,
+            "baseTokensOwed1USD": base_tokens_owed_1_usd,
+            "limitFees0USD": limit_fees_0_usd,
+            "limitFfees1USD": limit_fees_1_usd,
+            "limitTokensOwed0USD": limit_tokens_owed_0_usd,
+            "limitTokensOwed1USD": limit_tokens_owed_1_usd,
+            "totalUncollectedFees": uncollected_fees_total,
         }
 
     async def output_for_returns_calc(self, hypervisor_address, get_data=True):
@@ -738,8 +777,6 @@ class UncollectedFees(HypervisorData):
 
     @staticmethod
     def calc_fees(
-        decimals_0,
-        decimals_1,
         fee_growth_global_0,
         fee_growth_global_1,
         tick_current,
@@ -753,34 +790,44 @@ class UncollectedFees(HypervisorData):
         fee_growth_inside_last_0,
         fee_growth_inside_last_1,
     ):
-        X128 = 2 ** 128
+        X128 = 2**128
 
         if tick_current >= tick_lower:
             fee_growth_below_pos_0 = fee_growth_outside_0_lower
             fee_growth_below_pos_1 = fee_growth_outside_1_lower
         else:
-            fee_growth_below_pos_0 = sub_in_256(fee_growth_global_0, fee_growth_outside_0_lower)
-            fee_growth_below_pos_1 = sub_in_256(fee_growth_global_1, fee_growth_outside_1_lower)
+            fee_growth_below_pos_0 = sub_in_256(
+                fee_growth_global_0, fee_growth_outside_0_lower
+            )
+            fee_growth_below_pos_1 = sub_in_256(
+                fee_growth_global_1, fee_growth_outside_1_lower
+            )
 
         if tick_current >= tick_upper:
-            fee_growth_above_pos_0 = sub_in_256(fee_growth_global_0, fee_growth_outside_0_upper)
-            fee_growth_above_pos_1 = sub_in_256(fee_growth_global_1, fee_growth_outside_1_upper)
+            fee_growth_above_pos_0 = sub_in_256(
+                fee_growth_global_0, fee_growth_outside_0_upper
+            )
+            fee_growth_above_pos_1 = sub_in_256(
+                fee_growth_global_1, fee_growth_outside_1_upper
+            )
         else:
             fee_growth_above_pos_0 = fee_growth_outside_0_upper
             fee_growth_above_pos_1 = fee_growth_outside_1_upper
 
-        fees_accum_now_0 = (
-            sub_in_256(sub_in_256(fee_growth_global_0, fee_growth_below_pos_0), fee_growth_above_pos_0)
+        fees_accum_now_0 = sub_in_256(
+            sub_in_256(fee_growth_global_0, fee_growth_below_pos_0),
+            fee_growth_above_pos_0,
         )
-        fees_accum_now_1 = (
-            sub_in_256(sub_in_256(fee_growth_global_1, fee_growth_below_pos_1), fee_growth_above_pos_1)
+        fees_accum_now_1 = sub_in_256(
+            sub_in_256(fee_growth_global_1, fee_growth_below_pos_1),
+            fee_growth_above_pos_1,
         )
 
         uncollectedFees_0 = (
             liquidity * (sub_in_256(fees_accum_now_0, fee_growth_inside_last_0))
         ) / X128
         uncollectedFees_1 = (
-            liquidity * (sub_in_256(fees_accum_now_1,fee_growth_inside_last_1))
+            liquidity * (sub_in_256(fees_accum_now_1, fee_growth_inside_last_1))
         ) / X128
 
         return uncollectedFees_0, uncollectedFees_1
