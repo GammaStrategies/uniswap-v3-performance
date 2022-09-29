@@ -91,7 +91,7 @@ async def account_data(address: str):
     return await v3data.common.users.account_data(CHAIN_ARBITRUM, address)
 
 
-@router.get("/hupervisor/{hypervisor_address}/uncollectedFees")
+@router.get("/hypervisor/{hypervisor_address}/uncollectedFees")
 async def hypervisor_uncollected_fees(hypervisor_address: str):
     return await v3data.common.hypervisor.uncollected_fees(
         CHAIN_ARBITRUM, hypervisor_address

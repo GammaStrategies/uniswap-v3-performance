@@ -78,7 +78,7 @@ async def hypervisor_apy(response: Response, hypervisor_address):
     )
 
 
-@router.get("/hupervisor/{hypervisor_address}/uncollectedFees")
+@router.get("/hypervisor/{hypervisor_address}/uncollectedFees")
 async def hypervisor_uncollected_fees(hypervisor_address: str):
     return await v3data.common.hypervisor.uncollected_fees(
         CHAIN_MAINNET, hypervisor_address
