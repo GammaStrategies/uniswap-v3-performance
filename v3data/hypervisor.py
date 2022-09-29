@@ -747,7 +747,7 @@ class UncollectedFees(HypervisorData):
             "baseTokensOwed0USD": base_tokens_owed_0_usd,
             "baseTokensOwed1USD": base_tokens_owed_1_usd,
             "limitFees0USD": limit_fees_0_usd,
-            "limitFfees1USD": limit_fees_1_usd,
+            "limitFees1USD": limit_fees_1_usd,
             "limitTokensOwed0USD": limit_tokens_owed_0_usd,
             "limitTokensOwed1USD": limit_tokens_owed_1_usd,
             "totalFees0": (base_fees_0 + base_tokens_owed_0 + limit_fees_0 + limit_tokens_owed_0) / 10**decimals_0,
