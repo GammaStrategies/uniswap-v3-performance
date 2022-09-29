@@ -750,7 +750,9 @@ class UncollectedFees(HypervisorData):
             "limitFfees1USD": limit_fees_1_usd,
             "limitTokensOwed0USD": limit_tokens_owed_0_usd,
             "limitTokensOwed1USD": limit_tokens_owed_1_usd,
-            "totalUncollectedFees": uncollected_fees_total,
+            "totalFees0": (base_fees_0 + base_tokens_owed_0 + limit_fees_0 + limit_tokens_owed_0) / 10**decimals_0,
+            "totalFees1": (base_fees_1 + base_tokens_owed_1 + limit_fees_1 + limit_tokens_owed_1) / 10**decimals_1,
+            "totalFeesUSD": uncollected_fees_total,
         }
 
     async def output_for_returns_calc(self, hypervisor_address, get_data=True):
