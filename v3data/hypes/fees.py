@@ -3,7 +3,7 @@ from v3data.utils import sub_in_256
 
 
 class Fees(FeesData):
-    async def output(self, hypervisor_addresses: list[str] = None, get_data=True):
+    async def output(self, hypervisor_addresses=None, get_data=True):
         if get_data:
             await self._get_data(hypervisor_addresses)
 

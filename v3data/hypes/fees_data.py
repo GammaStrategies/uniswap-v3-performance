@@ -1,5 +1,6 @@
 import asyncio
 from dataclasses import dataclass
+
 from v3data import GammaClient, UniswapV3Client
 from v3data.utils import timestamp_ago
 
@@ -20,7 +21,7 @@ class FeesData:
         self.uniswap_client = UniswapV3Client(chain)
         self.data = {}
 
-    async def _get_hypervisor_data(self, hypervisors: list[str] = None):
+    async def _get_hypervisor_data(self, hypervisors=None):
         hypervisor_list_query = """
         query hypervisor($ids: [String!]!){
             uniswapV3Hypervisors(
@@ -183,16 +184,24 @@ class FeesData:
         return {
             self.tick_id(
                 response["data"]["pool"]["id"],
-                response["data"]["baseLower"][0]["tickIdx"] if response["data"]["baseLower"] else 0,
-                response["data"]["baseUpper"][0]["tickIdx"] if response["data"]["baseUpper"] else 0,
-                response["data"]["limitLower"][0]["tickIdx"] if response["data"]["limitLower"] else 0,
-                response["data"]["limitUpper"][0]["tickIdx"] if response["data"]["limitUpper"] else 0,
+                response["data"]["baseLower"][0]["tickIdx"]
+                if response["data"]["baseLower"]
+                else 0,
+                response["data"]["baseUpper"][0]["tickIdx"]
+                if response["data"]["baseUpper"]
+                else 0,
+                response["data"]["limitLower"][0]["tickIdx"]
+                if response["data"]["limitLower"]
+                else 0,
+                response["data"]["limitUpper"][0]["tickIdx"]
+                if response["data"]["limitUpper"]
+                else 0,
             ): response["data"]
             for response in responses
             if response["data"].get("pool", {}).get("id")
         }
 
-    async def _get_data(self, hypervisors: list[str] = None):
+    async def _get_data(self, hypervisors=None):
         hypervisor_data = await self._get_hypervisor_data(hypervisors)
 
         pools_params = [
