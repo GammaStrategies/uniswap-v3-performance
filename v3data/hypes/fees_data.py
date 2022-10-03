@@ -107,7 +107,7 @@ class FeesData:
             for hypervisor in response["data"]["uniswapV3Hypervisors"]
         }
 
-    async def _get_pool_data(self, pools_params: list[PoolQueryParams]):
+    async def _get_pool_data(self, pools_params):
         pool_query = """
         query pool(
             $poolAddress: String!
