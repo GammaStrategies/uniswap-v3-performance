@@ -5,7 +5,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
-from v3data.hypervisor import UncollectedFees
 
 from v3data.routers import mainnet, polygon, arbitrum, optimism, celo, simulator
 

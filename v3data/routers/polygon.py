@@ -66,6 +66,13 @@ async def hypervisor_apy(response: Response, hypervisor_address):
     )
 
 
+@router.get("/hypervisor/{hypervisor_address}/uncollectedFees")
+async def hypervisor_uncollected_fees(hypervisor_address: str):
+    return await v3data.common.hypervisor.uncollected_fees(
+        CHAIN_POLYGON, hypervisor_address
+    )
+
+
 @router.get("/hypervisors/aggregateStats")
 async def aggregate_stats():
     return await v3data.common.hypervisor.aggregate_stats(CHAIN_POLYGON)
@@ -80,6 +87,11 @@ async def hypervisors_return():
 @router.get("/hypervisors/allData")
 async def hypervisors_all():
     return await v3data.common.hypervisor.hypervisors_all(CHAIN_POLYGON)
+
+
+@router.get("/hypervisors/uncollectedFees")
+async def uncollected_fees_all():
+    return await v3data.common.hypervisor.uncollected_fees_all(CHAIN_POLYGON)
 
 
 @router.get("/allRewards")
@@ -100,10 +112,3 @@ async def user_data(address: str):
 @router.get("/vault/{address}")
 async def account_data(address: str):
     return await v3data.common.users.account_data(CHAIN_POLYGON, address)
-
-
-@router.get("/hypervisor/{hypervisor_address}/uncollectedFees")
-async def hypervisor_uncollected_fees(hypervisor_address: str):
-    return await v3data.common.hypervisor.uncollected_fees(
-        CHAIN_POLYGON, hypervisor_address
-    )

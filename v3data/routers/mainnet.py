@@ -15,7 +15,6 @@ from v3data.dashboard import Dashboard
 from v3data.eth import EthDistribution
 
 from v3data.gamma import GammaDistribution, GammaInfo, GammaYield
-from v3data.hypervisor import UncollectedFees
 
 CHAIN_MAINNET = "mainnet"
 
@@ -104,6 +103,10 @@ async def hypervisors_return():
 @router.get("/hypervisors/allData")
 async def hypervisors_all():
     return await v3data.common.hypervisor.hypervisors_all(CHAIN_MAINNET)
+
+@router.get("/hypervisors/uncollectedFees")
+async def uncollected_fees_all():
+    return await v3data.common.hypervisor.uncollected_fees_all(CHAIN_MAINNET)
 
 
 @router.get("/user/{address}")
