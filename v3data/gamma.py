@@ -265,14 +265,27 @@ class ProtocolFeesCalculations(ProtocolFeesData):
         super().__init__()
         self.days = days
 
+    def _empty_fees(self):
+        results = {}
+        for period, days in DAYS_IN_PERIOD.items():
+            results[period] = {}
+            results[period]["collected_usd"] = 0
+            results[period]["collected_gamma"] = 0
+            results[period]["yield"] = 0
+            results[period]["apr"] = 0
+            results[period]["apy"] = 0
+
+        return results
+
     async def collected_fees(self, get_data=True):
         if get_data:
             self._get_data(timedelta(days=self.days))
 
         rebalances = self.data["uniswapV3Rebalances"]
+        results = self._empty_fees()
 
         if not rebalances:
-            return 0
+            return results
 
         df_rebalances = DataFrame(rebalances, dtype=np.float64)
 
@@ -283,7 +296,6 @@ class ProtocolFeesCalculations(ProtocolFeesData):
             gamma_in_usd * int(self.data["rewardHypervisor"]["totalGamma"]) / 10**18
         )
 
-        results = {}
         for period, days in DAYS_IN_PERIOD.items():
             df_period = df_rebalances[
                 df_rebalances.timestamp > timestamp_ago(timedelta(days=days))
