@@ -86,27 +86,35 @@ class MasterchefInfo(MasterchefData):
                 int(masterchef["rewardPerBlock"])
                 / 10 ** masterchef["rewardToken"]["decimals"]
             )
-            info[masterchef["id"]] = {
-                "rewardToken": masterchef["rewardToken"]["id"],
-                "rewardTokenSymbol": masterchef["rewardToken"]["symbol"],
-                "rewardPerBlock": reward_per_block,
-                "totalAllocPoint": masterchef["totalAllocPoint"],
-                "pools": {
-                    pool["hypervisor"]["id"]: {
-                        "hypervisorSymbol": pool["hypervisor"]["symbol"],
-                        "allocPoint": pool["allocPoint"],
-                        "lastRewardBlock": pool["lastRewardBlock"],
-                        "apr": rewardTokenPriceUsdc
+
+            pool_info = {}
+            for pool in masterchef["pools"]:
+                try:
+                    apr = (
+                        rewardTokenPriceUsdc
                         * reward_per_block
                         * (int(pool["allocPoint"]) / int(masterchef["totalAllocPoint"]))
                         * BLOCKS_IN_YEAR[self.chain]
                         / (
                             int(pool["totalStaked"])
                             * float(pool["hypervisor"]["pricePerShare"])
-                        ),
-                    }
-                    for pool in masterchef["pools"]
-                },
+                        )
+                    )
+                except ZeroDivisionError:
+                    apr = 0
+                pool_info[pool["hypervisor"]["id"]] = {
+                    "hypervisorSymbol": pool["hypervisor"]["symbol"],
+                    "allocPoint": pool["allocPoint"],
+                    "lastRewardBlock": pool["lastRewardBlock"],
+                    "apr": apr,
+                }
+
+            info[masterchef["id"]] = {
+                "rewardToken": masterchef["rewardToken"]["id"],
+                "rewardTokenSymbol": masterchef["rewardToken"]["symbol"],
+                "rewardPerBlock": reward_per_block,
+                "totalAllocPoint": masterchef["totalAllocPoint"],
+                "pools": pool_info,
             }
 
         return info
