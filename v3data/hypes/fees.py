@@ -1,9 +1,69 @@
+from datetime import timedelta
+from email.mime import base
+from webbrowser import get
+
 from v3data.hypes.fees_data import FeesData
-from v3data.utils import sub_in_256
+from v3data.utils import sub_in_256, timestamp_ago
 
 
 class Fees(FeesData):
     async def output(self, hypervisor_addresses=None, get_data=True):
+        fees_data = await self._hypervisor_fees(hypervisor_addresses, get_data)
+
+        results = {}
+        for hypervisor_id, hypervisor in fees_data.items():
+            base_fees_0 = hypervisor["base"]["fees0"]
+            base_fees_1 = hypervisor["base"]["fees1"]
+            base_tokens_owed_0 = hypervisor["base"]["owed0"]
+            base_tokens_owed_1 = hypervisor["base"]["owed1"]
+
+            limit_fees_0 = hypervisor["limit"]["fees0"]
+            limit_fees_1 = hypervisor["limit"]["fees1"]
+            limit_tokens_owed_0 = hypervisor["limit"]["owed0"]
+            limit_tokens_owed_1 = hypervisor["limit"]["owed1"]
+
+            token0_price = hypervisor["tokens"]["price0"]
+            token1_price = hypervisor["tokens"]["price1"]
+
+            total_fees_0 = (
+                base_fees_0 + base_tokens_owed_0 + limit_fees_0 + limit_tokens_owed_0
+            )
+
+            total_fees_1 = (
+                base_fees_1 + base_tokens_owed_1 + limit_fees_1 + limit_tokens_owed_1
+            )
+
+            results[hypervisor_id] = {
+                "symbol": hypervisor["symbol"],
+                "baseFees0": base_fees_0 / 10 ** hypervisor["tokens"]["decimals0"],
+                "baseFees1": base_fees_1 / 10 ** hypervisor["tokens"]["decimals1"],
+                "baseTokensOwed0": base_tokens_owed_0
+                / 10 ** hypervisor["tokens"]["decimals0"],
+                "baseTokensOwed1": base_tokens_owed_1
+                / 10 ** hypervisor["tokens"]["decimals1"],
+                "limitFees0": limit_fees_0 / 10 ** hypervisor["tokens"]["decimals0"],
+                "limitFees1": limit_fees_1 / 10 ** hypervisor["tokens"]["decimals1"],
+                "limitTokensOwed0": limit_tokens_owed_0
+                / 10 ** hypervisor["tokens"]["decimals0"],
+                "limitTokensOwed1": limit_tokens_owed_1
+                / 10 ** hypervisor["tokens"]["decimals1"],
+                "baseFees0USD": base_fees_0 * token0_price,
+                "baseFees1USD": base_fees_1,
+                "baseTokensOwed0USD": base_tokens_owed_0 * token0_price,
+                "baseTokensOwed1USD": base_tokens_owed_1 * token1_price,
+                "limitFees0USD": limit_fees_0 * token0_price,
+                "limitFees1USD": limit_fees_1 * token1_price,
+                "limitTokensOwed0USD": limit_tokens_owed_0 * token0_price,
+                "limitTokensOwed1USD": limit_tokens_owed_1 * token1_price,
+                "totalFees0": total_fees_0,
+                "totalFees1": total_fees_1,
+                "totalFeesUSD": total_fees_0 * token0_price
+                + total_fees_1 * token1_price,
+            }
+
+        return results
+
+    async def _hypervisor_fees(self, hypervisor_addresses=None, get_data=True):
         if get_data:
             await self._get_data(hypervisor_addresses)
 
@@ -98,85 +158,36 @@ class Fees(FeesData):
             priceBaseInUSD = float(hypervisor["conversion"]["priceBaseInUSD"])
 
             if baseTokenIndex == 0:
-                base_fees_0_usd = base_fees_0 * priceBaseInUSD
-                base_fees_1_usd = base_fees_1 * priceTokenInBase * priceBaseInUSD
-                base_tokens_owed_0_usd = base_tokens_owed_0 * priceBaseInUSD
-                base_tokens_owed_1_usd = (
-                    base_tokens_owed_1 * priceTokenInBase * priceBaseInUSD
-                )
-                limit_fees_0_usd = limit_fees_0 * priceBaseInUSD
-                limit_fees_1_usd = limit_fees_1 * priceTokenInBase * priceBaseInUSD
-                limit_tokens_owed_0_usd = limit_tokens_owed_0 * priceBaseInUSD
-                limit_tokens_owed_1_usd = (
-                    limit_tokens_owed_1 * priceTokenInBase * priceBaseInUSD
-                )
+                token0_price = priceBaseInUSD
+                token1_price = priceTokenInBase * priceBaseInUSD
             elif baseTokenIndex == 1:
-                base_fees_0_usd = base_fees_0 * priceTokenInBase * priceBaseInUSD
-                base_fees_1_usd = base_fees_1 * priceBaseInUSD
-                base_tokens_owed_0_usd = (
-                    base_tokens_owed_0 * priceTokenInBase * priceBaseInUSD
-                )
-                base_tokens_owed_1_usd = base_tokens_owed_1 * priceBaseInUSD
-                limit_fees_0_usd = limit_fees_0 * priceTokenInBase * priceBaseInUSD
-                limit_fees_1_usd = limit_fees_1 * priceBaseInUSD
-                limit_tokens_owed_0_usd = (
-                    limit_tokens_owed_0 * priceTokenInBase * priceBaseInUSD
-                )
-                limit_tokens_owed_1_usd = limit_tokens_owed_1 * priceBaseInUSD
+                token0_price = priceTokenInBase * priceBaseInUSD
+                token1_price = priceBaseInUSD
             else:
-                base_fees_0_usd = 0
-                base_fees_1_usd = 0
-                base_tokens_owed_0_usd = 0
-                base_tokens_owed_1_usd = 1
-                limit_fees_0_usd = 0
-                limit_fees_1_usd = 0
-                limit_tokens_owed_0_usd = 0
-                limit_tokens_owed_1_usd = 0
-
-            uncollected_fees_total = (
-                base_fees_0_usd
-                + base_fees_1_usd
-                + base_tokens_owed_0_usd
-                + base_tokens_owed_1_usd
-                + limit_fees_0_usd
-                + limit_fees_1_usd
-                + limit_tokens_owed_0_usd
-                + limit_tokens_owed_1_usd
-            )
+                token0_price = 0
+                token1_price = 0
 
             results[hypervisor["id"]] = {
+                "id": hypervisor["id"],
                 "symbol": hypervisor["symbol"],
-                "baseFees0": base_fees_0 / 10**decimals_0,
-                "baseFees1": base_fees_1 / 10**decimals_1,
-                "baseTokensOwed0": base_tokens_owed_0 / 10**decimals_0,
-                "baseTokensOwed1": base_tokens_owed_1 / 10**decimals_1,
-                "limitFees0": limit_fees_0 / 10**decimals_0,
-                "limitFees1": limit_fees_1 / 10**decimals_1,
-                "limitTokensOwed0": limit_tokens_owed_0 / 10**decimals_0,
-                "limitTokensOwed1": limit_tokens_owed_1 / 10**decimals_1,
-                "baseFees0USD": base_fees_0_usd,
-                "baseFees1USD": base_fees_1_usd,
-                "baseTokensOwed0USD": base_tokens_owed_0_usd,
-                "baseTokensOwed1USD": base_tokens_owed_1_usd,
-                "limitFees0USD": limit_fees_0_usd,
-                "limitFees1USD": limit_fees_1_usd,
-                "limitTokensOwed0USD": limit_tokens_owed_0_usd,
-                "limitTokensOwed1USD": limit_tokens_owed_1_usd,
-                "totalFees0": (
-                    base_fees_0
-                    + base_tokens_owed_0
-                    + limit_fees_0
-                    + limit_tokens_owed_0
-                )
-                / 10**decimals_0,
-                "totalFees1": (
-                    base_fees_1
-                    + base_tokens_owed_1
-                    + limit_fees_1
-                    + limit_tokens_owed_1
-                )
-                / 10**decimals_1,
-                "totalFeesUSD": uncollected_fees_total,
+                "base": {
+                    "fees0": base_fees_0,
+                    "fees1": base_fees_1,
+                    "owed0": base_tokens_owed_0,
+                    "owed1": base_tokens_owed_1,
+                },
+                "limit": {
+                    "fees0": limit_fees_0,
+                    "fees1": limit_fees_1,
+                    "owed0": limit_tokens_owed_0,
+                    "owed1": limit_tokens_owed_1,
+                },
+                "tokens": {
+                    "price0": token0_price,
+                    "price1": token1_price,
+                    "decimals0": decimals_0,
+                    "decimals1": decimals_1,
+                }
             }
 
         return results

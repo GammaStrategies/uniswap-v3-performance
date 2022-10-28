@@ -15,6 +15,10 @@ from v3data.dashboard import Dashboard
 from v3data.eth import EthDistribution
 
 from v3data.gamma import GammaDistribution, GammaInfo, GammaYield
+from v3data.hypes.fees_yield import FeesYield
+from v3data.hypes.fees_yield_data import YieldData
+
+from v3data.hypes.fees import Fees
 
 CHAIN_MAINNET = "mainnet"
 
@@ -104,9 +108,28 @@ async def hypervisors_return():
 async def hypervisors_all():
     return await v3data.common.hypervisor.hypervisors_all(CHAIN_MAINNET)
 
+
 @router.get("/hypervisors/uncollectedFees")
 async def uncollected_fees_all():
     return await v3data.common.hypervisor.uncollected_fees_all(CHAIN_MAINNET)
+
+
+@router.get("/hypervisors/feeReturns/daily")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def fee_returns():
+    return await v3data.common.hypervisor.fee_returns(CHAIN_MAINNET, 1)
+
+
+@router.get("/hypervisors/feeReturns/weekly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def fee_returns():
+    return await v3data.common.hypervisor.fee_returns(CHAIN_MAINNET, 7)
+
+
+@router.get("/hypervisors/feeReturns/monthly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def fee_returns():
+    return await v3data.common.hypervisor.fee_returns(CHAIN_MAINNET, 30)
 
 
 @router.get("/user/{address}")
