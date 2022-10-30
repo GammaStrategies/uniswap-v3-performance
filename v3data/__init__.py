@@ -18,7 +18,7 @@ async_client = httpx.AsyncClient(timeout=180)
 
 
 class SubgraphClient:
-    def __init__(self, url: str, chain: str="mainnet"):
+    def __init__(self, url: str, chain: str = "mainnet"):
         self._url = url
         self.chain = chain
 
@@ -197,28 +197,31 @@ class CoingeckoClient:
 
 class LlamaClient:
     def __init__(self, chain):
-        self.base = "https://coin.llama.fi/"
+        self.base = "https://coins.llama.fi/"
         self.chain = self._translate_chain_name(chain)
 
     def _translate_chain_name(self, chain):
-        mapping = {
-            "mainnet": "ethereum"
-        }
+        mapping = {"mainnet": "ethereum"}
         return mapping.get(chain, chain)
-        
+
     async def block_from_timestamp(self, timestamp):
-        endpoint = f"{self.base}/blocks/{self.chain}/{timestamp}"
+        endpoint = f"{self.base}/block/{self.chain}/{timestamp}"
 
         response = await async_client.get(endpoint)
         if response.status_code == 200:
             return response.json()["height"]
-        
+
         return None
+
 
 class MasterChefContract:
     def __init__(self, address, chain: str):
         w3 = Web3(Web3.HTTPProvider(ALCHEMY_URLS[chain]))
-        self.contract = w3.eth.contract(address=Web3.toChecksumAddress(address), abi=abi.MASTERCHEF_ABI)
+        self.contract = w3.eth.contract(
+            address=Web3.toChecksumAddress(address), abi=abi.MASTERCHEF_ABI
+        )
 
     def pending_rewards(self, pool_id, user_address):
-        return self.contract.functions.pendingSushi(pool_id, Web3.toChecksumAddress(user_address))
+        return self.contract.functions.pendingSushi(
+            pool_id, Web3.toChecksumAddress(user_address)
+        )

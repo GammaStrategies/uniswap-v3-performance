@@ -94,6 +94,22 @@ async def hypervisors_all():
 async def uncollected_fees_all():
     return await v3data.common.hypervisor.uncollected_fees_all(CHAIN_OPTIMISM)
 
+@router.get("/hypervisors/feeReturns/daily")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def fee_returns_daily():
+    return await v3data.common.hypervisor.fee_returns(CHAIN_OPTIMISM, 1)
+
+
+@router.get("/hypervisors/feeReturns/weekly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def fee_returns_weekly():
+    return await v3data.common.hypervisor.fee_returns(CHAIN_OPTIMISM, 7)
+
+
+@router.get("/hypervisors/feeReturns/monthly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def fee_returns_monthly():
+    return await v3data.common.hypervisor.fee_returns(CHAIN_OPTIMISM, 30)
 
 @router.get("/allRewards")
 async def all_rewards():

@@ -1,8 +1,9 @@
 import asyncio
 from datetime import timedelta
 
-from v3data import GammaClient, UniswapV3Client
+from v3data import GammaClient, UniswapV3Client, LlamaClient
 from v3data.utils import timestamp_ago
+from v3data.constants import BLOCK_TIME_SECONDS
 
 
 class YieldData:
@@ -11,6 +12,7 @@ class YieldData:
         self.chain = chain
         self.gamma_client = GammaClient(chain)
         self.uniswap_client = UniswapV3Client(chain)
+        self.llama_client = LlamaClient(chain)
         self.data = {}
 
     async def _get_hypervisor_data_at_block(self, block, hypervisors):
@@ -174,26 +176,28 @@ class YieldData:
             "baseLower": base_lower,
             "baseUpper": base_upper,
             "limitLower": limit_lower,
-            "limitUpper": limit_upper
+            "limitUpper": limit_upper,
         }
 
         response = await self.uniswap_client.query(pool_query, variables)
 
         return response["data"]
 
-
     async def get_data(self):
         transition_data = await self._get_transition_data(self.period_days)
 
+        # initial_block = current_block - (7200 * self.period_days)
+        initial_timestamp = timestamp_ago(timedelta(days=self.period_days))
+        initial_block = await self.llama_client.block_from_timestamp(initial_timestamp)
         current_block = transition_data["_meta"]["block"]["number"]
-        initial_block = current_block - (7200 * self.period_days)
 
         block_hypervisor_map = {}
         block_hypervisor_map[initial_block] = []
         block_hypervisor_map[current_block] = []
 
         block_ts_map = {}
-        block_ts_map[initial_block] = timestamp_ago(timedelta(self.period_days))
+        # block_ts_map[initial_block] = timestamp_ago(timedelta(self.period_days))
+        block_ts_map[initial_block] = initial_timestamp
         block_ts_map[current_block] = timestamp_ago(timedelta(seconds=0))
 
         for hypervisor in transition_data["uniswapV3Hypervisors"]:
@@ -209,7 +213,9 @@ class YieldData:
                         continue
 
                     block_ts_map[tx_block] = tx["timestamp"]
-                    block_ts_map[tx_block_prev] = int(tx["timestamp"]) - 12
+                    block_ts_map[tx_block_prev] = (
+                        int(tx["timestamp"]) - BLOCK_TIME_SECONDS[self.chain]
+                    )
 
                     if not block_hypervisor_map.get(tx_block):
                         block_hypervisor_map[tx["block"]] = []
@@ -234,7 +240,9 @@ class YieldData:
         hypervisor_responses = await asyncio.gather(*hypervisors_requests)
 
         hypervisor_data_by_blocks = {
-            hypervisor_query_params[index]["block"]: response["data"]["uniswapV3Hypervisors"]
+            hypervisor_query_params[index]["block"]: response["data"][
+                "uniswapV3Hypervisors"
+            ]
             for index, response in enumerate(hypervisor_responses)
         }
 
@@ -251,7 +259,7 @@ class YieldData:
                 params["hypervisor"]["baseLower"],
                 params["hypervisor"]["baseUpper"],
                 params["hypervisor"]["limitLower"],
-                params["hypervisor"]["limitUpper"]
+                params["hypervisor"]["limitUpper"],
             )
             for params in pool_query_params
             if params["hypervisor"].get("pool", {}).get("id")
@@ -263,18 +271,10 @@ class YieldData:
             self.tick_id(
                 pool_query_params[index]["block"],
                 response["pool"]["id"],
-                response["baseLower"][0]["tickIdx"]
-                if response["baseLower"]
-                else 0,
-                response["baseUpper"][0]["tickIdx"]
-                if response["baseUpper"]
-                else 0,
-                response["limitLower"][0]["tickIdx"]
-                if response["limitLower"]
-                else 0,
-                response["limitUpper"][0]["tickIdx"]
-                if response["limitUpper"]
-                else 0,
+                response["baseLower"][0]["tickIdx"] if response["baseLower"] else 0,
+                response["baseUpper"][0]["tickIdx"] if response["baseUpper"] else 0,
+                response["limitLower"][0]["tickIdx"] if response["limitLower"] else 0,
+                response["limitUpper"][0]["tickIdx"] if response["limitUpper"] else 0,
             ): response
             for index, response in enumerate(pool_responses)
             if response.get("pool", {}).get("id")
@@ -286,28 +286,37 @@ class YieldData:
                 if not all_data.get(hypervisor["id"]):
                     all_data[hypervisor["id"]] = {}
 
-                hypervisor.update({
-                    "ticks": pool_data.get(self.tick_id(
-                        int(block),
-                        hypervisor["pool"]["id"],
-                        hypervisor['baseLower'],
-                        hypervisor['baseUpper'],
-                        hypervisor['limitLower'],
-                        hypervisor['limitUpper'],
-                    )),
-                    "timestamp": block_ts_map.get(block, 0)
-                })
+                hypervisor.update(
+                    {
+                        "ticks": pool_data.get(
+                            self.tick_id(
+                                int(block),
+                                hypervisor["pool"]["id"],
+                                hypervisor["baseLower"],
+                                hypervisor["baseUpper"],
+                                hypervisor["limitLower"],
+                                hypervisor["limitUpper"],
+                            )
+                        ),
+                        "timestamp": block_ts_map.get(block, 0),
+                    }
+                )
                 all_data[hypervisor["id"]][block] = hypervisor
-                 
+
         self.data = {
             "initial_block": initial_block,
             "initial_ts": block_ts_map[initial_block],
             "current_block": current_block,
-            "hype_data": all_data
+            "hype_data": all_data,
         }
 
     @staticmethod
     def tick_id(
-        block: int, address: str, baseLower: int, baseUpper: int, limitLower: int, limitUpper: int
+        block: int,
+        address: str,
+        baseLower: int,
+        baseUpper: int,
+        limitLower: int,
+        limitUpper: int,
     ):
         return f"{block}_{address}_{baseLower}_{baseUpper}_{limitLower}_{limitUpper}"

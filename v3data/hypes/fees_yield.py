@@ -7,6 +7,7 @@ from v3data.hypes.fees_yield_data import YieldData
 
 YIELD_PER_DAY_MAX = 30
 
+
 class FeesYield(YieldData):
     async def output(self, get_data=True):
 
@@ -15,7 +16,9 @@ class FeesYield(YieldData):
 
         results = {}
         for hypervisor_address, hypervisors in self.data["hype_data"].items():
-            symbol, hype_data = await self._aggregate_blocks(hypervisor_address, hypervisors)
+            symbol, hype_data = await self._aggregate_blocks(
+                hypervisor_address, hypervisors
+            )
 
             # print(f"\n{symbol}: {hypervisor_address}")
             returns = self._calculate_returns(hype_data)
@@ -24,10 +27,8 @@ class FeesYield(YieldData):
                 returns["symbol"] = symbol
                 results[hypervisor_address] = returns
 
-
         return results
 
-    
     def _calculate_returns(self, hype_data):
         df_hype = pd.DataFrame(hype_data, dtype=np.float64)
 
@@ -42,20 +43,19 @@ class FeesYield(YieldData):
 
         # print(df_hype)
 
-        df_hype = df_hype.iloc[1::2][
-            [
-                "fee0Growth",
-                "fee1Growth",
-                "price0",
-                "price1",
-                "tvlUSD",
-                "elapsedTime",
-            ]
-        ]
+        # df_hype = df_hype.iloc[1::2][
+        #     [
+        #         "fee0Growth",
+        #         "fee1Growth",
+        #         "price0",
+        #         "price1",
+        #         "tvlUSD",
+        #         "elapsedTime",
+        #     ]
+        # ]
 
         df_hype["feeGrowthUSD"] = (
-            df_hype.fee0Growth * df_hype.price0
-            + df_hype.fee1Growth * df_hype.price1
+            df_hype.fee0Growth * df_hype.price0 + df_hype.fee1Growth * df_hype.price1
         )
         df_hype["periodYield"] = df_hype.feeGrowthUSD / df_hype.tvlUSD
         df_hype["yieldPerDay"] = (
@@ -94,16 +94,14 @@ class FeesYield(YieldData):
 
         # Extrapolate by compounding
         df_returns["feeApy"] = (
-            1
-            + df_returns.cumFeeReturn
-            * (DAY_SECONDS / df_returns.totalPeriodSeconds)
+            1 + df_returns.cumFeeReturn * (DAY_SECONDS / df_returns.totalPeriodSeconds)
         ) ** 365 - 1
 
         df_returns = df_returns.fillna(0).replace({np.inf: 0, -np.inf: 0})
 
         returns = df_returns.to_dict("records")[0]
 
-        return  {
+        return {
             "feeApr": returns["feeApr"] if returns["feeApr"] else 0,
             "feeApy": returns["feeApy"] if returns["feeApy"] else 0,
             "hasOutlier": str(has_outlier),
@@ -121,7 +119,7 @@ class FeesYield(YieldData):
                 continue
             hype_fees = output[hypervisor_address]
             hype_data.append(
-                {   
+                {
                     "block": block,
                     "timestamp": hypervisor["timestamp"],
                     "tvlUSD": hypervisor["tvlUSD"],
@@ -141,5 +139,5 @@ class FeesYield(YieldData):
                     "price1": hype_fees["tokens"]["price1"],
                 }
             )
-        
+
         return symbol, hype_data

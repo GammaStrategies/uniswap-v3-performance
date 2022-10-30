@@ -143,11 +143,19 @@ class AccountInfo(AccountData):
         hypervisor_data = self.data["hypervisor"]
         xgamma_data = self.data["xgamma"]
 
-        if not (hypervisor_data.get("account") or xgamma_data.get("account")):
+        has_hypervisor_data = bool(hypervisor_data.get("account"))
+        has_xgamma_data = bool(xgamma_data.get("account"))
+
+        if not (has_hypervisor_data or has_xgamma_data):
             return {}
 
+        if has_hypervisor_data:
+            owner = hypervisor_data["account"]["parent"]["id"]
+        else:
+            owner = xgamma_data["account"]["parent"]["id"]
+
         account_info = {
-            "owner": hypervisor_data["account"]["parent"]["id"],
+            "owner": owner,
             "gammaStaked": 0,
             "gammaStakedUSD": 0,
             "gammaDeposited": 0,
@@ -159,7 +167,7 @@ class AccountInfo(AccountData):
             "xgammaAmount": 0,
         }
 
-        if xgamma_data.get("account"):
+        if has_xgamma_data:
             reward_hypervisor_shares = xgamma_data["account"]["rewardHypervisorShares"]
             xgamma_shares = 0
             for shares in reward_hypervisor_shares:
@@ -211,28 +219,28 @@ class AccountInfo(AccountData):
                 }
             )
 
-        returns = self._returns()
+        if has_hypervisor_data:
+            returns = self._returns()
+            for hypervisor in hypervisor_data["account"]["hypervisorShares"]:
+                if int(hypervisor["shares"]) <= 0:  # Workaround before fix in subgraph
+                    continue
+                hypervisor_id = hypervisor["hypervisor"]["id"]
+                shares = int(hypervisor["shares"])
+                totalSupply = int(hypervisor["hypervisor"]["totalSupply"])
+                shareOfSupply = shares / totalSupply if totalSupply > 0 else 0
+                tvlUSD = float(hypervisor["hypervisor"]["tvlUSD"])
+                decimal0 = int(hypervisor["hypervisor"]["pool"]["token0"]["decimals"])
+                decimal1 = int(hypervisor["hypervisor"]["pool"]["token1"]["decimals"])
+                tvl0_decimal = float(hypervisor["hypervisor"]["tvl0"]) / 10**decimal0
+                tvl1_decimal = float(hypervisor["hypervisor"]["tvl1"]) / 10**decimal1
 
-        for hypervisor in hypervisor_data["account"]["hypervisorShares"]:
-            if int(hypervisor["shares"]) <= 0:  # Workaround before fix in subgraph
-                continue
-            hypervisor_id = hypervisor["hypervisor"]["id"]
-            shares = int(hypervisor["shares"])
-            totalSupply = int(hypervisor["hypervisor"]["totalSupply"])
-            shareOfSupply = shares / totalSupply if totalSupply > 0 else 0
-            tvlUSD = float(hypervisor["hypervisor"]["tvlUSD"])
-            decimal0 = int(hypervisor["hypervisor"]["pool"]["token0"]["decimals"])
-            decimal1 = int(hypervisor["hypervisor"]["pool"]["token1"]["decimals"])
-            tvl0_decimal = float(hypervisor["hypervisor"]["tvl0"]) / 10**decimal0
-            tvl1_decimal = float(hypervisor["hypervisor"]["tvl1"]) / 10**decimal1
-
-            account_info[hypervisor_id] = {
-                "shares": shares,
-                "shareOfSupply": shareOfSupply,
-                "balance0": tvl0_decimal * shareOfSupply,
-                "balance1": tvl1_decimal * shareOfSupply,
-                "balanceUSD": tvlUSD * shareOfSupply,
-                "returns": returns[hypervisor_id],
-            }
+                account_info[hypervisor_id] = {
+                    "shares": shares,
+                    "shareOfSupply": shareOfSupply,
+                    "balance0": tvl0_decimal * shareOfSupply,
+                    "balance1": tvl1_decimal * shareOfSupply,
+                    "balanceUSD": tvlUSD * shareOfSupply,
+                    "returns": returns[hypervisor_id],
+                }
 
         return account_info

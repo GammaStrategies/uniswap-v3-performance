@@ -99,23 +99,38 @@ class UserInfo(UserData):
         hypervisor_data = self.data["hypervisor"]
         xgamma_data = self.data["xgamma"]
 
-        if not (hypervisor_data.get('user') or xgamma_data.get('user')):
+        has_hypervisor_data = hypervisor_data.get("user")
+        has_xgamma_data = xgamma_data.get("user")
+
+        if not (has_hypervisor_data or has_xgamma_data):
             return {}
 
-        if xgamma_data.get('user'):
+        if has_hypervisor_data:
+            hypervisor_lookup = {
+                account.pop("id"): account
+                for account in hypervisor_data["user"]["accountsOwned"]
+            }
+        else:
+            hypervisor_lookup = {}
+
+        if has_xgamma_data:
             xgamma_lookup = {
                 account.pop("id"): account
-                for account in self.data["xgamma"]["user"]["accountsOwned"]
+                for account in xgamma_data["user"]["accountsOwned"]
             }
         else:
             xgamma_lookup = {}
 
+        # combine accounts owned for both hype and xgamma
+        all_accounts = set(list(hypervisor_lookup.keys()) + list(xgamma_lookup.keys()))
+
         accounts = {}
-        for accountHypervisor in hypervisor_data["user"]["accountsOwned"]:
-            account_address = accountHypervisor["id"]
+        # for accountHypervisor in hypervisor_data["user"]["accountsOwned"]:
+        for account_address in all_accounts:
+            # account_address = accountHypervisor["id"]
             account_info = AccountInfo(self.chain, account_address)
             account_info.data = {
-                "hypervisor": {"account": accountHypervisor},
+                "hypervisor": {"account": hypervisor_lookup.get(account_address)},
                 "xgamma": {
                     "account": xgamma_lookup.get(account_address),
                     "rewardHypervisor": xgamma_data["rewardHypervisor"],
