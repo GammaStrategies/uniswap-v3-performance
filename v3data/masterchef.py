@@ -112,7 +112,7 @@ class MasterchefInfo(MasterchefData):
             info[masterchef["id"]] = {
                 "rewardToken": masterchef["rewardToken"]["id"],
                 "rewardTokenSymbol": masterchef["rewardToken"]["symbol"],
-                "rewardPerBlock": reward_per_block,
+                "rewardPerBlock": f"{reward_per_second:.30f}",
                 "totalAllocPoint": masterchef["totalAllocPoint"],
                 "pools": pool_info,
             }
