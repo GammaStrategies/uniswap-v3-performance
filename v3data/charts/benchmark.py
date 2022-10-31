@@ -192,11 +192,13 @@ class Benchmark:
         }
         v2_response = await self.v2_client.query(query_v2, variables_v2)
         return v2_response["data"]
-        
 
     async def get_data(self, v2=False):
         # Get hypervisor position
         hypervisor_data = await self._get_hypervisor_data()
+
+        if not hypervisor_data:
+            return None
 
         if not hypervisor_data["dayData"]:
             return None

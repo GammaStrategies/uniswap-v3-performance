@@ -405,6 +405,7 @@ class HypervisorInfo(HypervisorData):
         if self.chain in ["mainnet", "optimism"]:
             fees_yield = FeesYield(1, self.chain)
             fee_yield_output = await fees_yield.output(get_data=True)
+
             returns = {
                 hypervisor: {
                     "daily": {
