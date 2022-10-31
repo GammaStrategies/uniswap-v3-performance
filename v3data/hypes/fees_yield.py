@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from v3data.hypervisor import DAY_SECONDS, YEAR_SECONDS
+from v3data.constants import DAY_SECONDS, YEAR_SECONDS
 from v3data.hypes.fees import Fees
 from v3data.hypes.fees_yield_data import YieldData
 

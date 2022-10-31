@@ -6,6 +6,9 @@ DAYS_IN_PERIOD = {"daily": 1, "weekly": 7, "monthly": 30, "allTime": 2000}
 
 SECONDS_IN_DAYS = 3600
 
+DAY_SECONDS = 24 * 60 * 60
+YEAR_SECONDS = 365 * DAY_SECONDS
+
 BLOCKS_IN_YEAR = {
     "polygon": 15768000,
     "optimism": 15768000

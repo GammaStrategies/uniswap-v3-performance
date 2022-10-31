@@ -5,9 +5,10 @@ from datetime import timedelta
 from pandas import DataFrame
 
 from v3data import GammaClient, UniswapV3Client
-from v3data.utils import sub_in_256, timestamp_ago, timestamp_to_date
+from v3data.utils import timestamp_ago, timestamp_to_date
 from v3data.constants import DAYS_IN_PERIOD, SECONDS_IN_DAYS
 from v3data.config import EXCLUDED_HYPERVISORS, FALLBACK_DAYS
+from v3data.hypes.fees_yield import FeesYield
 
 DAY_SECONDS = 24 * 60 * 60
 YEAR_SECONDS = 365 * DAY_SECONDS
@@ -256,10 +257,8 @@ class HypervisorInfo(HypervisorData):
     def empty_returns(self):
         return {
             period: {
-                "cumFeeReturn": 0.0,
                 "feeApr": 0,
                 "feeApy": 0,
-                "totalPeriodSeconds": 0,
             }
             for period in DAYS_IN_PERIOD
         }
@@ -403,7 +402,32 @@ class HypervisorInfo(HypervisorData):
         basics = self.basics_data
         pools = self.pools_data
 
-        returns = await self.all_returns(get_data=get_data)
+        if self.chain in ["mainnet", "optimism"]:
+            fees_yield = FeesYield(1, self.chain)
+            fee_yield_output = await fees_yield.output(get_data=True)
+            returns = {
+                hypervisor: {
+                    "daily": {
+                        "feeApr": hypervisor_returns["feeApr"],
+                        "feeApy": hypervisor_returns["feeApy"]
+                    },
+                    "weekly": {
+                        "feeApr": hypervisor_returns["feeApr"],
+                        "feeApy": hypervisor_returns["feeApy"]
+                    },
+                    "monthly": {
+                        "feeApr": hypervisor_returns["feeApr"],
+                        "feeApy": hypervisor_returns["feeApy"]
+                    },
+                    "allTime": {
+                        "feeApr": hypervisor_returns["feeApr"],
+                        "feeApy": hypervisor_returns["feeApy"]
+                    }
+                }
+                for hypervisor, hypervisor_returns in fee_yield_output.items()
+            }
+        else:
+            returns = await self.all_returns(get_data=get_data)
 
         results = {}
         for hypervisor in basics:
@@ -456,7 +480,7 @@ class HypervisorInfo(HypervisorData):
                     "observationIndex": pools[pool_id]["observationIndex"],
                     "poolTvlUSD": pools[pool_id]["totalValueLockedUSD"],
                     "poolFeesUSD": pools[pool_id]["feesUSD"],
-                    "returns": returns.get(hypervisor_id),
+                    "returns": returns.get(hypervisor_id, self.empty_returns()),
                 }
             except Exception as e:
                 logger.warning(f"Failed on hypervisor {hypervisor['id']}")
