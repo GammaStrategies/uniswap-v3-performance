@@ -15,10 +15,7 @@ from v3data.dashboard import Dashboard
 from v3data.eth import EthDistribution
 
 from v3data.gamma import GammaDistribution, GammaInfo, GammaYield
-from v3data.hypes.fees_yield import FeesYield
-from v3data.hypes.fees_yield_data import YieldData
 
-from v3data.hypes.fees import Fees
 
 CHAIN_MAINNET = "mainnet"
 
@@ -130,6 +127,16 @@ async def fee_returns_weekly():
 @cache(expire=APY_CACHE_TIMEOUT)
 async def fee_returns_monthly():
     return await v3data.common.hypervisor.fee_returns(CHAIN_MAINNET, 30)
+
+
+@router.get("/allRewards")
+async def all_rewards():
+    return await v3data.common.masterchef.info(CHAIN_MAINNET)
+
+
+@router.get("/userRewards/{user_address}")
+async def user_rewards(user_address):
+    return await v3data.common.masterchef.user_rewards(CHAIN_MAINNET, user_address)
 
 
 @router.get("/user/{address}")
