@@ -102,6 +102,7 @@ async def hypervisors_return():
 
 
 @router.get("/hypervisors/allData")
+@cache(expire=APY_CACHE_TIMEOUT)
 async def hypervisors_all():
     return await v3data.common.hypervisor.hypervisors_all(CHAIN_MAINNET)
 
