@@ -68,6 +68,12 @@ async def token_price(token: str):
 async def token_price_from_address(chain: str, token_address: str):
     inverse = False
     pool_address = None
+
+    if chain == "mainnet":
+        if token_address == "0xd33526068d116ce69f19a9ee46f0bd304f21a51f":
+            pool_address = "0xe42318ea3b998e8355a3da364eb9d48ec725eb45"
+            inverse = True
+
     if chain == "optimism":
         if token_address == "0x4200000000000000000000000000000000000042":
             pool_address = "0x68f5c0a2de713a54991e01858fd27a3832401849"
