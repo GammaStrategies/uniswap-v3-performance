@@ -9,10 +9,10 @@ from v3data.charts.config import BASE_POOLS_CONFIG, WETH_USDC_POOL
 
 
 class Benchmark:
-    def __init__(self, chain: str, address, start_date, end_date):
+    def __init__(self, protocol: str, chain: str, address, start_date, end_date):
         self.chain = chain
-        self.gamma_client = GammaClient(chain)
-        self.v3_client = UniswapV3Client(chain)
+        self.gamma_client = GammaClient(protocol, chain)
+        self.v3_client = UniswapV3Client(protocol, chain)
         self.v2_client = UniswapV2Client()
         self.address = address
         self._init_dates(start_date, end_date)

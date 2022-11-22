@@ -7,11 +7,12 @@ from v3data.constants import BLOCK_TIME_SECONDS
 
 
 class YieldData:
-    def __init__(self, period_days, chain: str = "mainnet"):
+    def __init__(self, period_days, protocol: str, chain: str = "mainnet"):
         self.period_days = period_days
+        self.protocol = protocol
         self.chain = chain
-        self.gamma_client = GammaClient(chain)
-        self.uniswap_client = UniswapV3Client(chain)
+        self.gamma_client = GammaClient(protocol, chain)
+        self.uniswap_client = UniswapV3Client(protocol, chain)
         self.llama_client = LlamaClient(chain)
         self.data = {}
 

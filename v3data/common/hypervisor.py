@@ -7,9 +7,9 @@ from v3data.hypes.fees_yield import FeesYield
 
 
 async def hypervisor_basic_stats(
-    chain: str, hypervisor_address: str, response: Response
+    protocol: str, chain: str, hypervisor_address: str, response: Response
 ):
-    hypervisor_info = HypervisorInfo(chain)
+    hypervisor_info = HypervisorInfo(protocol, chain)
     basic_stats = await hypervisor_info.basic_stats(hypervisor_address)
 
     if basic_stats:
@@ -19,8 +19,10 @@ async def hypervisor_basic_stats(
         return "Invalid hypervisor address or not enough data"
 
 
-async def hypervisor_apy(chain: str, hypervisor_address, response: Response):
-    hypervisor_info = HypervisorInfo(chain)
+async def hypervisor_apy(
+    protocol: str, chain: str, hypervisor_address, response: Response
+):
+    hypervisor_info = HypervisorInfo(protocol, chain)
     returns = await hypervisor_info.calculate_returns(hypervisor_address)
 
     if returns:
@@ -30,8 +32,8 @@ async def hypervisor_apy(chain: str, hypervisor_address, response: Response):
         return "Invalid hypervisor address or not enough data"
 
 
-async def aggregate_stats(chain: str):
-    top_level = TopLevelData(chain)
+async def aggregate_stats(protocol: str, chain: str):
+    top_level = TopLevelData(protocol, chain)
     top_level_data = await top_level.all_stats()
 
     return {
@@ -41,36 +43,35 @@ async def aggregate_stats(chain: str):
     }
 
 
-async def recent_fees(chain: str, hours: int = 24):
-    top_level = TopLevelData(chain)
+async def recent_fees(protocol: str, chain: str, hours: int = 24):
+    top_level = TopLevelData(protocol, chain)
     recent_fees = await top_level.recent_fees(hours)
 
     return {"periodHours": hours, "fees": recent_fees}
 
 
-async def hypervisors_return(chain: str):
-    hypervisor_info = HypervisorInfo(chain)
+async def hypervisors_return(protocol: str, chain: str):
+    hypervisor_info = HypervisorInfo(protocol, chain)
 
     return await hypervisor_info.all_returns()
 
 
-async def hypervisors_all(chain: str):
-    hypervisor_info = HypervisorInfo(chain)
-
+async def hypervisors_all(protocol: str, chain: str):
+    hypervisor_info = HypervisorInfo(protocol, chain)
     return await hypervisor_info.all_data()
 
 
-async def uncollected_fees(chain: str, hypervisor_address: str):
-    fees = Fees(chain)
+async def uncollected_fees(protocol: str, chain: str, hypervisor_address: str):
+    fees = Fees(protocol, chain)
     return await fees.output([hypervisor_address])
 
 
-async def uncollected_fees_all(chain: str):
-    fees = Fees(chain)
+async def uncollected_fees_all(protocol: str, chain: str):
+    fees = Fees(protocol, chain)
     return await fees.output()
 
 
-async def fee_returns(chain: str, days: int):
-    fees_yield = FeesYield(days, chain)
+async def fee_returns(protocol: str, chain: str, days: int):
+    fees_yield = FeesYield(days, protocol, chain)
     output = await fees_yield.output()
     return output

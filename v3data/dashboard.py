@@ -14,7 +14,7 @@ from v3data.config import legacy_stats
 class Dashboard:
     def __init__(self, period: str):
         self.chain = "mainnet"
-        self.gamma_client = GammaClient(self.chain)
+        self.gamma_client = GammaClient("uniswap_v3", self.chain)
         self.period = period
         self.days = 30
         self.visr_data = {}

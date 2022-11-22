@@ -6,7 +6,7 @@ from v3data.config import (
     VISOR_SUBGRAPH_URL,
     GAMMA_SUBGRAPH_URLS,
     UNI_V2_SUBGRAPH_URL,
-    UNI_V3_SUBGRAPH_URLS,
+    DEX_SUBGRAPH_URLS,
     ETH_BLOCKS_SUBGRAPH_URL,
     THEGRAPH_INDEX_NODE_URL,
     XGAMMA_SUBGRAPH_URL,
@@ -99,8 +99,9 @@ class VisorClient(SubgraphClient):
 
 
 class GammaClient(SubgraphClient):
-    def __init__(self, chain: str):
-        super().__init__(GAMMA_SUBGRAPH_URLS[chain], chain)
+    def __init__(self, protocol: str, chain: str):
+        print(protocol)
+        super().__init__(GAMMA_SUBGRAPH_URLS[protocol][chain], chain)
 
 
 class UniswapV2Client(SubgraphClient):
@@ -109,8 +110,8 @@ class UniswapV2Client(SubgraphClient):
 
 
 class UniswapV3Client(SubgraphClient):
-    def __init__(self, chain: str):
-        super().__init__(UNI_V3_SUBGRAPH_URLS[chain], chain)
+    def __init__(self, protocol: str, chain: str):
+        super().__init__(DEX_SUBGRAPH_URLS[protocol][chain], chain)
 
 
 class EthBlocksClient(SubgraphClient):
@@ -140,9 +141,9 @@ class EthBlocksClient(SubgraphClient):
 
 
 class IndexNodeClient(SubgraphClient):
-    def __init__(self, chain: str):
+    def __init__(self, protocol: str, chain: str):
         super().__init__(THEGRAPH_INDEX_NODE_URL)
-        self.url = GAMMA_SUBGRAPH_URLS[chain]
+        self.url = GAMMA_SUBGRAPH_URLS[protocol][chain]
         self.set_subgraph_name()
 
     def set_subgraph_name(self):

@@ -23,17 +23,18 @@ OVERRIDE_TS = [1625162739, 1625332777, 1627458476]
 
 
 class BaseLimit:
-    def __init__(self, hours, chart=True, chain:str = "mainnet"):
+    def __init__(self, hours, protocol: str, chart=True, chain: str = "mainnet"):
+        self.protocol = protocol
         self.chain = chain
         self.hours = hours
         self.timestamp_start = timestamp_ago(timedelta(hours=hours))
-        self.gamma_client = GammaClient(chain)
+        self.gamma_client = GammaClient(protocol, chain)
         self.chart = chart
         self.pool_hourly = {}
 
     async def _get_pool_data(self, pool_addresses):
 
-        pool = Pool(self.chain)
+        pool = Pool(self.protocol, self.chain)
         pool_data = await pool.hourly_prices(pool_addresses, self.hours)
 
         self.pool_hourly = pool_data

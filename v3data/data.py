@@ -6,12 +6,12 @@ import pandas as pd
 
 from v3data import SubgraphClient
 from v3data.utils import sqrtPriceX96_to_priceDecimal
-from v3data.config import UNI_V3_SUBGRAPH_URLS, TOKEN_LIST_URL
+from v3data.config import DEX_SUBGRAPH_URLS, TOKEN_LIST_URL
 
 
 class UniV3Data(SubgraphClient):
-    def __init__(self, chain:str):
-        super().__init__(UNI_V3_SUBGRAPH_URLS[chain])
+    def __init__(self, protocol: str, chain: str):
+        super().__init__(DEX_SUBGRAPH_URLS[protocol][chain])
 
     def get_token_list(self):
         response = requests.get(TOKEN_LIST_URL)

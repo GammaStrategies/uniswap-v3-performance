@@ -4,9 +4,9 @@ from v3data.pricing import token_price_from_address
 
 
 class MasterchefData:
-    def __init__(self, chain: str = "mainnet"):
+    def __init__(self, protocol: str, chain: str = "mainnet"):
         self.chain = chain
-        self.gamma_client = GammaClient(chain)
+        self.gamma_client = GammaClient(protocol, chain)
         self.data = {}
 
     async def _get_masterchef_data(self):
@@ -121,8 +121,8 @@ class MasterchefInfo(MasterchefData):
 
 
 class UserRewards(MasterchefData):
-    def __init__(self, user_address: str, chain: str = "mainnet"):
-        super().__init__(chain)
+    def __init__(self, user_address: str, protocol: str, chain: str = "mainnet"):
+        super().__init__(protocol, chain)
         self.user_address = user_address.lower()
 
     async def output(self, get_data=True):

@@ -17,9 +17,7 @@ uniswap_subgraphs = {
     "optimism": {
         "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/optimism-post-regenesis"
     },
-    "celo": {
-        "prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"
-    }
+    "celo": {"prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"},
 }
 
 visor_subgraphs = {
@@ -29,26 +27,34 @@ visor_subgraphs = {
 }
 
 gamma_subgraphs = {
-    "mainnet": {
-        "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/gamma",
-        "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma",
-        "lab": "https://api.thegraph.com/subgraphs/name/l0c4t0r/laboratory",
+    "uniswap_v3": {
+        "mainnet": {
+            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/gamma",
+            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma",
+            "lab": "https://api.thegraph.com/subgraphs/name/l0c4t0r/laboratory",
+        },
+        "polygon": {
+            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/polygon",
+            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-polygon",
+        },
+        "arbitrum": {
+            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/arbitrum",
+            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-arbitrum",
+        },
+        "optimism": {
+            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/optimism",
+            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-optimism",
+        },
+        "celo": {
+            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/celo",
+            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-celo",
+        },
     },
-    "polygon": {
-        "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/polygon",
-        "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-polygon",
-    },
-    "arbitrum": {
-        "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/arbitrum",
-        "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-arbitrum",
-    },
-    "optimism": {
-        "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/optimism",
-        "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-optimism",
-    },
-    "celo": {
-        "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/celo",
-        "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-celo",
+    "algebra": {
+        "polygon": {
+            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/algebra-polygon",
+            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-algebra-polygon",
+        },
     },
 }
 
@@ -58,43 +64,56 @@ ETH_BLOCKS_SUBGRAPH_URL = (
 )
 UNI_V2_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2"
 
-
-UNI_V3_SUBGRAPH_URLS = {
-    "mainnet": uniswap_subgraphs["mainnet"][
-        os.environ.get("UNISWAP_SUBGRAPH_MAINNET", "prod")
-    ],
-    "polygon": uniswap_subgraphs["polygon"][
-        os.environ.get("UNISWAP_SUBGRAPH_POLYGON", "prod")
-    ],
-    "arbitrum": uniswap_subgraphs["arbitrum"][
-        os.environ.get("UNISWAP_SUBGRAPH_ARBITRUM", "prod")
-    ],
-    "optimism": uniswap_subgraphs["optimism"][
-        os.environ.get("UNISWAP_SUBGRAPH_OPTIMISM", "prod")
-    ],
-    "celo": uniswap_subgraphs["celo"][
-        os.environ.get("UNISWAP_SUBGRAPH_CELO", "prod")
-    ],
+DEX_SUBGRAPH_URLS = {
+    "uniswap_v3": {
+        "mainnet": uniswap_subgraphs["mainnet"][
+            os.environ.get("UNISWAP_SUBGRAPH_MAINNET", "prod")
+        ],
+        "polygon": uniswap_subgraphs["polygon"][
+            os.environ.get("UNISWAP_SUBGRAPH_POLYGON", "prod")
+        ],
+        "arbitrum": uniswap_subgraphs["arbitrum"][
+            os.environ.get("UNISWAP_SUBGRAPH_ARBITRUM", "prod")
+        ],
+        "optimism": uniswap_subgraphs["optimism"][
+            os.environ.get("UNISWAP_SUBGRAPH_OPTIMISM", "prod")
+        ],
+        "celo": uniswap_subgraphs["celo"][
+            os.environ.get("UNISWAP_SUBGRAPH_CELO", "prod")
+        ],
+    },
+    "algebra": {
+        "polygon": uniswap_subgraphs["polygon"][
+            os.environ.get("ALGEBRA_SUBGRAPH_POLYGON", "prod")
+        ],
+    },
 }
 
 VISOR_SUBGRAPH_URL = visor_subgraphs[os.environ.get("VISOR_SUBGRAPH", "prod")]
 
 GAMMA_SUBGRAPH_URLS = {
-    "mainnet": gamma_subgraphs["mainnet"][
-        os.environ.get("GAMMA_SUBGRAPH_MAINNET", "prod")
-    ],
-    "polygon": gamma_subgraphs["polygon"][
-        os.environ.get("GAMMA_SUBGRAPH_POLYGON", "prod")
-    ],
-    "arbitrum": gamma_subgraphs["arbitrum"][
-        os.environ.get("GAMMA_SUBGRAPH_ARBITRUM", "prod")
-    ],
-    "optimism": gamma_subgraphs["optimism"][
-        os.environ.get("GAMMA_SUBGRAPH_OPTIMISM", "prod")
-    ],
-    "celo": gamma_subgraphs["celo"][
-        os.environ.get("GAMMA_SUBGRAPH_CELO", "prod")
-    ],
+    "uniswap_v3": {
+        "mainnet": gamma_subgraphs["uniswap_v3"]["mainnet"][
+            os.environ.get("GAMMA_SUBGRAPH_MAINNET", "prod")
+        ],
+        "polygon": gamma_subgraphs["uniswap_v3"]["polygon"][
+            os.environ.get("GAMMA_SUBGRAPH_POLYGON", "prod")
+        ],
+        "arbitrum": gamma_subgraphs["uniswap_v3"]["arbitrum"][
+            os.environ.get("GAMMA_SUBGRAPH_ARBITRUM", "prod")
+        ],
+        "optimism": gamma_subgraphs["uniswap_v3"]["optimism"][
+            os.environ.get("GAMMA_SUBGRAPH_OPTIMISM", "prod")
+        ],
+        "celo": gamma_subgraphs["uniswap_v3"]["celo"][
+            os.environ.get("GAMMA_SUBGRAPH_CELO", "prod")
+        ],
+    },
+    "algebra": {
+        "polygon": gamma_subgraphs["algebra"]["polygon"][
+            os.environ.get("GAMMA__ALGEBRA_SUBGRAPH_POLYGON", "prod")
+        ],
+    },
 }
 
 
@@ -123,6 +142,7 @@ legacy_stats = {
 }
 
 ALCHEMY_URLS = {
+    "mainnet": f"https://eth-mainnet.g.alchemy.com/v2/{os.environ.get('ALCHEMY_MAINNET_KEY', '')}",
     "polygon": f"https://polygon-mainnet.g.alchemy.com/v2/{os.environ.get('ALCHEMY_POLYGON_KEY', '')}",
-    "optimism": f"https://opt-mainnet.g.alchemy.com/v2/{os.environ.get('ALCHEMY_OPTIMISM_KEY', '')}"
+    "optimism": f"https://opt-mainnet.g.alchemy.com/v2/{os.environ.get('ALCHEMY_OPTIMISM_KEY', '')}",
 }

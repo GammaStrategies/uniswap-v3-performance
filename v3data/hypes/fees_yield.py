@@ -112,7 +112,7 @@ class FeesYield(YieldData):
         hype_data = []
         for block, hypervisor in hypervisors.items():
             symbol = hypervisor["symbol"]
-            fees = Fees(self.chain)
+            fees = Fees(self.protocol, self.chain)
             fees.data = [hypervisor]
             output = await fees._hypervisor_fees(get_data=False)
             if not output.get(hypervisor_address):

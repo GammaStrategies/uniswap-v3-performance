@@ -7,6 +7,7 @@ from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
 
 from v3data.routers import mainnet, polygon, arbitrum, optimism, celo, simulator
+from v3data.routers.algebra import polygon as algebra_polygon
 
 from v3data.bollingerbands import BollingerBand
 
@@ -30,6 +31,7 @@ app.include_router(polygon.router, tags=["Polygon"])
 app.include_router(arbitrum.router, tags=["Arbitrum"])
 app.include_router(optimism.router, tags=["Optimism"])
 app.include_router(celo.router, tags=["Celo"])
+app.include_router(algebra_polygon.router, tags=["Algebra - Polygon"])
 app.include_router(simulator.router, tags=["Simulator"])
 
 # Allow CORS

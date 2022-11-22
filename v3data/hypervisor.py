@@ -18,10 +18,11 @@ logger = logging.getLogger(__name__)
 
 
 class HypervisorData:
-    def __init__(self, chain: str = "mainnet"):
+    def __init__(self, protocol: str, chain: str = "mainnet"):
+        self.protocol = protocol
         self.chain = chain
-        self.gamma_client = GammaClient(chain)
-        self.uniswap_client = UniswapV3Client(chain)
+        self.gamma_client = GammaClient(protocol, chain)
+        self.uniswap_client = UniswapV3Client(protocol, chain)
         self.basics_data = {}
         self.pools_data = {}
         self.fees_data = {}
@@ -403,7 +404,7 @@ class HypervisorInfo(HypervisorData):
         pools = self.pools_data
 
         if self.chain in ["mainnet", "optimism"]:
-            fees_yield = FeesYield(1, self.chain)
+            fees_yield = FeesYield(1, self.protocol, self.chain)
             fee_yield_output = await fees_yield.output(get_data=True)
 
             returns = {

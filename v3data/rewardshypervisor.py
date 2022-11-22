@@ -4,7 +4,7 @@ from v3data.constants import XGAMMA_ADDRESS
 
 class RewardsHypervisorData:
     def __init__(self):
-        self.client = GammaClient("mainnet")
+        self.client = GammaClient("uniswap_v3", "mainnet")
         self.decimal_factor = 10**18
         self.data = {}
 

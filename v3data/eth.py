@@ -8,8 +8,8 @@ from v3data.constants import DAYS_IN_PERIOD
 
 
 class EthData:
-    def __init__(self, chain: str, days, timezone=DEFAULT_TIMEZONE):
-        self.gamma_client = GammaClient(chain)
+    def __init__(self, protocol: str, chain: str, days, timezone=DEFAULT_TIMEZONE):
+        self.gamma_client = GammaClient(protocol, chain)
         self.days = days
         self.timezone = timezone
         self.decimal_factor = 10**18

@@ -10,13 +10,14 @@ class BollingerBand:
         self,
         pool_address: str,
         total_period_hours,
+        protocol: str,
         n_intervals=20,
         chain: str = "mainnet",
     ):
         self.pool_address = pool_address.lower()
         self.total_period_hours = total_period_hours  # how long to average over
         self.n_intervals = n_intervals
-        self.client = UniV3Data(chain)
+        self.client = UniV3Data(protocol, chain)
 
     async def get_data(self, report_hours=None):
         # Defaults to 10 times the total_period_hour if no report_hours is given

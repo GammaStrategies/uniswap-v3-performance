@@ -19,3 +19,6 @@ BLOCK_TIME_SECONDS = {
     "polygon": 2,
     "optimism": 2
 }
+
+PROTOCOL_UNISWAP_V3 = "uniswap_v3"
+PROTOCOL_ALGEBRA = "algebra"

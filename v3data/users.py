@@ -5,10 +5,10 @@ from v3data.constants import XGAMMA_ADDRESS
 
 
 class UserData:
-    def __init__(self, chain: str, user_address: str):
+    def __init__(self, protocol: str, chain: str, user_address: str):
         self.chain = chain
-        self.gamma_client = GammaClient(chain)
-        self.gamma_client_mainnet = GammaClient("mainnet")
+        self.gamma_client = GammaClient(protocol, chain)
+        self.gamma_client_mainnet = GammaClient("uniswap_v3", "mainnet")
         self.address = user_address.lower()
         self.decimal_factor = 10**18
         self.data = {}

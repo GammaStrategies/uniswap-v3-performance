@@ -27,8 +27,8 @@ async def pools_from_symbol(symbol):
 
 
 class Pool:
-    def __init__(self, chain: str = "mainnet"):
-        self.client = UniswapV3Client(chain)
+    def __init__(self, protocol: str, chain: str = "mainnet"):
+        self.client = UniswapV3Client(protocol, chain)
 
     async def swap_prices(self, pool_address, time_delta=None):
         query = """

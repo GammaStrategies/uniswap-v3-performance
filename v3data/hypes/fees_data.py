@@ -15,10 +15,10 @@ class PoolQueryParams:
 
 
 class FeesData:
-    def __init__(self, chain: str = "mainnet"):
+    def __init__(self, protocol: str, chain: str = "mainnet"):
         self.chain = chain
-        self.gamma_client = GammaClient(chain)
-        self.uniswap_client = UniswapV3Client(chain)
+        self.gamma_client = GammaClient(protocol, chain)
+        self.uniswap_client = UniswapV3Client(protocol, chain)
         self.data = {}
 
     async def _get_hypervisor_data(self, hypervisors=None):

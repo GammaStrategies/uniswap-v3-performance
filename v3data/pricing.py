@@ -6,7 +6,7 @@ class UniV3PriceData:
     """Class for querying GAMMA related data"""
 
     def __init__(self, pool: str, chain: str = "mainnet"):
-        self.uniswap_client = UniswapV3Client(chain)
+        self.uniswap_client = UniswapV3Client("uniswap_v3", chain)
         self.pool = pool
         # self.pool = "0x4006bed7bf103d70a1c6b7f1cef4ad059193dc25"  # GAMMA/WETH 0.3% pool
         self.data = {}
@@ -60,7 +60,7 @@ async def token_price(token: str):
         pool_address = "0x4006bed7bf103d70a1c6b7f1cef4ad059193dc25"
     else:
         return None
-    
+
     pricing = UniV3Price(pool_address, "mainnet")
     return await pricing.output()
 
