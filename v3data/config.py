@@ -20,6 +20,12 @@ uniswap_subgraphs = {
     "celo": {"prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"},
 }
 
+algebra_subgraphs = {
+    "polygon": {
+        "prod": "https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3"
+    }
+}
+
 visor_subgraphs = {
     "prod": "https://api.thegraph.com/subgraphs/name/visorfinance/visor",
     "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/visor",
@@ -83,7 +89,7 @@ DEX_SUBGRAPH_URLS = {
         ],
     },
     "algebra": {
-        "polygon": uniswap_subgraphs["polygon"][
+        "polygon": algebra_subgraphs["polygon"][
             os.environ.get("ALGEBRA_SUBGRAPH_POLYGON", "prod")
         ],
     },

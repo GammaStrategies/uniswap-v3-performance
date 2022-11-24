@@ -100,7 +100,6 @@ class VisorClient(SubgraphClient):
 
 class GammaClient(SubgraphClient):
     def __init__(self, protocol: str, chain: str):
-        print(protocol)
         super().__init__(GAMMA_SUBGRAPH_URLS[protocol][chain], chain)
 
 
