@@ -7,7 +7,7 @@ from v3data.pricing import token_price
 class AccountData:
     def __init__(self, protocol: str, chain: str, account_address: str):
         self.gamma_client = GammaClient(protocol, chain)
-        self.gamma_client_mainnet = GammaClient("uniswap_V3", "mainnet")
+        self.gamma_client_mainnet = GammaClient("uniswap_v3", "mainnet")
         self.address = account_address.lower()
         self.reward_hypervisor_address = XGAMMA_ADDRESS
         self.decimal_factor = 10**18

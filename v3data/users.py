@@ -6,6 +6,7 @@ from v3data.constants import XGAMMA_ADDRESS
 
 class UserData:
     def __init__(self, protocol: str, chain: str, user_address: str):
+        self.protocol = protocol
         self.chain = chain
         self.gamma_client = GammaClient(protocol, chain)
         self.gamma_client_mainnet = GammaClient("uniswap_v3", "mainnet")
@@ -128,7 +129,7 @@ class UserInfo(UserData):
         # for accountHypervisor in hypervisor_data["user"]["accountsOwned"]:
         for account_address in all_accounts:
             # account_address = accountHypervisor["id"]
-            account_info = AccountInfo(self.chain, account_address)
+            account_info = AccountInfo(self.protocol, self.chain, account_address)
             account_info.data = {
                 "hypervisor": {"account": hypervisor_lookup.get(account_address)},
                 "xgamma": {
