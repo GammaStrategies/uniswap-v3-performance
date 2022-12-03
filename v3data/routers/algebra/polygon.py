@@ -3,6 +3,7 @@ import v3data.common.charts
 import v3data.common.hypervisor
 import v3data.common.users
 import v3data.common.masterchef
+import v3data.common.masterchef_v2
 
 from fastapi import APIRouter, Response
 from fastapi_cache.decorator import cache
@@ -110,6 +111,11 @@ async def uncollected_fees_all():
 @router.get("/allRewards")
 async def all_rewards():
     return await v3data.common.masterchef.info(PROTOCOL_ALGEBRA, CHAIN_POLYGON)
+
+
+@router.get("/allRewards2")
+async def all_rewards_2():
+    return await v3data.common.masterchef_v2.info(PROTOCOL_ALGEBRA, CHAIN_POLYGON)
 
 
 @router.get("/userRewards/{user_address}")
