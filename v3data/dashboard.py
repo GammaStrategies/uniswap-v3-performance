@@ -145,7 +145,7 @@ class Dashboard:
         )
 
         gamma_price_usd = gamma_prices["token_in_usdc"]
-        gamma_in_eth = gamma_prices["token_in_eth"]
+        gamma_in_eth = gamma_prices["token_in_native"]
 
         gamma_calcs = GammaCalculations(self.chain, days=30)
         gamma_calcs.data = self.gamma_data
