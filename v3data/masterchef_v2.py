@@ -1,4 +1,4 @@
-from v3data import GammaClient
+from v3data import GammaClient, MasterChefContract, RewarderContract
 from v3data.constants import YEAR_SECONDS
 from v3data.pricing import token_price_from_address
 
@@ -46,6 +46,36 @@ class MasterchefV2Data:
 
         response = await self.gamma_client.query(query)
         self.data = response["data"]["masterChefV2S"]
+
+    async def _get_user_data(self, user_address):
+        query = """
+        query userRewards($userAddress: String!){
+            account(id: $userAddress) {
+                masterChefV2RewarderAccounts {
+                    amount
+                    rewarder {
+                        id
+                        rewardToken {
+                            id
+                            symbol
+                            decimals
+                        }
+                        masterChefPool {
+                            poolId
+                            hypervisor{
+                                id
+                                symbol
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        """
+        variables = {"userAddress": user_address}
+
+        response = await self.gamma_client.query(query, variables)
+        self.data = response["data"]["account"]
 
 
 class MasterchefV2Info(MasterchefV2Data):
@@ -104,3 +134,51 @@ class MasterchefV2Info(MasterchefV2Data):
             info[masterChef["id"]] = {"pools": pool_info}
 
         return info
+
+
+class UserRewardsV2(MasterchefV2Data):
+    def __init__(self, user_address: str, protocol: str, chain: str = "mainnet"):
+        super().__init__(protocol, chain)
+        self.user_address = user_address.lower()
+
+    async def output(self, get_data=True):
+        if get_data:
+            await self._get_user_data(self.user_address)
+
+        if not self.data:
+            return {}
+
+        # return self.data
+
+        info = {}
+        for account in self.data["masterChefV2RewarderAccounts"]:
+            hypervisor_id = account["rewarder"]["masterChefPool"]["hypervisor"]["id"]
+            hypervisor_symbol = account["rewarder"]["masterChefPool"]["hypervisor"][
+                "symbol"
+            ]
+            hypervisor_decimal = 18
+
+            pool_id = int(account["rewarder"]["masterChefPool"]["poolId"])
+
+            reward_token_id = account["rewarder"]["rewardToken"]["id"]
+            reward_token_symbol = account["rewarder"]["rewardToken"]["symbol"]
+            reward_decimals = int(account["rewarder"]["rewardToken"]["decimals"])
+
+            if not info.get(hypervisor_id):
+                info[hypervisor_id] = {"hypervisorSymbol": hypervisor_symbol}
+
+            info[hypervisor_id][reward_token_id] = {
+                "stakedAmount": int(account["amount"]) / 10**hypervisor_decimal,
+                "pendingRewards": self._get_pending_reward(
+                    account["rewarder"]["id"],
+                    pool_id,
+                )
+                / 10**reward_decimals,
+                "rewardTokenSymbol": reward_token_symbol,
+            }
+
+        return info
+
+    def _get_pending_reward(self, rewarder, pool_id):
+        masterchef_contract = RewarderContract(rewarder, self.chain)
+        return masterchef_contract.pending_rewards(pool_id, self.user_address).call()

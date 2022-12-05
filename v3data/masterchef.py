@@ -83,7 +83,9 @@ class MasterchefInfo(MasterchefData):
             )
             rewardTokenPriceUsdc = rewardTokenPrice["token_in_usdc"]
             reward_per_second = (
-                int(masterchef["rewardPerBlock"])  # rewardPerBlock is actually rewardPerSecond
+                int(
+                    masterchef["rewardPerBlock"]
+                )  # rewardPerBlock is actually rewardPerSecond
                 / 10 ** masterchef["rewardToken"]["decimals"]
             )
 

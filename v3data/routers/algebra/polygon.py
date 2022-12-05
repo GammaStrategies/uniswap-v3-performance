@@ -124,6 +124,12 @@ async def user_rewards(user_address):
         PROTOCOL_ALGEBRA, CHAIN_POLYGON, user_address
     )
 
+@router.get("/userRewards2/{user_address}")
+async def user_rewards(user_address):
+    return await v3data.common.masterchef_v2.user_rewards(
+        PROTOCOL_ALGEBRA, CHAIN_POLYGON, user_address
+    )
+
 
 @router.get("/user/{address}")
 async def user_data(address: str):

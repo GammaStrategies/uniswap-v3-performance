@@ -370,3 +370,328 @@ MASTERCHEF_ABI = [
         "type": "function",
     },
 ]
+
+
+REWARDER_ABI = [
+    {
+        "inputs": [
+            {"internalType": "address", "name": "_MASTERCHEF_V2", "type": "address"}
+        ],
+        "stateMutability": "nonpayable",
+        "type": "constructor",
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {
+                "indexed": True,
+                "internalType": "contract IERC20",
+                "name": "rewardToken",
+                "type": "address",
+            },
+            {
+                "indexed": False,
+                "internalType": "address",
+                "name": "owner",
+                "type": "address",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "rewardPerSecond",
+                "type": "uint256",
+            },
+            {
+                "indexed": True,
+                "internalType": "contract IERC20",
+                "name": "masterLpToken",
+                "type": "address",
+            },
+        ],
+        "name": "LogInit",
+        "type": "event",
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "user",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "uint256",
+                "name": "pid",
+                "type": "uint256",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "to",
+                "type": "address",
+            },
+        ],
+        "name": "LogOnReward",
+        "type": "event",
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "rewardPerSecond",
+                "type": "uint256",
+            }
+        ],
+        "name": "LogRewardPerSecond",
+        "type": "event",
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {
+                "indexed": True,
+                "internalType": "uint256",
+                "name": "pid",
+                "type": "uint256",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint64",
+                "name": "lastRewardTime",
+                "type": "uint64",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "lpSupply",
+                "type": "uint256",
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "accToken1PerShare",
+                "type": "uint256",
+            },
+        ],
+        "name": "LogUpdatePool",
+        "type": "event",
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "previousOwner",
+                "type": "address",
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "newOwner",
+                "type": "address",
+            },
+        ],
+        "name": "OwnershipTransferred",
+        "type": "event",
+    },
+    {
+        "inputs": [],
+        "name": "MASTERCHEF_V2",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "claimOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "_rewardToken", "type": "address"},
+            {"internalType": "address", "name": "_owner", "type": "address"},
+            {"internalType": "uint256", "name": "_rewardPerSecond", "type": "uint256"},
+            {"internalType": "address", "name": "_masterLpToken", "type": "address"},
+        ],
+        "name": "init",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "masterLpToken",
+        "outputs": [{"internalType": "contract IERC20", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "pid", "type": "uint256"},
+            {"internalType": "address", "name": "_user", "type": "address"},
+            {"internalType": "address", "name": "to", "type": "address"},
+            {"internalType": "uint256", "name": "", "type": "uint256"},
+            {"internalType": "uint256", "name": "lpTokenAmount", "type": "uint256"},
+        ],
+        "name": "onSushiReward",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "pendingOwner",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "_pid", "type": "uint256"},
+            {"internalType": "address", "name": "_user", "type": "address"},
+        ],
+        "name": "pendingToken",
+        "outputs": [{"internalType": "uint256", "name": "pending", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "pid", "type": "uint256"},
+            {"internalType": "address", "name": "user", "type": "address"},
+            {"internalType": "uint256", "name": "", "type": "uint256"},
+        ],
+        "name": "pendingTokens",
+        "outputs": [
+            {
+                "internalType": "contract IERC20[]",
+                "name": "rewardTokens",
+                "type": "address[]",
+            },
+            {"internalType": "uint256[]", "name": "rewardAmounts", "type": "uint256[]"},
+        ],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "name": "poolInfo",
+        "outputs": [
+            {"internalType": "uint128", "name": "accToken1PerShare", "type": "uint128"},
+            {"internalType": "uint64", "name": "lastRewardTime", "type": "uint64"},
+        ],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "token", "type": "address"},
+            {"internalType": "uint256", "name": "amount", "type": "uint256"},
+            {"internalType": "address payable", "name": "to", "type": "address"},
+        ],
+        "name": "reclaimTokens",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "rewardPerSecond",
+        "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "rewardRates",
+        "outputs": [{"internalType": "uint256[]", "name": "", "type": "uint256[]"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "rewardToken",
+        "outputs": [{"internalType": "contract IERC20", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "_rewardPerSecond", "type": "uint256"}
+        ],
+        "name": "setRewardPerSecond",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "newOwner", "type": "address"},
+            {"internalType": "bool", "name": "direct", "type": "bool"},
+            {"internalType": "bool", "name": "renounce", "type": "bool"},
+        ],
+        "name": "transferOwnership",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [{"internalType": "uint256", "name": "pid", "type": "uint256"}],
+        "name": "updatePool",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "uint128",
+                        "name": "accToken1PerShare",
+                        "type": "uint128",
+                    },
+                    {
+                        "internalType": "uint64",
+                        "name": "lastRewardTime",
+                        "type": "uint64",
+                    },
+                ],
+                "internalType": "struct Rewarder.PoolInfo",
+                "name": "pool",
+                "type": "tuple",
+            }
+        ],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "", "type": "uint256"},
+            {"internalType": "address", "name": "", "type": "address"},
+        ],
+        "name": "userInfo",
+        "outputs": [
+            {"internalType": "uint256", "name": "amount", "type": "uint256"},
+            {"internalType": "uint256", "name": "rewardDebt", "type": "uint256"},
+            {"internalType": "uint256", "name": "unpaidRewards", "type": "uint256"},
+        ],
+        "stateMutability": "view",
+        "type": "function",
+    },
+]

@@ -225,3 +225,17 @@ class MasterChefContract:
         return self.contract.functions.pendingSushi(
             pool_id, Web3.toChecksumAddress(user_address)
         )
+
+
+class RewarderContract:
+    def __init__(self, address, chain: str):
+        w3 = Web3(Web3.HTTPProvider(ALCHEMY_URLS[chain]))
+        self.contract = w3.eth.contract(
+            address=Web3.toChecksumAddress(address), abi=abi.REWARDER_ABI
+        )
+
+    def pending_rewards(self, pool_id, user_address):
+        return self.contract.functions.pendingToken(
+            pool_id, Web3.toChecksumAddress(user_address)
+        )
+
