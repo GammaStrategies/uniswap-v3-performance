@@ -158,22 +158,17 @@ class UserRewardsV2(MasterchefV2Data):
             ]
             hypervisor_decimal = 18
 
-            pool_id = int(account["rewarder"]["masterChefPool"]["poolId"])
+            # pool_id = int(account["rewarder"]["masterChefPool"]["poolId"])
 
             reward_token_id = account["rewarder"]["rewardToken"]["id"]
             reward_token_symbol = account["rewarder"]["rewardToken"]["symbol"]
-            reward_decimals = int(account["rewarder"]["rewardToken"]["decimals"])
+            # reward_decimals = int(account["rewarder"]["rewardToken"]["decimals"])
 
             if not info.get(hypervisor_id):
                 info[hypervisor_id] = {"hypervisorSymbol": hypervisor_symbol}
 
             info[hypervisor_id][reward_token_id] = {
-                "stakedAmount": int(account["amount"]) / 10**hypervisor_decimal,
-                "pendingRewards": self._get_pending_reward(
-                    account["rewarder"]["id"],
-                    pool_id,
-                )
-                / 10**reward_decimals,
+                "stakedAmount": int(account["amount"]) / 10 ** hypervisor_decimal,
                 "rewardTokenSymbol": reward_token_symbol,
             }
 
