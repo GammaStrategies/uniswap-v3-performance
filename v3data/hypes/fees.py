@@ -1,6 +1,4 @@
 from datetime import timedelta
-from email.mime import base
-from webbrowser import get
 
 from v3data.hypes.fees_data import FeesData
 from v3data.utils import sub_in_256, timestamp_ago
@@ -48,15 +46,15 @@ class Fees(FeesData):
                 "limitTokensOwed1": limit_tokens_owed_1
                 / 10 ** hypervisor["tokens"]["decimals1"],
                 "baseFees0USD": base_fees_0 * token0_price,
-                "baseFees1USD": base_fees_1,
+                "baseFees1USD": base_fees_1 * token1_price,
                 "baseTokensOwed0USD": base_tokens_owed_0 * token0_price,
                 "baseTokensOwed1USD": base_tokens_owed_1 * token1_price,
                 "limitFees0USD": limit_fees_0 * token0_price,
                 "limitFees1USD": limit_fees_1 * token1_price,
                 "limitTokensOwed0USD": limit_tokens_owed_0 * token0_price,
                 "limitTokensOwed1USD": limit_tokens_owed_1 * token1_price,
-                "totalFees0": total_fees_0,
-                "totalFees1": total_fees_1,
+                "totalFees0": total_fees_0 / 10 ** hypervisor["tokens"]["decimals0"],
+                "totalFees1": total_fees_1 / 10 ** hypervisor["tokens"]["decimals1"],
                 "totalFeesUSD": total_fees_0 * token0_price
                 + total_fees_1 * token1_price,
             }
@@ -187,7 +185,7 @@ class Fees(FeesData):
                     "price1": token1_price,
                     "decimals0": decimals_0,
                     "decimals1": decimals_1,
-                }
+                },
             }
 
         return results

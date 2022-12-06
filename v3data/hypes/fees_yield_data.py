@@ -192,10 +192,12 @@ class YieldData:
         current_timestamp = timestamp_ago(timedelta(minutes=5))
         initial_block, current_block = await asyncio.gather(
             self.llama_client.block_from_timestamp(initial_timestamp),
-            self.llama_client.block_from_timestamp(current_timestamp)
+            self.llama_client.block_from_timestamp(current_timestamp),
         )
-        # initial_block = await self.llama_client.block_from_timestamp(initial_timestamp)
-        # current_block = await self.llama_client.block_from_timestamp(current_timestamp)
+        # initial_block = await self.llama_client.block_from_timestamp(
+        #   initial_timestamp)
+        # current_block = await self.llama_client.block_from_timestamp(
+        #   current_timestamp)
         # current_block = transition_data["_meta"]["block"]["number"]
 
         block_hypervisor_map = {}

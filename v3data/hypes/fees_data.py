@@ -2,7 +2,6 @@ import asyncio
 from dataclasses import dataclass
 
 from v3data import GammaClient, UniswapV3Client
-from v3data.utils import timestamp_ago
 
 
 @dataclass
