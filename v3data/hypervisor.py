@@ -323,7 +323,8 @@ class HypervisorInfo(HypervisorData):
             ].copy()
 
             if df_period.empty:
-                # if no rebalances in the last 24 hours, calculate using the 24 hours prior to the last rebalance
+                # if no rebalances in the last 24 hours, calculate using the 24 hours 
+                # prior to the last rebalance
                 timestamp_start = df_rebalances.timestamp.max() - DAY_SECONDS
                 df_period = df_rebalances.loc[
                     df_rebalances.timestamp > timestamp_start
@@ -403,7 +404,7 @@ class HypervisorInfo(HypervisorData):
         basics = self.basics_data
         pools = self.pools_data
 
-        if self.chain in ["mainnet", "optimism"]:
+        if self.chain in ["mainnet", "optimism"] or self.protocol == "algebra":
             fees_yield = FeesYield(1, self.protocol, self.chain)
             fee_yield_output = await fees_yield.output(get_data=True)
 
@@ -411,20 +412,20 @@ class HypervisorInfo(HypervisorData):
                 hypervisor: {
                     "daily": {
                         "feeApr": hypervisor_returns["feeApr"],
-                        "feeApy": hypervisor_returns["feeApy"]
+                        "feeApy": hypervisor_returns["feeApy"],
                     },
                     "weekly": {
                         "feeApr": hypervisor_returns["feeApr"],
-                        "feeApy": hypervisor_returns["feeApy"]
+                        "feeApy": hypervisor_returns["feeApy"],
                     },
                     "monthly": {
                         "feeApr": hypervisor_returns["feeApr"],
-                        "feeApy": hypervisor_returns["feeApy"]
+                        "feeApy": hypervisor_returns["feeApy"],
                     },
                     "allTime": {
                         "feeApr": hypervisor_returns["feeApr"],
-                        "feeApy": hypervisor_returns["feeApy"]
-                    }
+                        "feeApy": hypervisor_returns["feeApy"],
+                    },
                 }
                 for hypervisor, hypervisor_returns in fee_yield_output.items()
             }
