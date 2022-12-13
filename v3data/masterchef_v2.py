@@ -1,4 +1,4 @@
-from v3data import GammaClient, MasterChefContract, RewarderContract
+from v3data import GammaClient, RewarderContract
 from v3data.constants import YEAR_SECONDS
 from v3data.pricing import token_price_from_address
 
@@ -30,13 +30,17 @@ class MasterchefV2Data:
                         pricePerShare
                     }
                     rewarders {
-                        id
-                        lastRewardTimestamp
-                        rewardPerSecond
-                        rewardToken {
+                        allocPoint
+                        rewarder {
                             id
-                            symbol
-                            decimals
+                            lastRewardTimestamp
+                            rewardPerSecond
+                            totalAllocPoint
+                            rewardToken {
+                                id
+                                symbol
+                                decimals
+                            }
                         }
                     }
                 }
@@ -49,20 +53,22 @@ class MasterchefV2Data:
 
     async def _get_user_data(self, user_address):
         query = """
-        query userRewards($userAddress: String!){
+        query userRewards($userAddress: String!) {
             account(id: $userAddress) {
-                masterChefV2RewarderAccounts {
+                mcv2RewarderPoolAccounts {
                     amount
-                    rewarder {
-                        id
-                        rewardToken {
+                    rewarderPool {
+                        rewarder {
                             id
-                            symbol
-                            decimals
+                            rewardToken {
+                                id
+                                symbol
+                                decimals
+                            }
                         }
-                        masterChefPool {
+                        pool {
                             poolId
-                            hypervisor{
+                            hypervisor {
                                 id
                                 symbol
                             }
@@ -90,28 +96,37 @@ class MasterchefV2Info(MasterchefV2Data):
             for pool in masterChef["pools"]:
                 reward_per_second_usdc = 0
                 rewarder_info = {}
-                for rewarder in pool["rewarders"]:
-                    reward_token = rewarder["rewardToken"]["id"]
-                    reward_token_symbol = rewarder["rewardToken"]["symbol"]
+                for rewarderPool in pool["rewarders"]:
+                    reward_token = rewarderPool["rewarder"]["rewardToken"]["id"]
+                    reward_token_symbol = rewarderPool["rewarder"]["rewardToken"][
+                        "symbol"
+                    ]
                     reward_per_second = (
-                        int(rewarder["rewardPerSecond"])
-                        / 10 ** rewarder["rewardToken"]["decimals"]
+                        int(rewarderPool["rewarder"]["rewardPerSecond"])
+                        / 10 ** rewarderPool["rewarder"]["rewardToken"]["decimals"]
                     )
 
-                    rewardTokenPrice = await token_price_from_address(
-                        self.chain, rewarder["rewardToken"]["id"]
+                    reward_token_price = await token_price_from_address(
+                        self.chain, rewarderPool["rewarder"]["rewardToken"]["id"]
                     )
 
-                    reward_per_second_usdc += (
-                        reward_per_second * rewardTokenPrice["token_in_usdc"]
+                    weighted_reward_per_second = (
+                        reward_per_second
+                        * rewarderPool["allocPoint"]
+                        / rewarderPool["rewarder"]["totalAllocPoint"]
                     )
 
-                    rewarder_info[rewarder["id"]] = {
+                    rewarder_info[rewarderPool["rewarder"]["id"]] = {
                         "rewardToken": reward_token,
                         "rewardTokenSymbol": reward_token_symbol,
-                        "rewardPerSecond": reward_per_second,
+                        "rewardPerSecond": weighted_reward_per_second,
+                        "allocPoint": rewarderPool["allocPoint"],
                     }
 
+                    # Weighted reward_per_second_usdc
+                    reward_per_second_usdc += (
+                        weighted_reward_per_second * reward_token_price["token_in_usdc"]
+                    )
                 try:
                     apr = (
                         reward_per_second_usdc
@@ -151,24 +166,24 @@ class UserRewardsV2(MasterchefV2Data):
         # return self.data
 
         info = {}
-        for account in self.data["masterChefV2RewarderAccounts"]:
-            hypervisor_id = account["rewarder"]["masterChefPool"]["hypervisor"]["id"]
-            hypervisor_symbol = account["rewarder"]["masterChefPool"]["hypervisor"][
-                "symbol"
-            ]
+        for account in self.data["mcv2RewarderPoolAccounts"]:
+            hypervisor_id = account["rewarderPool"]["pool"]["hypervisor"]["id"]
+            hypervisor_symbol = account["rewarderPool"]["pool"]["hypervisor"]["symbol"]
             hypervisor_decimal = 18
 
             # pool_id = int(account["rewarder"]["masterChefPool"]["poolId"])
 
-            reward_token_id = account["rewarder"]["rewardToken"]["id"]
-            reward_token_symbol = account["rewarder"]["rewardToken"]["symbol"]
+            reward_token_id = account["rewarderPool"]["rewarder"]["rewardToken"]["id"]
+            reward_token_symbol = account["rewarderPool"]["rewarder"]["rewardToken"][
+                "symbol"
+            ]
             # reward_decimals = int(account["rewarder"]["rewardToken"]["decimals"])
 
             if not info.get(hypervisor_id):
                 info[hypervisor_id] = {"hypervisorSymbol": hypervisor_symbol}
 
             info[hypervisor_id][reward_token_id] = {
-                "stakedAmount": int(account["amount"]) / 10 ** hypervisor_decimal,
+                "stakedAmount": int(account["amount"]) / 10**hypervisor_decimal,
                 "rewardTokenSymbol": reward_token_symbol,
             }
 
