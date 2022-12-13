@@ -109,12 +109,17 @@ class MasterchefV2Info(MasterchefV2Data):
                     reward_token_price = await token_price_from_address(
                         self.chain, rewarderPool["rewarder"]["rewardToken"]["id"]
                     )
+                    
+                    total_alloc_point = int(rewarderPool["rewarder"]["totalAllocPoint"])
 
-                    weighted_reward_per_second = (
-                        reward_per_second
-                        * rewarderPool["allocPoint"]
-                        / rewarderPool["rewarder"]["totalAllocPoint"]
-                    )
+                    if total_alloc_point > 0:
+                        weighted_reward_per_second = (
+                            reward_per_second
+                            * int(rewarderPool["allocPoint"])
+                            / int(rewarderPool["rewarder"]["totalAllocPoint"])
+                        )
+                    else:
+                        weighted_reward_per_second = 0
 
                     rewarder_info[rewarderPool["rewarder"]["id"]] = {
                         "rewardToken": reward_token,
