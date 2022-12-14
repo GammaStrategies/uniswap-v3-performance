@@ -21,4 +21,4 @@ BLOCK_TIME_SECONDS = {
 }
 
 PROTOCOL_UNISWAP_V3 = "uniswap_v3"
-PROTOCOL_ALGEBRA = "algebra"
+PROTOCOL_QUICKSWAP = "quickswap"

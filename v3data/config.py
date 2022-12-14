@@ -20,10 +20,8 @@ uniswap_subgraphs = {
     "celo": {"prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"},
 }
 
-algebra_subgraphs = {
-    "polygon": {
-        "prod": "https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3"
-    }
+quickswap_subgraphs = {
+    "polygon": {"prod": "https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3"}
 }
 
 visor_subgraphs = {
@@ -56,7 +54,7 @@ gamma_subgraphs = {
             "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-celo",
         },
     },
-    "algebra": {
+    "quickswap": {
         "polygon": {
             "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/algebra-polygon",
             "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-algebra-polygon",
@@ -88,9 +86,9 @@ DEX_SUBGRAPH_URLS = {
             os.environ.get("UNISWAP_SUBGRAPH_CELO", "prod")
         ],
     },
-    "algebra": {
-        "polygon": algebra_subgraphs["polygon"][
-            os.environ.get("ALGEBRA_SUBGRAPH_POLYGON", "prod")
+    "quickswap": {
+        "polygon": quickswap_subgraphs["polygon"][
+            os.environ.get("QUICKSWAP_SUBGRAPH_POLYGON", "prod")
         ],
     },
 }
@@ -115,9 +113,9 @@ GAMMA_SUBGRAPH_URLS = {
             os.environ.get("GAMMA_SUBGRAPH_CELO", "prod")
         ],
     },
-    "algebra": {
-        "polygon": gamma_subgraphs["algebra"]["polygon"][
-            os.environ.get("GAMMA__ALGEBRA_SUBGRAPH_POLYGON", "prod")
+    "quickswap": {
+        "polygon": gamma_subgraphs["quickswap"]["polygon"][
+            os.environ.get("QUICKSWAP_SUBGRAPH_POLYGON", "prod")
         ],
     },
 }

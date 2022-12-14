@@ -7,16 +7,14 @@ from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
 
 from v3data.routers import mainnet, polygon, arbitrum, optimism, celo, simulator
-from v3data.routers.algebra import polygon as algebra_polygon
+from v3data.routers.quickswap import polygon as quickswap_polygon
 
 from v3data.bollingerbands import BollingerBand
 
-from v3data.charts.benchmark import Benchmark
 from v3data.charts.daily import DailyChart
 from v3data.config import CHARTS_CACHE_TIMEOUT
 
 from v3data.pools import pools_from_symbol
-from v3data.utils import parse_date
 
 logging.basicConfig(
     format="[%(asctime)s:%(levelname)s]:%(message)s",
@@ -31,7 +29,7 @@ app.include_router(polygon.router, tags=["Polygon"])
 app.include_router(arbitrum.router, tags=["Arbitrum"])
 app.include_router(optimism.router, tags=["Optimism"])
 app.include_router(celo.router, tags=["Celo"])
-app.include_router(algebra_polygon.router, tags=["Algebra - Polygon"])
+app.include_router(quickswap_polygon.router, tags=["Quickswap - Polygon"])
 app.include_router(simulator.router, tags=["Simulator"])
 
 # Allow CORS

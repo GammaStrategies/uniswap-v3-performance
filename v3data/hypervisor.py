@@ -307,7 +307,12 @@ class HypervisorInfo(HypervisorData):
 
         # Time since last rebalance
         df_rebalances["periodSeconds"] = df_rebalances.timestamp.diff()
-        # print(df_rebalances[["timestamp", "feeRate", "grossFeesUSD", "totalAmountUSD"]])
+        # print(df_rebalances[[
+        #     "timestamp",
+        #     "feeRate",
+        #     "grossFeesUSD",
+        #     "totalAmountUSD"
+        # ]])
         # Calculate returns for using last 1, 7, and 30 days data
         results = {}
         for period, days in DAYS_IN_PERIOD.items():
@@ -323,7 +328,7 @@ class HypervisorInfo(HypervisorData):
             ].copy()
 
             if df_period.empty:
-                # if no rebalances in the last 24 hours, calculate using the 24 hours 
+                # if no rebalances in the last 24 hours, calculate using the 24 hours
                 # prior to the last rebalance
                 timestamp_start = df_rebalances.timestamp.max() - DAY_SECONDS
                 df_period = df_rebalances.loc[
@@ -404,7 +409,7 @@ class HypervisorInfo(HypervisorData):
         basics = self.basics_data
         pools = self.pools_data
 
-        if self.chain in ["mainnet", "optimism"] or self.protocol == "algebra":
+        if self.chain in ["mainnet", "optimism"] or self.protocol == "quickswap":
             fees_yield = FeesYield(1, self.protocol, self.chain)
             fee_yield_output = await fees_yield.output(get_data=True)
 
