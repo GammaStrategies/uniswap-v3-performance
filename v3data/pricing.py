@@ -37,7 +37,7 @@ class UniV3PriceData:
         self.data = response["data"]
 
 
-class quickswapV3PriceData:
+class QuickswapV3PriceData:
     """Class for querying GAMMA related data"""
 
     def __init__(self, pool: str, chain: str = "polygon"):
@@ -76,7 +76,7 @@ class UniV3Price:
         if protocol == "uniswap_v3":
             self.data = UniV3PriceData(pool_address, chain)
         elif protocol == "quickswap":
-            self.data = quickswapV3PriceData(pool_address, chain)
+            self.data = QuickswapV3PriceData(pool_address, chain)
 
     async def output(self, inverse=False):
         await self.data._get_data()
