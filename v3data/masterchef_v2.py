@@ -171,9 +171,6 @@ class UserRewardsV2(MasterchefV2Data):
         if not self.data:
             return {}
 
-        # return self.data
-
-        # info = {}
         info = []
         for account in self.data["mcv2RewarderPoolAccounts"]:
 
@@ -190,15 +187,6 @@ class UserRewardsV2(MasterchefV2Data):
             reward_token_symbol = account["rewarderPool"]["rewarder"]["rewardToken"][
                 "symbol"
             ]
-            # reward_decimals = int(account["rewarder"]["rewardToken"]["decimals"])
-
-            # if not info.get(hypervisor_id):
-            #     info[hypervisor_id] = {"hypervisorSymbol": hypervisor_symbol}
-
-            # info[hypervisor_id][reward_token_id] = {
-            #     "stakedAmount": int(account["amount"]) / 10**hypervisor_decimal,
-            #     "rewardTokenSymbol": reward_token_symbol,
-            # }
 
             info.append(
                 {
@@ -213,7 +201,7 @@ class UserRewardsV2(MasterchefV2Data):
                 }
             )
 
-        return info
+        return {"stakes": info}
 
     def _get_pending_reward(self, rewarder, pool_id):
         masterchef_contract = RewarderContract(rewarder, self.chain)
