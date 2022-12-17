@@ -67,6 +67,7 @@ class MasterchefV2Data:
                             }
                         }
                         pool {
+                            masterChef { id }
                             poolId
                             hypervisor {
                                 id
@@ -90,7 +91,7 @@ class MasterchefV2Info(MasterchefV2Data):
             await self._get_masterchef_data()
 
         info = {}
-
+        print(self.data)
         for masterChef in self.data:
             pool_info = {}
             for pool in masterChef["pools"]:
@@ -132,6 +133,8 @@ class MasterchefV2Info(MasterchefV2Data):
                     reward_per_second_usdc += (
                         weighted_reward_per_second * reward_token_price["token_in_usdc"]
                     )
+                    print(reward_token_symbol)
+                    print(reward_token_price["token_in_usdc"])
                 try:
                     apr = (
                         reward_per_second_usdc
@@ -170,27 +173,45 @@ class UserRewardsV2(MasterchefV2Data):
 
         # return self.data
 
-        info = {}
+        # info = {}
+        info = []
         for account in self.data["mcv2RewarderPoolAccounts"]:
+
+            masterchef_id = account["rewarderPool"]["pool"]["masterChef"]["id"]
+
             hypervisor_id = account["rewarderPool"]["pool"]["hypervisor"]["id"]
             hypervisor_symbol = account["rewarderPool"]["pool"]["hypervisor"]["symbol"]
             hypervisor_decimal = 18
 
-            # pool_id = int(account["rewarder"]["masterChefPool"]["poolId"])
+            pool_id = int(account["rewarderPool"]["pool"]["poolId"])
 
+            rewarder_id = account["rewarderPool"]["rewarder"]["id"]
             reward_token_id = account["rewarderPool"]["rewarder"]["rewardToken"]["id"]
             reward_token_symbol = account["rewarderPool"]["rewarder"]["rewardToken"][
                 "symbol"
             ]
             # reward_decimals = int(account["rewarder"]["rewardToken"]["decimals"])
 
-            if not info.get(hypervisor_id):
-                info[hypervisor_id] = {"hypervisorSymbol": hypervisor_symbol}
+            # if not info.get(hypervisor_id):
+            #     info[hypervisor_id] = {"hypervisorSymbol": hypervisor_symbol}
 
-            info[hypervisor_id][reward_token_id] = {
-                "stakedAmount": int(account["amount"]) / 10**hypervisor_decimal,
-                "rewardTokenSymbol": reward_token_symbol,
-            }
+            # info[hypervisor_id][reward_token_id] = {
+            #     "stakedAmount": int(account["amount"]) / 10**hypervisor_decimal,
+            #     "rewardTokenSymbol": reward_token_symbol,
+            # }
+
+            info.append(
+                {
+                    "masterchef": masterchef_id,
+                    "poolId": pool_id,
+                    "hypervisor": hypervisor_id,
+                    "hypervisorSymbol": hypervisor_symbol,
+                    "rewarder": rewarder_id,
+                    "rewardToken": reward_token_id,
+                    "rewardTokenSymbol": reward_token_symbol,
+                    "stakedAmount": int(account["amount"]) / 10**hypervisor_decimal,
+                }
+            )
 
         return info
 
