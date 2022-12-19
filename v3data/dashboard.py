@@ -156,7 +156,7 @@ class Dashboard:
         protocol_fees_calcs.data = self.protocol_fees_data
         collected_fees = await protocol_fees_calcs.collected_fees(get_data=False)
 
-        top_level = TopLevelData(self.chain)
+        top_level = TopLevelData("uniswap_v3", self.chain)
         top_level.all_stats_data = self.top_level_data
         top_level.all_returns_data = self.top_level_returns_data
         top_level_data = top_level._all_stats()
@@ -175,7 +175,6 @@ class Dashboard:
         fees_per_day = collected_fees['weekly']["collected_usd"]
         gamma_fees_apr = 365 * fees_per_day / gamma_staked_usd
         gamma_fees_apy = (1 + fees_per_day / gamma_staked_usd) ** 365 - 1
-
 
         dashboard_stats = {
             "stakedUsdAmount": gamma_staked_usd,

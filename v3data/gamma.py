@@ -11,8 +11,8 @@ from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
 
 
 class GammaData:
-    def __init__(self, protocol: str, chain: str, days, timezone=DEFAULT_TIMEZONE):
-        self.gamma_client = GammaClient(protocol, chain)
+    def __init__(self, chain: str, days, timezone=DEFAULT_TIMEZONE):
+        self.gamma_client = GammaClient("uniswap_v3", chain)
         self.days = days
         self.timezone = timezone
         self.address = GAMMA_ADDRESS
@@ -234,8 +234,8 @@ class GammaDistribution(GammaCalculations):
 
 
 class ProtocolFeesData:
-    def __init__(self, protocol: str, chain: str = "mainnet"):
-        self.visor_client = GammaClient(protocol, chain)
+    def __init__(self, chain: str = "mainnet"):
+        self.visor_client = GammaClient("uniswap_v3", chain)
 
     def _get_data(self, time_delta):
         query = """

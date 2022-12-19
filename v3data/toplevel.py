@@ -14,6 +14,7 @@ class TopLevelData:
     """Top level stats"""
 
     def __init__(self, protocol: str, chain: str = "mainnet"):
+        self.protocol = protocol
         self.gamma_client = GammaClient(protocol, chain)
         self.all_stats_data = {}
         self.all_returns_data = {}
@@ -177,7 +178,7 @@ class TopLevelData:
             ]
         )
 
-        hypervisor_info = HypervisorInfo()
+        hypervisor_info = HypervisorInfo(self.protocol)
         hypervisor_info.all_rebalance_data = hypervisors
         all_returns = await hypervisor_info.all_returns()
 
