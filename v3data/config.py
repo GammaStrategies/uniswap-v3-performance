@@ -20,7 +20,29 @@ uniswap_subgraphs = {
     "celo": {"prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"},
 }
 
+uniswap_feegrowth_subgraphs = {
+    "mainnet": {
+        "prod": "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3",
+        "alt": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt",
+        "test": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-testing",
+    },
+    "polygon": {
+        "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-polygon"
+    },
+    "arbitrum": {
+        "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-v3-arbitrum"
+    },
+    "optimism": {
+        "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/optimism-post-regenesis"
+    },
+    "celo": {"prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"},
+}
+
 quickswap_subgraphs = {
+    "polygon": {"prod": "https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3"}
+}
+
+quickswap_feegrowth_subgraphs = {
     "polygon": {"prod": "https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3"}
 }
 
@@ -43,7 +65,7 @@ gamma_subgraphs = {
         },
         "arbitrum": {
             "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/arbitrum",
-            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-arbitrum",
+            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/visor-arbitrum",
         },
         "optimism": {
             "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/optimism",
@@ -89,6 +111,31 @@ DEX_SUBGRAPH_URLS = {
     "quickswap": {
         "polygon": quickswap_subgraphs["polygon"][
             os.environ.get("QUICKSWAP_SUBGRAPH_POLYGON", "prod")
+        ],
+    },
+}
+
+DEX_FEEGROWTH_SUBGRAPH_URLS = {
+    "uniswap_v3": {
+        "mainnet": uniswap_feegrowth_subgraphs["mainnet"][
+            os.environ.get("UNISWAP_FG_SUBGRAPH_MAINNET", "prod")
+        ],
+        "polygon": uniswap_feegrowth_subgraphs["polygon"][
+            os.environ.get("UNISWAP_FG_SUBGRAPH_POLYGON", "prod")
+        ],
+        "arbitrum": uniswap_feegrowth_subgraphs["arbitrum"][
+            os.environ.get("UNISWAP_FG_SUBGRAPH_ARBITRUM", "prod")
+        ],
+        "optimism": uniswap_feegrowth_subgraphs["optimism"][
+            os.environ.get("UNISWAP_FG_SUBGRAPH_OPTIMISM", "prod")
+        ],
+        "celo": uniswap_feegrowth_subgraphs["celo"][
+            os.environ.get("UNISWAP_FG_SUBGRAPH_CELO", "prod")
+        ],
+    },
+    "quickswap": {
+        "polygon": quickswap_feegrowth_subgraphs["polygon"][
+            os.environ.get("QUICKSWAP_FG_SUBGRAPH_POLYGON", "prod")
         ],
     },
 }

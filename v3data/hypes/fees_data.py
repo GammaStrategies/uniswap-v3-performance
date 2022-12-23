@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 
-from v3data import GammaClient, UniswapV3Client
+from v3data import GammaClient, DexFeeGrowthClient
 
 
 @dataclass
@@ -17,7 +17,7 @@ class FeesData:
     def __init__(self, protocol: str, chain: str = "mainnet"):
         self.chain = chain
         self.gamma_client = GammaClient(protocol, chain)
-        self.uniswap_client = UniswapV3Client(protocol, chain)
+        self.uniswap_client = DexFeeGrowthClient(protocol, chain)
         self.data = {}
 
     async def _get_hypervisor_data(self, hypervisors=None):
@@ -123,7 +123,7 @@ class FeesData:
             }
             baseLower: ticks(
                 where: {
-                poolAddress: $poolAddress
+                pool: $poolAddress
                 tickIdx: $baseLower
                 }
             ){
@@ -133,7 +133,7 @@ class FeesData:
             },
             baseUpper: ticks(
                 where: {
-                poolAddress: $poolAddress
+                pool: $poolAddress
                 tickIdx: $baseUpper
                 }
             ){
@@ -143,7 +143,7 @@ class FeesData:
             },
             limitLower: ticks(
                 where: {
-                poolAddress: $poolAddress
+                pool: $poolAddress
                 tickIdx: $limitLower
                 }
             ){
@@ -153,7 +153,7 @@ class FeesData:
             },
             limitUpper: ticks(
                 where: {
-                poolAddress: $poolAddress
+                pool: $poolAddress
                 tickIdx: $limitUpper
                 }
             ){

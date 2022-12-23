@@ -7,6 +7,7 @@ from v3data.config import (
     GAMMA_SUBGRAPH_URLS,
     UNI_V2_SUBGRAPH_URL,
     DEX_SUBGRAPH_URLS,
+    DEX_FEEGROWTH_SUBGRAPH_URLS,
     ETH_BLOCKS_SUBGRAPH_URL,
     THEGRAPH_INDEX_NODE_URL,
     XGAMMA_SUBGRAPH_URL,
@@ -111,6 +112,11 @@ class UniswapV2Client(SubgraphClient):
 class UniswapV3Client(SubgraphClient):
     def __init__(self, protocol: str, chain: str):
         super().__init__(DEX_SUBGRAPH_URLS[protocol][chain], chain)
+
+
+class DexFeeGrowthClient(SubgraphClient):
+    def __init__(self, protocol: str, chain: str):
+        super().__init__(DEX_FEEGROWTH_SUBGRAPH_URLS[protocol][chain], chain)
 
 
 class EthBlocksClient(SubgraphClient):

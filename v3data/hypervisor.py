@@ -409,7 +409,7 @@ class HypervisorInfo(HypervisorData):
         basics = self.basics_data
         pools = self.pools_data
 
-        if self.chain in ["mainnet", "optimism"] or self.protocol == "quickswap":
+        if self.chain in ["mainnet", "optimism", "arbitrum"] or self.protocol == "quickswap":
             fees_yield = FeesYield(1, self.protocol, self.chain)
             fee_yield_output = await fees_yield.output(get_data=True)
 

@@ -1,7 +1,7 @@
 import asyncio
 from datetime import timedelta
 
-from v3data import GammaClient, UniswapV3Client, LlamaClient
+from v3data import GammaClient, DexFeeGrowthClient, LlamaClient
 from v3data.utils import timestamp_ago
 from v3data.constants import BLOCK_TIME_SECONDS
 
@@ -12,7 +12,7 @@ class YieldData:
         self.protocol = protocol
         self.chain = chain
         self.gamma_client = GammaClient(protocol, chain)
-        self.uniswap_client = UniswapV3Client(protocol, chain)
+        self.uniswap_client = DexFeeGrowthClient(protocol, chain)
         self.llama_client = LlamaClient(chain)
         self.data = {}
 
@@ -127,7 +127,7 @@ class YieldData:
             baseLower: ticks(
                 block: {number: $block}
                 where: {
-                poolAddress: $poolAddress
+                pool: $poolAddress
                 tickIdx: $baseLower
                 }
             ){
@@ -138,7 +138,7 @@ class YieldData:
             baseUpper: ticks(
                 block: {number: $block}
                 where: {
-                poolAddress: $poolAddress
+                pool: $poolAddress
                 tickIdx: $baseUpper
                 }
             ){
@@ -149,7 +149,7 @@ class YieldData:
             limitLower: ticks(
                 block: {number: $block}
                 where: {
-                poolAddress: $poolAddress
+                pool: $poolAddress
                 tickIdx: $limitLower
                 }
             ){
@@ -160,7 +160,7 @@ class YieldData:
             limitUpper: ticks(
                 block: {number: $block}
                 where: {
-                poolAddress: $poolAddress
+                pool: $poolAddress
                 tickIdx: $limitUpper
                 }
             ){

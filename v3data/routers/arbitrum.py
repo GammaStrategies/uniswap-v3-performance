@@ -20,10 +20,7 @@ def root():
 
 @router.get("/status/subgraph")
 async def subgraph_status():
-    return await v3data.common.subgraph_status(
-        PROTOCOL_UNISWAP_V3,
-        CHAIN_ARBITRUM
-    )
+    return await v3data.common.subgraph_status(PROTOCOL_UNISWAP_V3, CHAIN_ARBITRUM)
 
 
 @router.get("/charts/bollingerbands/{poolAddress}")
@@ -54,11 +51,7 @@ async def benchmark_chart(
     hypervisor_address: str, startDate: str = "", endDate: str = ""
 ):
     return await v3data.common.charts.benchmark_chart(
-        PROTOCOL_UNISWAP_V3,
-        CHAIN_ARBITRUM,
-        hypervisor_address,
-        startDate,
-        endDate
+        PROTOCOL_UNISWAP_V3, CHAIN_ARBITRUM, hypervisor_address, startDate, endDate
     )
 
 
@@ -77,11 +70,11 @@ async def hypervisor_apy(response: Response, hypervisor_address):
     )
 
 
-# @router.get("/hypervisor/{hypervisor_address}/uncollectedFees")
-# async def hypervisor_uncollected_fees(hypervisor_address: str):
-#     return await v3data.common.hypervisor.uncollected_fees(
-#         PROTOCOL_UNISWAP_V3, CHAIN_ARBITRUM, hypervisor_address
-#     )
+@router.get("/hypervisor/{hypervisor_address}/uncollectedFees")
+async def hypervisor_uncollected_fees(hypervisor_address: str):
+    return await v3data.common.hypervisor.uncollected_fees(
+        PROTOCOL_UNISWAP_V3, CHAIN_ARBITRUM, hypervisor_address
+    )
 
 
 @router.get("/hypervisors/aggregateStats")
@@ -106,12 +99,11 @@ async def hypervisors_all():
     )
 
 
-# @router.get("/hypervisors/uncollectedFees")
-# async def uncollected_fees_all():
-# return await v3data.common.hypervisor.uncollected_fees_all(
-#     PROTOCOL_UNISWAP_V3,
-#     CHAIN_ARBITRUM
-# )
+@router.get("/hypervisors/uncollectedFees")
+async def uncollected_fees_all():
+    return await v3data.common.hypervisor.uncollected_fees_all(
+        PROTOCOL_UNISWAP_V3, CHAIN_ARBITRUM
+    )
 
 
 @router.get("/user/{address}")

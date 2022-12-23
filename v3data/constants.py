@@ -17,7 +17,8 @@ BLOCKS_IN_YEAR = {
 BLOCK_TIME_SECONDS = {
     "mainnet": 12,
     "polygon": 2,
-    "optimism": 2
+    "optimism": 1,
+    "arbitrum": 1
 }
 
 PROTOCOL_UNISWAP_V3 = "uniswap_v3"
