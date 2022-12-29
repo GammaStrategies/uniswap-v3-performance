@@ -184,25 +184,27 @@ class YieldData:
 
         return response["data"]
 
-    async def get_data(self, time_buffer_seconds=300):
+    async def get_data(self, time_buffer_seconds=3600):
         transition_data = await self._get_transition_data(self.period_days)
 
         initial_timestamp = timestamp_ago(timedelta(days=self.period_days))
-        current_timestamp = timestamp_ago(timedelta(seconds=time_buffer_seconds))  # Buffer as subgraph may not be indexed to latest
+        current_timestamp = timestamp_ago(
+            timedelta(seconds=time_buffer_seconds)
+        )  # Buffer as subgraph may not be indexed to latest
         initial_block, current_block = await asyncio.gather(
             self.llama_client.block_from_timestamp(initial_timestamp),
             self.llama_client.block_from_timestamp(current_timestamp),
         )
 
         if not current_block:
-            current_block = int(transition_data["_meta"]["block"]["number"]) - time_buffer_seconds // BLOCK_TIME_SECONDS[self.chain]
+            current_block = (
+                int(transition_data["_meta"]["block"]["number"])
+                - time_buffer_seconds // BLOCK_TIME_SECONDS[self.chain]
+            )
 
         if not initial_block:
             initial_block = estimate_block_from_timestamp_diff(
-                self.chain,
-                current_block,
-                current_timestamp,
-                initial_timestamp
+                self.chain, current_block, current_timestamp, initial_timestamp
             )
 
         block_hypervisor_map = {}
