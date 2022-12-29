@@ -2,7 +2,7 @@ import asyncio
 from datetime import timedelta
 
 from v3data import GammaClient, DexFeeGrowthClient, LlamaClient
-from v3data.utils import timestamp_ago
+from v3data.utils import timestamp_ago, estimate_block_from_timestamp_diff
 from v3data.constants import BLOCK_TIME_SECONDS
 
 
@@ -184,21 +184,26 @@ class YieldData:
 
         return response["data"]
 
-    async def get_data(self):
+    async def get_data(self, time_buffer_seconds=300):
         transition_data = await self._get_transition_data(self.period_days)
 
-        # initial_block = current_block - (7200 * self.period_days)
         initial_timestamp = timestamp_ago(timedelta(days=self.period_days))
-        current_timestamp = timestamp_ago(timedelta(minutes=5))
+        current_timestamp = timestamp_ago(timedelta(seconds=time_buffer_seconds))  # Buffer as subgraph may not be indexed to latest
         initial_block, current_block = await asyncio.gather(
             self.llama_client.block_from_timestamp(initial_timestamp),
             self.llama_client.block_from_timestamp(current_timestamp),
         )
-        # initial_block = await self.llama_client.block_from_timestamp(
-        #   initial_timestamp)
-        # current_block = await self.llama_client.block_from_timestamp(
-        #   current_timestamp)
-        # current_block = transition_data["_meta"]["block"]["number"]
+
+        if not current_block:
+            current_block = int(transition_data["_meta"]["block"]["number"]) - time_buffer_seconds // BLOCK_TIME_SECONDS[self.chain]
+
+        if not initial_block:
+            initial_block = estimate_block_from_timestamp_diff(
+                self.chain,
+                current_block,
+                current_timestamp,
+                initial_timestamp
+            )
 
         block_hypervisor_map = {}
         block_hypervisor_map[initial_block] = []
@@ -215,10 +220,10 @@ class YieldData:
             for tx_type in ["deposits", "withdraws", "rebalances"]:
                 for tx in hypervisor[tx_type]:
 
-                    tx_block = tx["block"]
-                    tx_block_prev = str(int(tx_block) - 1)
+                    tx_block = int(tx["block"])
+                    tx_block_prev = tx_block - 1
 
-                    if int(tx_block) < initial_block:
+                    if tx_block < initial_block:
                         continue
 
                     block_ts_map[tx_block] = tx["timestamp"]
@@ -227,7 +232,7 @@ class YieldData:
                     )
 
                     if not block_hypervisor_map.get(tx_block):
-                        block_hypervisor_map[tx["block"]] = []
+                        block_hypervisor_map[tx_block] = []
 
                     block_hypervisor_map[tx_block].append(hypervisor["id"])
 

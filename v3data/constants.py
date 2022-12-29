@@ -18,7 +18,8 @@ BLOCK_TIME_SECONDS = {
     "mainnet": 12,
     "polygon": 2,
     "optimism": 1,
-    "arbitrum": 1
+    "arbitrum": 1,
+    "celo": 5
 }
 
 PROTOCOL_UNISWAP_V3 = "uniswap_v3"
