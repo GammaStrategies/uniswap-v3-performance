@@ -113,6 +113,30 @@ async def uncollected_fees_all():
     )
 
 
+@router.get("/hypervisors/feeReturns/daily")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def fee_returns_daily():
+    return await v3data.common.hypervisor.fee_returns(
+        PROTOCOL_UNISWAP_V3, CHAIN_POLYGON, 1
+    )
+
+
+@router.get("/hypervisors/feeReturns/weekly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def fee_returns_weekly():
+    return await v3data.common.hypervisor.fee_returns(
+        PROTOCOL_UNISWAP_V3, CHAIN_POLYGON, 7
+    )
+
+
+@router.get("/hypervisors/feeReturns/monthly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def fee_returns_monthly():
+    return await v3data.common.hypervisor.fee_returns(
+        PROTOCOL_UNISWAP_V3, CHAIN_POLYGON, 30
+    )
+
+
 @router.get("/allRewards")
 async def all_rewards():
     return await v3data.common.masterchef.info(
