@@ -7,20 +7,12 @@ from v3data.hypes.fees import Fees
 
 from v3data.utils import timestamp_ago
 from v3data.constants import BLOCK_TIME_SECONDS
+from v3data.hypes.fees_yield_data import YieldData
 
 
 
 
-
-class ImpermanentData:
-    def __init__(self, period_days, protocol: str, chain: str = "mainnet"):
-        self.period_days = period_days
-        self.protocol = protocol
-        self.chain = chain
-        self.gamma_client = GammaClient(protocol, chain)
-        self.uniswap_client = UniswapV3Client(protocol, chain)
-        self.llama_client = LlamaClient(chain)
-        self.data = {}
+class ImpermanentData(YieldData):
 
     async def _get_hypervisor_data_at_block(self, block, hypervisors=None):
 
@@ -320,12 +312,6 @@ class ImpermanentData:
                 hypdta["uncollected_fees1"] = base_fees_1+limit_fees_1+hypdta["baseTokensOwed1"]+hypdta["limitTokensOwed1"]
 
 
-                # # debug test
-                # if len(data_by_hypervisor[hypdta["id"]][block_index].keys())>0:
-                #     # error
-                #     stop_here=""
-                    
-
                 # add to structure
                 data_by_hypervisor[hypdta["id"]][block_index] = hypdta
 
@@ -360,7 +346,7 @@ class ImpermanentData:
                 # hodl deposited tokens proportion ( use curr prices with initial qtties)
                 ini_HODL_deposited = (initial_tvl0*struct[1]["token0_usd_price"] + initial_tvl1*struct[1]["token1_usd_price"])/struct[1]["totalSupply"]
                 cur_HODL_deposited = cur_HODL_USD
-                vs_HODL_deposited = ((cur_HODL_deposited-ini_HODL_deposited)/ini_HODL_deposited) if ini_HODL_deposited != 0 else 0 # reversed so it shows LP vs 
+                vs_HODL_deposited = ((cur_HODL_deposited-ini_HODL_deposited)/ini_HODL_deposited) if ini_HODL_deposited != 0 else 0 
 
                 # hodl token0
                 ini_HODL_token0 = (initial_tvl0 + (initial_tvl1*(struct[0]["token1_usd_price"]/struct[0]["token0_usd_price"])))/struct[0]["totalSupply"]
@@ -474,3 +460,6 @@ class ImpermanentData:
             token1_price = 0
         
         return token0_price*(10**decimals_0),token1_price*(10**decimals_1)
+
+
+
