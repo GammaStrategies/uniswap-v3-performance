@@ -106,6 +106,30 @@ async def uncollected_fees_all():
     )
 
 
+@router.get("/hypervisors/feeReturns/daily")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def fee_returns_daily():
+    return await v3data.common.hypervisor.fee_returns(
+        PROTOCOL_UNISWAP_V3, CHAIN_ARBITRUM, 1
+    )
+
+
+@router.get("/hypervisors/feeReturns/weekly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def fee_returns_weekly():
+    return await v3data.common.hypervisor.fee_returns(
+        PROTOCOL_UNISWAP_V3, CHAIN_ARBITRUM, 7
+    )
+
+
+@router.get("/hypervisors/feeReturns/monthly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def fee_returns_monthly():
+    return await v3data.common.hypervisor.fee_returns(
+        PROTOCOL_UNISWAP_V3, CHAIN_ARBITRUM, 30
+    )
+
+
 @router.get("/user/{address}")
 async def user_data(address: str):
     return await v3data.common.users.user_data(

@@ -1,4 +1,5 @@
 import datetime
+from v3data.constants import BLOCK_TIME_SECONDS
 
 
 def timestamp_to_date(timestamp, format=None):
@@ -62,3 +63,11 @@ def sub_in_256(x, y):
         difference += 2 ** 256
 
     return difference
+
+
+def estimate_block_from_timestamp_diff(chain, current_block, current_timestamp, initial_timestamp):
+    ts_diff = current_timestamp - initial_timestamp
+    block_diff = ts_diff // BLOCK_TIME_SECONDS[chain]
+
+    initial_block = current_block - block_diff
+    return initial_block

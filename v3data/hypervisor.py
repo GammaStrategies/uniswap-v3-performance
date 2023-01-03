@@ -409,33 +409,32 @@ class HypervisorInfo(HypervisorData):
         basics = self.basics_data
         pools = self.pools_data
 
-        if self.chain in ["mainnet", "optimism", "arbitrum"] or self.protocol == "quickswap":
-            fees_yield = FeesYield(1, self.protocol, self.chain)
-            fee_yield_output = await fees_yield.output(get_data=True)
+        fees_yield = FeesYield(1, self.protocol, self.chain)
+        fee_yield_output = await fees_yield.output(get_data=True)
 
-            returns = {
-                hypervisor: {
-                    "daily": {
-                        "feeApr": hypervisor_returns["feeApr"],
-                        "feeApy": hypervisor_returns["feeApy"],
-                    },
-                    "weekly": {
-                        "feeApr": hypervisor_returns["feeApr"],
-                        "feeApy": hypervisor_returns["feeApy"],
-                    },
-                    "monthly": {
-                        "feeApr": hypervisor_returns["feeApr"],
-                        "feeApy": hypervisor_returns["feeApy"],
-                    },
-                    "allTime": {
-                        "feeApr": hypervisor_returns["feeApr"],
-                        "feeApy": hypervisor_returns["feeApy"],
-                    },
-                }
-                for hypervisor, hypervisor_returns in fee_yield_output.items()
+        returns = {
+            hypervisor: {
+                "daily": {
+                    "feeApr": hypervisor_returns["feeApr"],
+                    "feeApy": hypervisor_returns["feeApy"],
+                },
+                "weekly": {
+                    "feeApr": hypervisor_returns["feeApr"],
+                    "feeApy": hypervisor_returns["feeApy"],
+                },
+                "monthly": {
+                    "feeApr": hypervisor_returns["feeApr"],
+                    "feeApy": hypervisor_returns["feeApy"],
+                },
+                "allTime": {
+                    "feeApr": hypervisor_returns["feeApr"],
+                    "feeApy": hypervisor_returns["feeApy"],
+                },
+                "hasOutlier": hypervisor_returns["hasOutlier"]
             }
-        else:
-            returns = await self.all_returns(get_data=get_data)
+            for hypervisor, hypervisor_returns in fee_yield_output.items()
+        }
+        # returns = await self.all_returns(get_data=get_data)
 
         results = {}
         for hypervisor in basics:
