@@ -203,10 +203,12 @@ class HypervisorData:
                     id
                     fee
                     token0{
+                        id
                         symbol
                         decimals
                     }
                     token1{
+                        id
                         symbol
                         decimals
                     }
@@ -459,6 +461,8 @@ class HypervisorInfo(HypervisorData):
                     ),
                     "poolAddress": pool_id,
                     "name": hypervisor_name,
+                    "token0": hypervisor["pool"]["token0"]["id"],
+                    "token1": hypervisor["pool"]["token1"]["id"],
                     "decimals0": decimals0,
                     "decimals1": decimals1,
                     "depositCap0": int(hypervisor["deposit0Max"]) / 10**decimals0,
