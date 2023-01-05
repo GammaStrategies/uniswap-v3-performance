@@ -78,7 +78,7 @@ class BaseLimit:
         """Get data for one hypervisor"""
         hypervisor_address = hypervisor_address.lower()
         query = """
-        query historicalRanges($id: String!, $timestampStart: Int!){
+        query historicalRanges($id: String!){
             uniswapV3Hypervisor(
                 id: $id
             ){
@@ -110,7 +110,7 @@ class BaseLimit:
             }
         }
         """
-        variables = {"id": hypervisor_address, "timestampStart": self.timestamp_start}
+        variables = {"id": hypervisor_address}
         response = await self.gamma_client.query(query, variables)
         data = response["data"]["uniswapV3Hypervisor"]
 
