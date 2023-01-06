@@ -7,13 +7,26 @@ from v3data.constants import BLOCK_TIME_SECONDS
 
 
 class YieldData:
-    def __init__(self, period_days, protocol: str, chain: str = "mainnet"):
+    def __init__(
+        self,
+        period_days,
+        protocol: str,
+        chain: str = "mainnet",
+        delay_buffer_seconds: int = 3600,
+    ):
         self.period_days = period_days
         self.protocol = protocol
         self.chain = chain
         self.gamma_client = GammaClient(protocol, chain)
         self.uniswap_client = DexFeeGrowthClient(protocol, chain)
         self.llama_client = LlamaClient(chain)
+        self.delay_buffer_seconds = (
+            delay_buffer_seconds  # Buffer to account for subgraph being slightly behind
+        )
+        self._block_ts_map = {}
+        self._transition_data = {}
+        self._hypervisor_data_by_blocks = {}
+        self._pool_data = {}
         self.data = {}
 
     async def _get_hypervisor_data_at_block(self, block, hypervisors):
@@ -66,25 +79,34 @@ class YieldData:
 
     async def _get_transition_data(self, period_days):
         transition_query = """
-        query transitions($timestamp_start: Int!){
+        query transitions($timestamp_start: Int!, $timestamp_end: Int!){
             uniswapV3Hypervisors(
                 first: 1000
             ){
                 id
                 withdraws(
-                    where: {timestamp_gt: $timestamp_start}
+                    where: {
+                        timestamp_gt: $timestamp_start
+                        timestamp_lt: $timestamp_end
+                    }
                 ) {
                     block
                     timestamp
                 }
                 rebalances(
-                    where: {timestamp_gt: $timestamp_start}
+                    where: {
+                        timestamp_gt: $timestamp_start
+                        timestamp_lt: $timestamp_end
+                    }
                 ) {
                     block
                     timestamp
                 }
                 deposits(
-                    where: {timestamp_gt: $timestamp_start}
+                    where: {
+                        timestamp_gt: $timestamp_start
+                        timestamp_lt: $timestamp_end
+                    }
                 ) {
                     block
                     timestamp
@@ -98,10 +120,18 @@ class YieldData:
         }
         """
 
-        variables = {"timestamp_start": timestamp_ago(timedelta(days=period_days))}
+        variables = {
+            "timestamp_start": timestamp_ago(
+                timedelta(days=period_days)
+                + timedelta(seconds=self.delay_buffer_seconds)
+            ),
+            "timestamp_end": timestamp_ago(
+                timedelta(seconds=self.delay_buffer_seconds)
+            ),
+        }
         response = await self.gamma_client.query(transition_query, variables)
 
-        return response["data"]
+        self._transition_data = response["data"]
 
     async def _get_pool_data_at_block(
         self, block, pool_address, base_lower, base_upper, limit_lower, limit_upper
@@ -184,12 +214,10 @@ class YieldData:
 
         return response["data"]
 
-    async def get_data(self, time_buffer_seconds=3600):
-        transition_data = await self._get_transition_data(self.period_days)
-
+    async def _get_block_timestamps(self):
         initial_timestamp = timestamp_ago(timedelta(days=self.period_days))
         current_timestamp = timestamp_ago(
-            timedelta(seconds=time_buffer_seconds)
+            timedelta(seconds=self.delay_buffer_seconds)
         )  # Buffer as subgraph may not be indexed to latest
         initial_block, current_block = await asyncio.gather(
             self.llama_client.block_from_timestamp(initial_timestamp),
@@ -198,8 +226,8 @@ class YieldData:
 
         if not current_block:
             current_block = (
-                int(transition_data["_meta"]["block"]["number"])
-                - time_buffer_seconds // BLOCK_TIME_SECONDS[self.chain]
+                int(self._transition_data["_meta"]["block"]["number"])
+                - self.delay_buffer_seconds // BLOCK_TIME_SECONDS[self.chain]
             )
 
         if not initial_block:
@@ -207,16 +235,25 @@ class YieldData:
                 self.chain, current_block, current_timestamp, initial_timestamp
             )
 
-        block_hypervisor_map = {}
-        block_hypervisor_map[initial_block] = []
-        block_hypervisor_map[current_block] = []
+        return {
+            "initial": {"block": initial_block, "timestamp": initial_timestamp},
+            "current": {"block": current_block, "timestamp": current_timestamp},
+        }
 
-        block_ts_map = {}
-        # block_ts_map[initial_block] = timestamp_ago(timedelta(self.period_days))
-        block_ts_map[initial_block] = initial_timestamp
-        block_ts_map[current_block] = timestamp_ago(timedelta(seconds=0))
-
-        for hypervisor in transition_data["uniswapV3Hypervisors"]:
+    async def _get_hypervisor_data_for_all_blocks(
+        self,
+        initial_block: int,
+        initial_timestamp: int,
+        current_block: int,
+        current_timestamp: int,
+    ):
+        # Identify which hypes need to be queried at specific blocks
+        block_hypervisor_map = {initial_block: [], current_block: []}
+        block_ts_map = {
+            initial_block: initial_timestamp,
+            current_block: current_timestamp,
+        }
+        for hypervisor in self._transition_data["uniswapV3Hypervisors"]:
             block_hypervisor_map[initial_block].append(hypervisor["id"])
             block_hypervisor_map[current_block].append(hypervisor["id"])
             for tx_type in ["deposits", "withdraws", "rebalances"]:
@@ -235,36 +272,36 @@ class YieldData:
 
                     if not block_hypervisor_map.get(tx_block):
                         block_hypervisor_map[tx_block] = []
-
                     block_hypervisor_map[tx_block].append(hypervisor["id"])
 
                     if not block_hypervisor_map.get(tx_block_prev):
                         block_hypervisor_map[tx_block_prev] = []
-
                     block_hypervisor_map[tx_block_prev].append(hypervisor["id"])
 
+        self._block_ts_map = block_ts_map
+
+        # Build hypervisor queries and execute
         hypervisor_query_params = [
             {"block": block, "hypervisors": hypervisors}
             for block, hypervisors in block_hypervisor_map.items()
         ]
-
         hypervisors_requests = [
             self._get_hypervisor_data_at_block(params["block"], params["hypervisors"])
             for params in hypervisor_query_params
         ]
-
         hypervisor_responses = await asyncio.gather(*hypervisors_requests)
 
-        hypervisor_data_by_blocks = {
+        self._hypervisor_data_by_blocks = {
             hypervisor_query_params[index]["block"]: response["data"][
                 "uniswapV3Hypervisors"
             ]
             for index, response in enumerate(hypervisor_responses)
         }
 
+    async def _get_pool_data_for_all_blocks(self):
         pool_query_params = [
             {"block": block, "hypervisor": hypervisor}
-            for block, hypervisors in hypervisor_data_by_blocks.items()
+            for block, hypervisors in self._hypervisor_data_by_blocks.items()
             for hypervisor in hypervisors
         ]
 
@@ -283,7 +320,7 @@ class YieldData:
 
         pool_responses = await asyncio.gather(*pool_requests)
 
-        pool_data = {
+        self._pool_data = {
             self.tick_id(
                 pool_query_params[index]["block"],
                 response["pool"]["id"],
@@ -296,15 +333,38 @@ class YieldData:
             if response.get("pool", {}).get("id")
         }
 
+    async def get_data(self):
+        # Get transition data to identify blocks for making time-travel query
+        await self._get_transition_data(self.period_days)
+
+        # Get initial and current blocks and timestamps
+        edge_block_ts = await self._get_block_timestamps()
+        initial_block = edge_block_ts["initial"]["block"]
+        initial_timestamp = edge_block_ts["initial"]["timestamp"]
+        current_block = edge_block_ts["current"]["block"]
+        current_timestamp = edge_block_ts["current"]["timestamp"]
+
+        # Identify which hypes need to be queried at specific blocks
+        await self._get_hypervisor_data_for_all_blocks(
+            initial_block,
+            initial_timestamp,
+            current_block,
+            current_timestamp,
+        )
+
+        # Make corresponding pool queries for tick data
+        await self._get_pool_data_for_all_blocks()
+
+        # Reshape hype + pool data into something useful
         all_data = {}
-        for block, hypervisors_in_block in hypervisor_data_by_blocks.items():
+        for block, hypervisors_in_block in self._hypervisor_data_by_blocks.items():
             for hypervisor in hypervisors_in_block:
                 if not all_data.get(hypervisor["id"]):
                     all_data[hypervisor["id"]] = {}
 
                 hypervisor.update(
                     {
-                        "ticks": pool_data.get(
+                        "ticks": self._pool_data.get(
                             self.tick_id(
                                 int(block),
                                 hypervisor["pool"]["id"],
@@ -314,15 +374,16 @@ class YieldData:
                                 hypervisor["limitUpper"],
                             )
                         ),
-                        "timestamp": block_ts_map.get(block, 0),
+                        "timestamp": self._block_ts_map.get(block, 0),
                     }
                 )
                 all_data[hypervisor["id"]][block] = hypervisor
 
         self.data = {
             "initial_block": initial_block,
-            "initial_ts": block_ts_map[initial_block],
+            "initial_ts": self._block_ts_map[initial_block],
             "current_block": current_block,
+            "current_ts": current_timestamp,
             "hype_data": all_data,
         }
 
