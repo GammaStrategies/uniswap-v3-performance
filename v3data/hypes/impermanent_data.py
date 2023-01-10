@@ -9,7 +9,7 @@ from v3data.constants import BLOCK_TIME_SECONDS
 from v3data.hypes.fees_yield import FeesYield
 
 
-class ImpermanentResult(FeesYield):
+class ImpermanentDivergence(FeesYield):
     async def _get_hypervisor_data_at_block(self, block, hypervisors=None):
 
         if hypervisors:

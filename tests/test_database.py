@@ -19,7 +19,7 @@ from v3data.hypes import impermanent_data, fees_yield
 
 
 CHAIN = "mainnet"  # polygon
-mongo_srv_url = "mongodb://10.10.0.39:49154"
+mongo_srv_url = ""
 db_name = "gamma_v1"
 collections = {"static": {"id": True}, "returns": {"id": True}}
 
@@ -36,7 +36,7 @@ async def simulate_query():
         result[days] = dict()
 
         # add ilg to result
-        all_data = impermanent_data.ImpermanentData(
+        all_data = impermanent_data.ImpermanentDivergence(
             period_days=days, protocol=PROTOCOL_UNISWAP_V3, chain=CHAIN
         )
         returns_data = await all_data.get_fees_yield()
@@ -69,10 +69,10 @@ async def simulate_query():
             # only hypervisors with FeeYield data
             if k in result[days].keys():
                 result[days][k]["ilg"] = {
-                    "vs_HODL_USD": v["vs_HODL_USD"],
-                    "vs_HODL_deposited": v["vs_HODL_deposited"],
-                    "vs_HODL_token0": v["vs_HODL_token0"],
-                    "vs_HODL_token1": v["vs_HODL_token1"],
+                    "vs_hodl_usd": v["vs_hodl_usd"],
+                    "vs_hodl_deposited": v["vs_hodl_deposited"],
+                    "vs_hodl_token0": v["vs_hodl_token0"],
+                    "vs_hodl_token1": v["vs_hodl_token1"],
                 }
 
     # end time log
