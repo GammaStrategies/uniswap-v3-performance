@@ -101,6 +101,9 @@ class FeesYield(YieldData):
 
         returns = df_returns.to_dict("records")[0]
 
+        returns["feeApr"] = max(returns["feeApr"], 0)
+        returns["feeApy"] = max(returns["feeApy"], 0)
+
         return {
             "feeApr": returns["feeApr"] if returns["feeApr"] else 0,
             "feeApy": returns["feeApy"] if returns["feeApy"] else 0,
