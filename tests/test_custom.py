@@ -30,6 +30,9 @@ collections = {
 
 async def simulate_query():
 
+    # start time log
+    _startime = dt.datetime.utcnow()
+
     block = timestamp = 0
     result = dict()
     for days in [1,7,30]:
@@ -37,20 +40,20 @@ async def simulate_query():
         result[days] = dict()
 
         # add ilg to result
-        all_dta = impermanent_data.ImpermanentData_permanent(period_days=days,protocol=PROTOCOL_UNISWAP_V3,chain=CHAIN)
+        all_dta = impermanent_data.ImpermanentData(period_days=days,protocol=PROTOCOL_UNISWAP_V3,chain=CHAIN)
         returns_dta = await all_dta.get_feesYield_data()
         imperm_dta = await all_dta.get_impermanent_data(get_data=False)
 
         # get block n timestamp
-        block = all_dta.raw_data["current_block"]
-        timestamp = all_dta.raw_data["current_timestamp"]
+        block = all_dta.data["current_block"]
+        timestamp = all_dta._block_ts_map[block]
 
         # fee yield data process
         for k,v in returns_dta.items():
             if not k in result[days].keys():
                 result[days][k] = dict()
                 # no ilg data for this hypervisor
-                result[days][k]["id"] = f"{CHAIN}_{k}_{block}"
+                result[days][k]["id"] = f"{CHAIN}_{k}_{block}_{days}"
                 result[days][k]["chain"] = CHAIN
                 result[days][k]["period"] = days
                 result[days][k]["hypervisor_id"] = k
@@ -74,6 +77,16 @@ async def simulate_query():
                         "vs_HODL_token1": v["vs_HODL_token1"]
                         }
 
+
+    # end time log
+    _timelapse = dt.datetime.utcnow() - _startime
+    print("         took {:,.2f} seconds to prepare items for database load".format(_timelapse.total_seconds()))
+
+    # start time log
+    _startime = dt.datetime.utcnow()
+    _items = 0
+
+
     # create database manager/connector
     db_connector = db_managers.MongoDbManager(url=mongo_srv_url, db_name=db_name, collections=collections)
 
@@ -85,9 +98,35 @@ async def simulate_query():
             # value = { k:str(v) for k,v in value.items()}
             # add to mongodb
             db_connector.add_item(coll_name="returns", item_id=hyp["id"], data=hyp)
+            _items+=1
+
+
+            # try add 2 times same data ( replacement test)
+            db_connector.add_item(coll_name="returns", item_id=hyp["id"], data=hyp)
+
+
+    # end time log
+    _timelapse = dt.datetime.utcnow() - _startime
+    print("         took {:,.2f} seconds to add {} items to the database".format(_timelapse.total_seconds(),_items))
+    
+
+
+
+
+
+
+
 
 
 
 # TESTING
 if __name__ == "__main__":
+    # start time log
+    _startime = dt.datetime.utcnow()
+
     asyncio.run(simulate_query())
+
+    # end time log
+    _timelapse = dt.datetime.utcnow() - _startime
+    print(" took {:,.2f} seconds to complete the script".format(_timelapse.total_seconds()))
+    

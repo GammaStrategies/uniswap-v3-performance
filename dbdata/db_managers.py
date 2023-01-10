@@ -74,7 +74,10 @@ class MongoDbManager():
         self.create_collection(coll_name=coll_name, **self.collections_config[coll_name])
 
         # add/ update to database (add or replace)
-        self.database[coll_name].update_one({"_id": item_id},{"$set": data}, upsert=upsert)
+        self.database[coll_name].replace_one(filter={"id": item_id},
+                                            replacement=data,
+                                            upsert=True
+                                            )
 
     def get_item(self, coll_name:str, **kwargs):
         """ get items cursor from database

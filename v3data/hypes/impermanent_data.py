@@ -7,11 +7,11 @@ from v3data.hypes.fees import Fees
 
 from v3data.utils import timestamp_ago
 from v3data.constants import BLOCK_TIME_SECONDS
-from v3data.hypes.fees_yield_data import YieldData
+from v3data.hypes.fees_yield import FeesYield
 
 
 
-class ImpermanentData(YieldData):
+class ImpermanentData(FeesYield):
 
     async def _get_hypervisor_data_at_block(self, block, hypervisors=None):
 
@@ -204,10 +204,10 @@ class ImpermanentData(YieldData):
 
         
         # get hypervisors data
-        hypervisor_dta = self.raw_data["hypervisor_data_by_blocks"]
+        hypervisor_dta = self._hypervisor_data_by_blocks
         
         # get pool data   
-        pool_data = self.raw_data["pool_data"]
+        pool_data = self._pool_data
 
         # prepare n fill data structure
         data_by_hypervisor = {} 
@@ -215,7 +215,7 @@ class ImpermanentData(YieldData):
             #                        <data> includes "self._get_hypervisor_data_at_block()", "block" and "token0_usd_price" , "token1_usd_price" fields
                     
         # only start and end block datas are used
-        for idx, block in enumerate([self.raw_data["initial_block"], self.raw_data["current_block"]]):
+        for idx, block in enumerate([self.data["initial_block"], self.data["current_block"]]):
             for hypervisor in hypervisor_dta[block]:
                 
                 pool = None
@@ -234,7 +234,7 @@ class ImpermanentData(YieldData):
                 
                 # add block and timestamp to hypervisor
                 hypervisor["block"] = block
-                hypervisor["timestamp"] = self.raw_data["initial_timestamp"] if idx == 0 else self.raw_data["current_timestamp"]
+                hypervisor["timestamp"] = self._block_ts_map[block]
 
                 # add usd prices
                 hypervisor["token0_usd_price"],hypervisor["token1_usd_price"] = self._calc_USD_prices(hypervisor=hypervisor)
