@@ -73,5 +73,5 @@ async def uncollected_fees_all(protocol: str, chain: str):
 
 async def fee_returns(protocol: str, chain: str, days: int):
     fees_yield = FeesYield(days, protocol, chain)
-    output = await fees_yield.get_feesYield_data()
+    output = await fees_yield.get_fees_yield()
     return output
