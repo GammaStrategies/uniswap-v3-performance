@@ -15,6 +15,7 @@ class YieldData:
         self.uniswap_client = DexFeeGrowthClient(protocol, chain)
         self.llama_client = LlamaClient(chain)
         self.data = {}
+        self.raw_data = {} # data gathered from queries
 
     async def _get_hypervisor_data_at_block(self, block, hypervisors):
         query = """
@@ -207,6 +208,13 @@ class YieldData:
                 self.chain, current_block, current_timestamp, initial_timestamp
             )
 
+        # save raw data
+        self.raw_data["initial_timestamp"] = initial_timestamp
+        self.raw_data["current_timestamp"] = current_timestamp
+        self.raw_data["initial_block"] = initial_block
+        self.raw_data["current_block"] = current_block
+
+
         block_hypervisor_map = {}
         block_hypervisor_map[initial_block] = []
         block_hypervisor_map[current_block] = []
@@ -255,7 +263,7 @@ class YieldData:
 
         hypervisor_responses = await asyncio.gather(*hypervisors_requests)
 
-        hypervisor_data_by_blocks = {
+        self.raw_data["hypervisor_data_by_blocks"] = {
             hypervisor_query_params[index]["block"]: response["data"][
                 "uniswapV3Hypervisors"
             ]
@@ -264,7 +272,7 @@ class YieldData:
 
         pool_query_params = [
             {"block": block, "hypervisor": hypervisor}
-            for block, hypervisors in hypervisor_data_by_blocks.items()
+            for block, hypervisors in self.raw_data["hypervisor_data_by_blocks"].items()
             for hypervisor in hypervisors
         ]
 
@@ -283,7 +291,7 @@ class YieldData:
 
         pool_responses = await asyncio.gather(*pool_requests)
 
-        pool_data = {
+        self.raw_data["pool_data"] = {
             self.tick_id(
                 pool_query_params[index]["block"],
                 response["pool"]["id"],
@@ -297,14 +305,14 @@ class YieldData:
         }
 
         all_data = {}
-        for block, hypervisors_in_block in hypervisor_data_by_blocks.items():
+        for block, hypervisors_in_block in self.raw_data["hypervisor_data_by_blocks"].items():
             for hypervisor in hypervisors_in_block:
                 if not all_data.get(hypervisor["id"]):
                     all_data[hypervisor["id"]] = {}
 
                 hypervisor.update(
                     {
-                        "ticks": pool_data.get(
+                        "ticks": self.raw_data["pool_data"].get(
                             self.tick_id(
                                 int(block),
                                 hypervisor["pool"]["id"],

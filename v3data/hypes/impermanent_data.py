@@ -11,7 +11,6 @@ from v3data.hypes.fees_yield_data import YieldData
 
 
 
-
 class ImpermanentData(YieldData):
 
     async def _get_hypervisor_data_at_block(self, block, hypervisors=None):
@@ -198,83 +197,67 @@ class ImpermanentData(YieldData):
 
         return response["data"]
 
-
-    async def get_data(self):
+    async def get_impermanent_data(self, get_data=True):
         
-        # define blocks to gather info from
-        initial_timestamp = timestamp_ago(timedelta(days=self.period_days))
-        current_timestamp = timestamp_ago(timedelta(minutes=5))
-        initial_block, current_block = await asyncio.gather(
-            self.llama_client.block_from_timestamp(initial_timestamp),
-            self.llama_client.block_from_timestamp(current_timestamp),
-        )
+        if get_data:
+            await self.get_data()
 
+        
         # get hypervisors data
-        hypervisor_dta = await asyncio.gather(*[self._get_hypervisor_data_at_block(block) for block in [initial_block, current_block]])
+        hypervisor_dta = self.raw_data["hypervisor_data_by_blocks"]
         
         # get pool data   
-        pool_data = [await asyncio.gather(*[
-                self._get_pool_data_at_block(
-                    initial_block if block_index == 0 else current_block,
-                    hypervisor_dta[block_index]["data"]["uniswapV3Hypervisors"][hyper_index]["pool"]["id"],
-                    hypervisor_dta[block_index]["data"]["uniswapV3Hypervisors"][hyper_index]["baseLower"],
-                    hypervisor_dta[block_index]["data"]["uniswapV3Hypervisors"][hyper_index]["baseUpper"],
-                    hypervisor_dta[block_index]["data"]["uniswapV3Hypervisors"][hyper_index]["limitLower"],
-                    hypervisor_dta[block_index]["data"]["uniswapV3Hypervisors"][hyper_index]["limitUpper"],
-                )
-                for hyper_index in range(len(hypervisor_dta[block_index]["data"]["uniswapV3Hypervisors"]))
-            ]) for block_index in range(len(hypervisor_dta))
-            ]
+        pool_data = self.raw_data["pool_data"]
 
         # prepare n fill data structure
         data_by_hypervisor = {} 
             #  { <hypervisor id> : [ <initial data>, <current data> ]
             #                        <data> includes "self._get_hypervisor_data_at_block()", "block" and "token0_usd_price" , "token1_usd_price" fields
                     
-        for block_index in range(len(hypervisor_dta)):
-            for hyper_index in range(len(hypervisor_dta[block_index]["data"]["uniswapV3Hypervisors"])):
+        # only start and end block datas are used
+        for idx, block in enumerate([self.raw_data["initial_block"], self.raw_data["current_block"]]):
+            for hypervisor in hypervisor_dta[block]:
                 
-                # create ease to access vars
-                hypdta = hypervisor_dta[block_index]["data"]["uniswapV3Hypervisors"][hyper_index]
-                pooldta = pool_data[block_index][hyper_index]
-
-                # if not hypdta["pool"]["id"] == pooldta["pool"]["id"]:
-                #     # should not be here ERR
-                #     stop_here = ""
+                pool = None
+                try:
+                    tick_id = self.tick_id(block=block, address=hypervisor["pool"]["id"], baseLower=hypervisor["baseLower"], baseUpper=hypervisor["baseUpper"], limitLower=hypervisor["limitLower"], limitUpper=hypervisor["limitUpper"])
+                    pool = pool_data[tick_id]
+                except:
+                    continue
 
                 # add to structure
-                if not hypdta["id"] in data_by_hypervisor:
-                    data_by_hypervisor[hypdta["id"]] = [dict(),dict()] # init block , end block data 
+                if not hypervisor["id"] in data_by_hypervisor:
+                    data_by_hypervisor[hypervisor["id"]] = [dict(),dict()] # init block , end block data 
             
                 # convert types
-                hypdta = self._convert_dataTypes(hypdta)
+                hypervisor = self._convert_dataTypes(hypervisor)
                 
                 # add block and timestamp to hypervisor
-                hypdta["block"] = initial_block if block_index == 0 else current_block
-                hypdta["timestamp"] = initial_timestamp if block_index == 0 else current_timestamp
+                hypervisor["block"] = block
+                hypervisor["timestamp"] = self.raw_data["initial_timestamp"] if idx == 0 else self.raw_data["current_timestamp"]
 
                 # add usd prices
-                hypdta["token0_usd_price"],hypdta["token1_usd_price"] = self._calc_USD_prices(hypervisor=hypdta)
+                hypervisor["token0_usd_price"],hypervisor["token1_usd_price"] = self._calc_USD_prices(hypervisor=hypervisor)
 
                 
                 # get uncollected base fees
-                decimals_0 = int(hypdta["pool"]["token0"]["decimals"])
-                decimals_1 = int(hypdta["pool"]["token1"]["decimals"])
+                decimals_0 = int(hypervisor["pool"]["token0"]["decimals"])
+                decimals_1 = int(hypervisor["pool"]["token1"]["decimals"])
 
                 try:
                     base_fees_0, base_fees_1 = Fees.calc_fees(
-                        fee_growth_global_0=int(pooldta["pool"]["feeGrowthGlobal0X128"]),
-                        fee_growth_global_1=int(pooldta["pool"]["feeGrowthGlobal1X128"]),
-                        tick_current=int(pooldta["pool"]["tick"]),
-                        tick_lower=int(hypdta["baseLower"]),
-                        tick_upper=int(hypdta["baseUpper"]),
-                        fee_growth_outside_0_lower=int(pooldta["baseLower"][0]["feeGrowthOutside0X128"]),
-                        fee_growth_outside_1_lower=int(pooldta["baseLower"][0]["feeGrowthOutside1X128"]),
-                        fee_growth_outside_0_upper=int(pooldta["baseUpper"][0]["feeGrowthOutside0X128"]),
-                        fee_growth_outside_1_upper=int(pooldta["baseUpper"][0]["feeGrowthOutside1X128"]),
-                        liquidity=int(hypdta["baseLiquidity"]),
-                        fee_growth_inside_last_0=int(hypdta["baseFeeGrowthInside0LastX128"]),
-                        fee_growth_inside_last_1=int(hypdta["baseFeeGrowthInside1LastX128"]),
+                        fee_growth_global_0=int(pool["pool"]["feeGrowthGlobal0X128"]),
+                        fee_growth_global_1=int(pool["pool"]["feeGrowthGlobal1X128"]),
+                        tick_current=int(pool["pool"]["tick"]),
+                        tick_lower=int(hypervisor["baseLower"]),
+                        tick_upper=int(hypervisor["baseUpper"]),
+                        fee_growth_outside_0_lower=int(pool["baseLower"][0]["feeGrowthOutside0X128"]),
+                        fee_growth_outside_1_lower=int(pool["baseLower"][0]["feeGrowthOutside1X128"]),
+                        fee_growth_outside_0_upper=int(pool["baseUpper"][0]["feeGrowthOutside0X128"]),
+                        fee_growth_outside_1_upper=int(pool["baseUpper"][0]["feeGrowthOutside1X128"]),
+                        liquidity=int(hypervisor["baseLiquidity"]),
+                        fee_growth_inside_last_0=int(hypervisor["baseFeeGrowthInside0LastX128"]),
+                        fee_growth_inside_last_1=int(hypervisor["baseFeeGrowthInside1LastX128"]),
                     )
                     # convert
                     base_fees_0 /= 10**decimals_0
@@ -286,18 +269,18 @@ class ImpermanentData(YieldData):
                 # get uncollected limit fees
                 try:
                     limit_fees_0, limit_fees_1 = Fees.calc_fees(
-                        fee_growth_global_0=int(pooldta["pool"]["feeGrowthGlobal0X128"]),
-                        fee_growth_global_1=int(pooldta["pool"]["feeGrowthGlobal1X128"]),
-                        tick_current=int(pooldta["pool"]["tick"]),
-                        tick_lower=int(hypdta["limitLower"]),
-                        tick_upper=int(hypdta["limitUpper"]),
-                        fee_growth_outside_0_lower=int(pooldta["limitLower"][0]["feeGrowthOutside0X128"]),
-                        fee_growth_outside_1_lower=int(pooldta["limitLower"][0]["feeGrowthOutside1X128"]),
-                        fee_growth_outside_0_upper=int(pooldta["limitUpper"][0]["feeGrowthOutside0X128"]),
-                        fee_growth_outside_1_upper=int(pooldta["limitUpper"][0]["feeGrowthOutside1X128"]),
-                        liquidity=int(hypdta["limitLiquidity"]),
-                        fee_growth_inside_last_0=int(hypdta["limitFeeGrowthInside0LastX128"]),
-                        fee_growth_inside_last_1=int(hypdta["limitFeeGrowthInside1LastX128"]),
+                        fee_growth_global_0=int(pool["pool"]["feeGrowthGlobal0X128"]),
+                        fee_growth_global_1=int(pool["pool"]["feeGrowthGlobal1X128"]),
+                        tick_current=int(pool["pool"]["tick"]),
+                        tick_lower=int(hypervisor["limitLower"]),
+                        tick_upper=int(hypervisor["limitUpper"]),
+                        fee_growth_outside_0_lower=int(pool["limitLower"][0]["feeGrowthOutside0X128"]),
+                        fee_growth_outside_1_lower=int(pool["limitLower"][0]["feeGrowthOutside1X128"]),
+                        fee_growth_outside_0_upper=int(pool["limitUpper"][0]["feeGrowthOutside0X128"]),
+                        fee_growth_outside_1_upper=int(pool["limitUpper"][0]["feeGrowthOutside1X128"]),
+                        liquidity=int(hypervisor["limitLiquidity"]),
+                        fee_growth_inside_last_0=int(hypervisor["limitFeeGrowthInside0LastX128"]),
+                        fee_growth_inside_last_1=int(hypervisor["limitFeeGrowthInside1LastX128"]),
                     )
                     # convert
                     limit_fees_0 /= 10**decimals_0
@@ -308,12 +291,12 @@ class ImpermanentData(YieldData):
                     limit_fees_1 = 0
 
                 # set uncollected fees field
-                hypdta["uncollected_fees0"] = base_fees_0+limit_fees_0+hypdta["baseTokensOwed0"]+hypdta["limitTokensOwed0"]
-                hypdta["uncollected_fees1"] = base_fees_1+limit_fees_1+hypdta["baseTokensOwed1"]+hypdta["limitTokensOwed1"]
+                hypervisor["uncollected_fees0"] = base_fees_0+limit_fees_0+hypervisor["baseTokensOwed0"]+hypervisor["limitTokensOwed0"]
+                hypervisor["uncollected_fees1"] = base_fees_1+limit_fees_1+hypervisor["baseTokensOwed1"]+hypervisor["limitTokensOwed1"]
 
 
                 # add to structure
-                data_by_hypervisor[hypdta["id"]][block_index] = hypdta
+                data_by_hypervisor[hypervisor["id"]][idx] = hypervisor
 
 
 
@@ -364,8 +347,8 @@ class ImpermanentData(YieldData):
             # add to result
             all_data[hypervisor_id] = {
 
-                "id":hypervisor_id, # test field TODO: remove
-                "symbol_0":struct[0]["symbol"], # test field TODO: remove
+                "id":hypervisor_id,
+                "symbol":struct[0]["symbol"],
 
                 "blocks_passed":blocks_passed,
                 "seconds_passed":seconds_passed,
@@ -399,12 +382,7 @@ class ImpermanentData(YieldData):
                 }
 
 
-        self.data = {
-            "initial_block": initial_block,
-            "current_block": current_block,
-            "hype_data": all_data,
-        }
-
+        return all_data
 
 
    # HELPERs
@@ -460,6 +438,4 @@ class ImpermanentData(YieldData):
             token1_price = 0
         
         return token0_price*(10**decimals_0),token1_price*(10**decimals_1)
-
-
 
