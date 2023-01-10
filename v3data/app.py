@@ -17,7 +17,7 @@ from v3data.config import CHARTS_CACHE_TIMEOUT
 from v3data.pools import pools_from_symbol
 
 logging.basicConfig(
-    format="[%(asctime)s:%(levelname)s]:%(message)s",
+    format="[%(asctime)s:%(levelname)s:%(name)s]:%(message)s",
     datefmt="%Y/%m/%d %I:%M:%S",
     level=logging.INFO,
 )

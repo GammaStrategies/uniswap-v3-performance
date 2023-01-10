@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pandas as pd
 
@@ -6,6 +8,8 @@ from v3data.hypes.fees import Fees
 from v3data.hypes.fees_yield_data import YieldData
 
 YIELD_PER_DAY_MAX = 30
+
+logger = logging.getLogger(__name__)
 
 
 class FeesYield(YieldData):
@@ -20,7 +24,7 @@ class FeesYield(YieldData):
                 hypervisor_address, hypervisors
             )
 
-            # print(f"\n{symbol}: {hypervisor_address}")
+            logger.info((f"Processing {symbol}: {hypervisor_address}"))
             returns = self._calculate_returns(hype_data)
 
             if returns:
@@ -33,7 +37,7 @@ class FeesYield(YieldData):
         df_hype = pd.DataFrame(hype_data, dtype=np.float64)
 
         if df_hype.empty:
-            # print("Empty DataFrame")
+            logger.info("No hypervisor data - skipping calculations")
             return
 
         df_hype = df_hype.set_index("block").sort_index()
@@ -41,18 +45,7 @@ class FeesYield(YieldData):
         df_hype["fee0Growth"] = df_hype.totalFees0.diff().clip(lower=0)
         df_hype["fee1Growth"] = df_hype.totalFees1.diff().clip(lower=0)
 
-        # print(df_hype)
-
-        # df_hype = df_hype.iloc[1::2][
-        #     [
-        #         "fee0Growth",
-        #         "fee1Growth",
-        #         "price0",
-        #         "price1",
-        #         "tvlUSD",
-        #         "elapsedTime",
-        #     ]
-        # ]
+        logger.debug("\n\t" + df_hype.to_string().replace("\n", "\n\t"))
 
         df_hype["feeGrowthUSD"] = (
             df_hype.fee0Growth * df_hype.price0 + df_hype.fee1Growth * df_hype.price1
@@ -68,23 +61,26 @@ class FeesYield(YieldData):
         df_hype["totalPeriodSeconds"] = df_hype.elapsedTime.cumsum()
         df_hype["cumFeeReturn"] = (1 + df_hype.periodYield).cumprod() - 1
 
-        # print(
-        #     df_hype[
-        #         [
-        #             "feeGrowthUSD",
-        #             "tvlUSD",
-        #             "periodYield",
-        #             "yieldPerDay",
-        #             "totalPeriodSeconds",
-        #             "cumFeeReturn",
-        #         ]
-        #     ]
-        # )
+        logger.debug(
+            "\n\t"
+            + df_hype[
+                [
+                    "feeGrowthUSD",
+                    "tvlUSD",
+                    "periodYield",
+                    "yieldPerDay",
+                    "totalPeriodSeconds",
+                    "cumFeeReturn",
+                ]
+            ]
+            .to_string()
+            .replace("\n", "\n\t")
+        )
 
         df_returns = df_hype[["totalPeriodSeconds", "cumFeeReturn"]].tail(1)
 
         if df_returns.empty:
-            print("Empty returns")
+            logger.info("Empty returns")
             return
 
         # Extrapolate linearly to annual rate
