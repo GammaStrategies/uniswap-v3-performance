@@ -9,7 +9,7 @@ YIELD_PER_DAY_MAX = 30
 
 
 class FeesYield(YieldData):
-    async def output(self, get_data=True):
+    async def get_feesYield_data(self, get_data=True):
 
         if get_data:
             await self.get_data()
