@@ -412,7 +412,7 @@ class HypervisorInfo(HypervisorData):
         pools = self.pools_data
 
         fees_yield = FeesYield(1, self.protocol, self.chain)
-        fee_yield_output = await fees_yield.output(get_data=True)
+        fee_yield_output = await fees_yield.get_fees_yield(get_data=True)
 
         returns = {
             hypervisor: {

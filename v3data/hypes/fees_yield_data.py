@@ -265,8 +265,8 @@ class YieldData:
                     if tx_block < initial_block:
                         continue
 
-                    block_ts_map[tx_block] = tx["timestamp"]
-                    block_ts_map[tx_block_prev] = (
+                    block_ts_map[tx_block] = int(tx["timestamp"])
+                    block_ts_map[tx_block_prev] = int(
                         int(tx["timestamp"]) - BLOCK_TIME_SECONDS[self.chain]
                     )
 

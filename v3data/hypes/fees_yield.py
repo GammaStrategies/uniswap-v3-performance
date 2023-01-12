@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class FeesYield(YieldData):
-    async def output(self, get_data=True):
+    async def get_fees_yield(self, get_data=True):
 
         if get_data:
             await self.get_data()
