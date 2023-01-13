@@ -6,125 +6,63 @@ import asyncio
 import csv
 from pathlib import Path
 
+# force test environment
+#os.environ["MONGO_DB_URL"] = "mongodb://localhost:27027"
+
+
 # append parent directory pth
 CURRENT_FOLDER = os.path.dirname(os.path.realpath(__file__))
 PARENT_FOLDER = os.path.dirname(CURRENT_FOLDER)
 sys.path.append(PARENT_FOLDER)
 
-from dbdata import db_managers
-from v3data.constants import PROTOCOL_UNISWAP_V3
+from database import db_managers
+from database import db_queries
+from database.db_data_models import (
+    tool_mongodb_general,
+    tool_database_id,
+    hypervisor_return,
+    hypervisor_fees,
+    hypervisor_impermanent,
+    hypervisor_static,
+    pool,
+    token,
+)
+from v3data.constants import PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP
 
-# from v3data.common import hypervisor
-from v3data.hypes import impermanent_data, fees_yield
+from v3data import hypervisor
+from v3data import hypes
+
+from database.db_feeds import feed_db_with_returns, feed_db_with_static_hypInfo
 
 
-CHAIN = "mainnet"  # polygon
-mongo_srv_url = ""
-db_name = "gamma_v1"
-collections = {"static": {"id": True}, "returns": {"id": True}}
+logger = logging.getLogger(__name__)
 
 
-async def simulate_query():
 
-    # start time log
-    _startime = dt.datetime.utcnow()
+async def test_put_data_to_Mongodb():
 
-    block = timestamp = 0
-    result = dict()
-    for days in [1, 7, 30]:
-        # init
-        result[days] = dict()
+    for chain in ["mainnet", "optimism", "polygon", "arbitrum", "celo"]:
 
-        # add ilg to result
-        all_data = impermanent_data.ImpermanentDivergence(
-            period_days=days, protocol=PROTOCOL_UNISWAP_V3, chain=CHAIN
+        protocol = PROTOCOL_UNISWAP_V3
+
+        await asyncio.gather(
+            feed_db_with_returns(chain=chain, protocol=protocol),
+            feed_db_with_static_hypInfo(chain=chain, protocol=protocol),
         )
-        returns_data = await all_data.get_fees_yield()
-        imperm_data = await all_data.get_impermanent_data(get_data=False)
 
-        # get block n timestamp
-        block = all_data.data["current_block"]
-        timestamp = all_data._block_ts_map[block]
+        if chain == "polygon":
+            protocol = PROTOCOL_QUICKSWAP
+            await asyncio.gather(
+                feed_db_with_returns(chain=chain, protocol=protocol),
+                feed_db_with_static_hypInfo(chain=chain, protocol=protocol),
+            )
 
-        # fee yield data process
-        for k, v in returns_data.items():
-            if not k in result[days].keys():
-                result[days][k] = dict()
-                # no ilg data for this hypervisor
-                result[days][k]["id"] = f"{CHAIN}_{k}_{block}_{days}"
-                result[days][k]["chain"] = CHAIN
-                result[days][k]["period"] = days
-                result[days][k]["hypervisor_id"] = k
-                result[days][k]["symbol"] = v["symbol"]
-                result[days][k]["block"] = block
-                result[days][k]["timestamp"] = timestamp
-            result[days][k]["return"] = {
-                "feeApr": v["feeApr"],
-                "feeApy": v["feeApy"],
-                "hasOutlier": v["hasOutlier"],
-            }
+async def test_get_data_from_Mongo():
 
-        # impermanent data process
-        for k, v in imperm_data.items():
-            # only hypervisors with FeeYield data
-            if k in result[days].keys():
-                result[days][k]["ilg"] = {
-                    "vs_hodl_usd": v["vs_hodl_usd"],
-                    "vs_hodl_deposited": v["vs_hodl_deposited"],
-                    "vs_hodl_token0": v["vs_hodl_token0"],
-                    "vs_hodl_token1": v["vs_hodl_token1"],
-                }
-
-    # end time log
-    _timelapse = dt.datetime.utcnow() - _startime
-    print(
-        "         took {:,.2f} seconds to prepare items for database load".format(
-            _timelapse.total_seconds()
-        )
-    )
-
-    # start time log
-    _startime = dt.datetime.utcnow()
-    _items = 0
-
-    # create database manager/connector
-    db_connector = db_managers.MongoDbManager(
-        url=mongo_srv_url, db_name=db_name, collections=collections
-    )
-
-    # add item by item to database
-    for period, hypervisors in result.items():
-
-        for hyp_id, hyp in hypervisors.items():
-            # convert int to string ( mongo 8bit int)
-            # value = { k:str(v) for k,v in value.items()}
-            # add to mongodb
-            db_connector.add_item(coll_name="returns", item_id=hyp["id"], data=hyp)
-            _items += 1
-
-            # try add 2 times same data ( replacement test)
-            db_connector.add_item(coll_name="returns", item_id=hyp["id"], data=hyp)
-
-    # end time log
-    _timelapse = dt.datetime.utcnow() - _startime
-    print(
-        "         took {:,.2f} seconds to add {} items to the database".format(
-            _timelapse.total_seconds(), _items
-        )
-    )
+    for chain in ["mainnet", "optimism", "polygon", "arbitrum", "celo"]:
+        for period in [1,7,24]: # TODO: periodless
+            query = db_queries.db_returns_queries.hypervisors_average(chain, period)
 
 
-# TESTING
-if __name__ == "__main__":
-    # start time log
-    _startime = dt.datetime.utcnow()
 
-    asyncio.run(simulate_query())
-
-    # end time log
-    _timelapse = dt.datetime.utcnow() - _startime
-    print(
-        " took {:,.2f} seconds to complete the script".format(
-            _timelapse.total_seconds()
-        )
-    )
+asyncio.run(test_put_data_to_Mongodb())

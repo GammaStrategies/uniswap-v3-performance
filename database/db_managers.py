@@ -1,4 +1,8 @@
+import logging
 from pymongo import MongoClient
+from pymongo import errors as MongoErrors
+
+logger = logging.getLogger(__name__)
 
 
 class MongoDbManager:
@@ -19,8 +23,11 @@ class MongoDbManager:
                                }
         """
 
-        # define database var
-        mongo_client = MongoClient(url)
+        # connect to mongo database
+        try:
+            mongo_client = MongoClient(url)
+        except MongoErrors.ConnectionFailure:
+            raise Exception("Failed not connect to {}".format(url))
         self.database = mongo_client[db_name]
 
         # Retrieve database collection names
@@ -55,12 +62,40 @@ class MongoDbManager:
                 include_system_collections=False
             )
 
-    def add_item(self, coll_name: str, item_id: str, data: dict, upsert=True):
+    def add_item(self, coll_name: str, dbFilter: dict, data: dict, upsert=True):
         """Add or Update item
 
         Args:
            coll_name (str): collection name
-           item_id (str): id to be saved as
+           dbFilter (dict): filter to use as to replacement filter, like { address:<>, chain:<>}
+           data (dict): data to save
+           upsert (bool, optional): replace or add item. Defaults to True.
+
+        Raises:
+           ValueError: if coll_name is not defined at the class init <collections> field
+        """
+
+        # check collection configuration exists
+        if not coll_name in self.collections_config.keys():
+            raise ValueError(
+                f" No configuration found for {coll_name} database collection."
+            )
+        # create collection if it does not exist yet
+        self.create_collection(
+            coll_name=coll_name, **self.collections_config[coll_name]
+        )
+
+        # add/ update to database (add or replace)
+        self.database[coll_name].update_one(
+            filter=dbFilter, update={"$set": data}, upsert=True
+        )
+
+    def replace_item(self, coll_name: str, dbFilter: dict, data: dict, upsert=True):
+        """Add or Update item
+
+        Args:
+           coll_name (str): collection name
+           dbFilter (dict): filter to use as to replacement filter, like { address:<>, chain:<>}
            data (dict): data to save
            upsert (bool, optional): replace or add item. Defaults to True.
 
@@ -80,7 +115,7 @@ class MongoDbManager:
 
         # add/ update to database (add or replace)
         self.database[coll_name].replace_one(
-            filter={"id": item_id}, replacement=data, upsert=True
+            filter=dbFilter, replacement=data, upsert=True
         )
 
     def get_item(self, coll_name: str, **kwargs):
@@ -110,8 +145,6 @@ class MongoDbManager:
                                                        }
                                                }]
                                    allowDiskUse=<bool>
-
-
         """
 
         # build FIND result

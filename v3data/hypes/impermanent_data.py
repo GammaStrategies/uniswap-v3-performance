@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import timedelta
 
 from v3data import GammaClient, LlamaClient, UniswapV3Client
@@ -7,6 +8,8 @@ from v3data.hypes.fees import Fees
 from v3data.utils import timestamp_ago
 from v3data.constants import BLOCK_TIME_SECONDS
 from v3data.hypes.fees_yield import FeesYield
+
+logger = logging.getLogger(__name__)
 
 
 class ImpermanentDivergence(FeesYield):
@@ -193,7 +196,17 @@ class ImpermanentDivergence(FeesYield):
 
         response = await self.uniswap_client.query(pool_query, variables)
 
-        return response["data"]
+        if "errors" in response:
+            for error in response["errors"]:
+                logger.error(
+                    " Error while getting pool {} data at block {}.  Response fom thegraph:{}".format(
+                        pool_address, block, error["message"]
+                    )
+                )
+            return response
+        else:
+
+            return response["data"]
 
     async def get_impermanent_data(self, get_data=True):
 
@@ -399,6 +412,8 @@ class ImpermanentDivergence(FeesYield):
                             struct[0]["token1_usd_price"]
                             / struct[0]["token0_usd_price"]
                         )
+                        if struct[0]["token0_usd_price"] > 0
+                        else 0
                     )
                 ) / struct[0]["totalSupply"]
                 cur_hodl_token0 = (
@@ -409,6 +424,8 @@ class ImpermanentDivergence(FeesYield):
                             struct[1]["token1_usd_price"]
                             / struct[1]["token0_usd_price"]
                         )
+                        if struct[1]["token0_usd_price"] > 0
+                        else 0
                     )
                 ) / struct[1]["totalSupply"]
                 vs_hodl_token0 = (
@@ -426,6 +443,8 @@ class ImpermanentDivergence(FeesYield):
                             struct[0]["token0_usd_price"]
                             / struct[0]["token1_usd_price"]
                         )
+                        if struct[0]["token1_usd_price"] > 0
+                        else 0
                     )
                 ) / struct[0]["totalSupply"]
                 cur_hodl_token1 = (
@@ -436,6 +455,8 @@ class ImpermanentDivergence(FeesYield):
                             struct[1]["token0_usd_price"]
                             / struct[1]["token1_usd_price"]
                         )
+                        if struct[1]["token1_usd_price"] > 0
+                        else 0
                     )
                 ) / struct[1]["totalSupply"]
                 vs_hodl_token1 = (
@@ -512,15 +533,15 @@ class ImpermanentDivergence(FeesYield):
     def _calc_USD_prices(self, hypervisor: dict) -> tuple:
         """use conversion subgraph field to retrieve USD token prices
 
-         Args:
-           conversion (dict):  {   baseTokenIndex
-                                   priceTokenInBase
-                                   priceBaseInUSD
-                               }
+        Args:
+          conversion (dict):  {   baseTokenIndex
+                                  priceTokenInBase
+                                  priceBaseInUSD
+                              }
 
-         Returns:
-           tuple: token0 usd price ,token1 usd price
-         """
+        Returns:
+          tuple: token0 usd price ,token1 usd price
+        """
 
         decimals_0 = int(hypervisor["pool"]["token0"]["decimals"])
         decimals_1 = int(hypervisor["pool"]["token1"]["decimals"])
