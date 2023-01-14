@@ -21,7 +21,7 @@ MONGO_DB_URL = os.environ.get("MONGO_DB_URL")
 logging.basicConfig(
     format="[%(asctime)s:%(levelname)s:%(name)s]:%(message)s",
     datefmt="%Y/%m/%d %I:%M:%S",
-    level=logging.DEBUG,
+    level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
 
