@@ -4,7 +4,10 @@ from v3data.hypervisor import HypervisorInfo
 from v3data.toplevel import TopLevelData
 from v3data.hypes.fees import Fees
 from v3data.hypes.fees_yield import FeesYield
+from v3data.hypes.impermanent_data import ImpermanentDivergence
 
+from database.collection_returns import db_returns_manager
+from v3data.config import MONGO_DB_URL
 
 async def hypervisor_basic_stats(
     protocol: str, chain: str, hypervisor_address: str, response: Response
@@ -56,6 +59,19 @@ async def hypervisors_return(protocol: str, chain: str):
     return await hypervisor_info.all_returns()
 
 
+
+async def hypervisors_average_return(protocol: str, chain: str):
+    # TODO: protocol ¿?
+    average_returns_mngr = db_returns_manager(mongo_url=MONGO_DB_URL)
+    return await average_returns_mngr.get_hypervisors_average(chain=chain)
+
+
+async def hypervisor_average_return(protocol: str, chain: str, hypervisor_address: str):
+    # TODO: protocol ¿?
+    average_returns_mngr = db_returns_manager(mongo_url=MONGO_DB_URL)
+    return await average_returns_mngr.get_hypervisor_average(chain=chain, hypervisor_address=hypervisor_address)
+
+
 async def hypervisors_all(protocol: str, chain: str):
     hypervisor_info = HypervisorInfo(protocol, chain)
     return await hypervisor_info.all_data()
@@ -74,4 +90,9 @@ async def uncollected_fees_all(protocol: str, chain: str):
 async def fee_returns(protocol: str, chain: str, days: int):
     fees_yield = FeesYield(days, protocol, chain)
     output = await fees_yield.get_fees_yield()
+    return output
+
+async def impermanent_divergence(protocol: str, chain: str, days: int):
+    impermanent_manager = ImpermanentDivergence(period_days=days, protocol=protocol,chain=chain)
+    output = await impermanent_manager.get_impermanent_data()
     return output

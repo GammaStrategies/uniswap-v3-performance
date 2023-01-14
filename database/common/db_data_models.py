@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field, asdict, InitVar
 
+# database objects
+
 @dataclass
 class tool_mongodb_general:
 
@@ -111,34 +113,6 @@ class hypervisor_impermanent(tool_mongodb_general):
         self.vs_hodl_deposited = data["vs_hodl_deposited"]
         self.vs_hodl_token0 = data["vs_hodl_token0"]
         self.vs_hodl_token1 = data["vs_hodl_token1"]
-
-
-@dataclass
-class hypervisor_return(tool_mongodb_general,tool_database_id):
-    chain: str
-    period: str
-    address: str
-    symbol: str
-    block: int
-    timestamp: int
-    fees: hypervisor_fees = None
-    impermanent: hypervisor_impermanent = None
-
-    def create_id(self)->str:
-        return f"{self.chain}_{self.address}_{self.block}_{self.period}"
-
-
-@dataclass
-class hypervisor_static(tool_mongodb_general,tool_database_id):
-    chain: str
-    address: str
-    symbol: str
-    protocol: int
-    created: int
-    pool: pool
- 
-    def create_id(self)->str:
-        return f"{self.chain}_{self.address}"
 
 
 

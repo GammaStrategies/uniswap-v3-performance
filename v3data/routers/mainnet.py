@@ -86,6 +86,13 @@ async def hypervisor_apy(response: Response, hypervisor_address):
         PROTOCOL_UNISWAP_V3, CHAIN_MAINNET, hypervisor_address, response
     )
 
+# TODO: implement response 
+@router.get("/hypervisor/{hypervisor_address}/average_returns")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def hypervisor_average_apy(response: Response, hypervisor_address):
+    return await v3data.common.hypervisor.hypervisor_average_return(
+        protocol=PROTOCOL_UNISWAP_V3, chain=CHAIN_MAINNET, hypervisor_address=hypervisor_address
+    )
 
 @router.get("/hypervisor/{hypervisor_address}/uncollectedFees")
 async def hypervisor_uncollected_fees(hypervisor_address: str):
@@ -112,6 +119,13 @@ async def recent_fees(hours: int = 24):
 @cache(expire=APY_CACHE_TIMEOUT)
 async def hypervisors_return():
     return await v3data.common.hypervisor.hypervisors_return(
+        PROTOCOL_UNISWAP_V3, CHAIN_MAINNET
+    )
+
+@router.get("/hypervisors/average_returns")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def hypervisors_average_return():
+    return await v3data.common.hypervisor.hypervisors_average_return(
         PROTOCOL_UNISWAP_V3, CHAIN_MAINNET
     )
 
@@ -155,6 +169,27 @@ async def fee_returns_monthly():
     )
 
 
+@router.get("/hypervisors/impermanentDivergence/daily")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def impermanent_divergence_daily():
+    return await v3data.common.hypervisor.impermanent_divergence(
+        protocol=PROTOCOL_UNISWAP_V3, chain=CHAIN_MAINNET, days=1
+    )
+
+@router.get("/hypervisors/impermanentDivergence/weekly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def impermanent_divergence_weekly():
+    return await v3data.common.hypervisor.impermanent_divergence(
+        protocol=PROTOCOL_UNISWAP_V3, chain=CHAIN_MAINNET, days=7
+    )
+
+@router.get("/hypervisors/impermanentDivergence/monthly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def impermanent_divergence_monthly():
+    return await v3data.common.hypervisor.impermanent_divergence(
+        protocol=PROTOCOL_UNISWAP_V3, chain=CHAIN_MAINNET, days=30
+    )
+    
 @router.get("/allRewards")
 async def all_rewards():
     return await v3data.common.masterchef.info(

@@ -75,6 +75,7 @@ class YieldData:
 
         response = await self.gamma_client.query(query, variables)
 
+        # TODO: return the source of the query here, so response["data"]["uniswapV3Hypervisors"]
         return response
 
     async def _get_transition_data(self, period_days):

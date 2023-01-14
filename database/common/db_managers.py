@@ -25,21 +25,26 @@ class MongoDbManager:
 
         # connect to mongo database
         try:
-            mongo_client = MongoClient(url)
+            self.mongo_client = MongoClient(url)
         except MongoErrors.ConnectionFailure:
             raise Exception("Failed not connect to {}".format(url))
-        self.database = mongo_client[db_name]
+        self.database = self.mongo_client[db_name]
 
         # Retrieve database collection names
-        self.database_collections = self.database.list_collection_names(
-            include_system_collections=False
-        )
+        self.database_collections = self.database.list_collection_names()
 
         # define collection configurations
         self.collections_config = collections
 
         # Setup collections and their indexes
         self.configure_collections()
+    
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        # xception handling here
+        self.mongo_client.close()
 
     def configure_collections(self):
         """define collection names and create indexes"""
@@ -58,9 +63,8 @@ class MongoDbManager:
                 self.database[coll_name].create_index(field, unique=unique)
 
             # refresh database collection names
-            self.database_collections = self.database.list_collection_names(
-                include_system_collections=False
-            )
+            self.database_collections = self.database.list_collection_names()
+
 
     def add_item(self, coll_name: str, dbFilter: dict, data: dict, upsert=True):
         """Add or Update item
@@ -118,7 +122,7 @@ class MongoDbManager:
             filter=dbFilter, replacement=data, upsert=True
         )
 
-    def get_item(self, coll_name: str, **kwargs):
+    def get_items(self, coll_name: str, **kwargs):
         """get items cursor from database
 
         Args:
