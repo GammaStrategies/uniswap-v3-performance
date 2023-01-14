@@ -6,17 +6,12 @@ import logging
 import asyncio
 from aiocron import crontab
 
-# force test environment
-os.environ["MONGO_DB_URL"] = "mongodb://localhost:27072"
-
-
 from v3data.constants import PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP
 from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS
 
 from database.collection_returns import db_returns_manager
 from database.collection_static import db_static_manager
 
-MONGO_DB_URL = os.environ.get("MONGO_DB_URL")
 
 logging.basicConfig(
     format="[%(asctime)s:%(levelname)s:%(name)s]:%(message)s",
