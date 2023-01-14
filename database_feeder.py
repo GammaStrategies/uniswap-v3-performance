@@ -30,8 +30,8 @@ logger = logging.getLogger(__name__)
 PROTOCOLS = [PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP]
 CHAINS_PROTOCOLS = [
     (chain, protocol)
-    for chain in GAMMA_SUBGRAPH_URLS[protocol].keys()
     for protocol in PROTOCOLS
+    for chain in GAMMA_SUBGRAPH_URLS[protocol].keys()
 ]
 
 
