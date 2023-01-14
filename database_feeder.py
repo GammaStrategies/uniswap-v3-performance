@@ -99,10 +99,7 @@ async def feed_database_monthly_average_returns():
     await asyncio.gather(*requests)
 
 
-# loop.run_forever()
 
-# aiocron.crontab("1 0 * * *", func=feed_database_daily_average_returns, start=True, loop=loop)
-
-# future = asyncio.ensure_future(feed_database_daily_average_returns.next(), loop=loop)
-
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 asyncio.get_event_loop().run_forever()
