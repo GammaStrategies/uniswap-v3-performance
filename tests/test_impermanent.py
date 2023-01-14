@@ -30,7 +30,12 @@ from v3data.routers import mainnet,optimism,arbitrum,celo,polygon
 
 logger = logging.getLogger(__name__)
 
-
+async def test_impermanent_divergence(days, protocol:str=PROTOCOL_UNISWAP_V3, chain:str = "mainnet"):
+    
+    return await hypervisor.impermanent_divergence(
+        protocol=protocol, chain=chain, days=days
+    )
+    
 
 async def test_all_endpoints():
 
@@ -72,7 +77,8 @@ if __name__ == "__main__":
     # start time log
     _startime = dt.datetime.utcnow()
 
-    asyncio.run(test_all_endpoints())
+    data = asyncio.run(test_impermanent_divergence(days=1,protocol=PROTOCOL_UNISWAP_V3,chain="arbitrum"))
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))
+    po=""
