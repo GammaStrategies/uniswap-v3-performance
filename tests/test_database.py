@@ -39,12 +39,12 @@ async def test_put_data_to_Mongodb_v1():
     ]
 
     # return requests
-    returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
-    requests = [returns_manager.feed_db(chain=chain, protocol=protocol) for chain,protocol in chains_protocols]
+    # returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
+    # requests = [returns_manager.feed_db(chain=chain, protocol=protocol) for chain,protocol in chains_protocols]
     
     # static requests
     static_manager = db_static_manager(mongo_url=MONGO_DB_URL)
-    requests.extend([static_manager.feed_db(chain=chain, protocol=protocol) for chain,protocol in chains_protocols])
+    requests = [static_manager.feed_db(chain=chain, protocol=protocol) for chain,protocol in chains_protocols]
     
     # execute queries
     await asyncio.gather(*requests)
@@ -53,13 +53,10 @@ async def test_get_data_from_Mongodb_v1():
 
     chains = ["mainnet", "optimism", "polygon", "arbitrum", "celo"]
     
-    
-
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     result_requests = [ returns_manager.get_data(query=db_returns_manager.query_hypervisors_average(chain=chain)) for chain in ["mainnet", "optimism", "polygon", "arbitrum", "celo"]]
     result_responses = {chains[idx]:list(x) for idx,x in enumerate(await asyncio.gather(*result_requests))}
 
-    stop = "here"      
 
 async def test_get_data_from_Mongodb_v2():
 
@@ -72,7 +69,7 @@ async def test_get_data_from_Mongodb_v2():
         # start time log
         _startime = dt.datetime.utcnow()
 
-        await hypervisor.hypervisors_average_return(protocol, chain)
+        data_result = await hypervisor.hypervisors_average_return(protocol, chain)
         # end time log
         print("[{} {}]  took {} to get hypervisors return data".format(chain, protocol, get_timepassed_string(_startime)))
 

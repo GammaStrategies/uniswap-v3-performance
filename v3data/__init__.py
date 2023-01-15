@@ -29,6 +29,7 @@ class SubgraphClient:
             params = {"query": query, "variables": variables}
         else:
             params = {"query": query}
+        #TODO: error handling -> connection, result and others (httpcore.RemoteProtocolError) 
         response = await async_client.post(self._url, json=params)
         return response.json()
 

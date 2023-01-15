@@ -198,5 +198,5 @@ ALCHEMY_URLS = {
     "optimism": f"https://opt-mainnet.g.alchemy.com/v2/{os.environ.get('ALCHEMY_OPTIMISM_KEY', '')}",
 }
 
-MONGO_DB_URL = os.environ.get("MONGO_DB_URL")
+MONGO_DB_URL = os.environ.get("MONGO_DB_URL","mongodb://localhost:27072")
 

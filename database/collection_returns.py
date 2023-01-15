@@ -256,8 +256,25 @@ class db_returns_manager(db_collections_common):
                     }
                 },
                 {
+                    "$lookup": {
+                        "from": "static",
+                        "localField": "_id",
+                        "foreignField": "address",
+                        "as": "hypervisor",
+                    }
+                },
+                {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
+                {
                     "$replaceRoot": {
-                        "newRoot": {"$mergeObjects": [{"_id": "$_id"}, "$periods"]}
+                        "newRoot": {
+                            "$mergeObjects": [
+                                {"_id": "$_id"},
+                                {"address": "$hypervisor.address"},
+                                {"symbol": "$hypervisor.symbol"},
+                                {"pool": "$hypervisor.pool.address"},
+                                "$periods",
+                            ]
+                        }
                     }
                 },
             ]
@@ -375,8 +392,25 @@ class db_returns_manager(db_collections_common):
                     }
                 },
                 {
+                    "$lookup": {
+                        "from": "static",
+                        "localField": "_id",
+                        "foreignField": "address",
+                        "as": "hypervisor",
+                    }
+                },
+                {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
+                {
                     "$replaceRoot": {
-                        "newRoot": {"$mergeObjects": [{"_id": "$_id"}, "$periods"]}
+                        "newRoot": {
+                            "$mergeObjects": [
+                                {"_id": "$_id"},
+                                {"address": "$hypervisor.address"},
+                                {"symbol": "$hypervisor.symbol"},
+                                {"pool": "$hypervisor.pool.address"},
+                                "$periods",
+                            ]
+                        }
                     }
                 },
             ]

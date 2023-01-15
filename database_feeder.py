@@ -30,7 +30,7 @@ CHAINS_PROTOCOLS = [
 ]
 
 
-# every day 0 0 * * *
+# every day
 @crontab("0 0 * * *", start=True)
 async def feed_database_daily_average_returns():
     logger.debug(" Starting daily database feeding process for average results data")
