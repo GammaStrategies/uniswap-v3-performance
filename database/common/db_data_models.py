@@ -2,14 +2,15 @@ from dataclasses import dataclass, field, asdict, InitVar
 
 # database objects
 
+
 @dataclass
 class tool_mongodb_general:
-
-    def create_dbFilter(self)->dict:
+    def create_dbFilter(self) -> dict:
         return {}
 
-    def asdict(self)->dict:
+    def asdict(self) -> dict:
         return asdict(self)
+
 
 class tool_database_id:
     id: str = ""
@@ -18,18 +19,18 @@ class tool_database_id:
         if self.id == "":
             self.id = self.create_id()
 
-    def create_id(self)->str:
+    def create_id(self) -> str:
         return ""
 
 
 @dataclass
-class token(tool_mongodb_general,tool_database_id):
-    address:str
+class token(tool_mongodb_general, tool_database_id):
+    address: str
     symbol: int
     chain: str
     position: int
 
-    def create_id(self)->str:
+    def create_id(self) -> str:
         return f"{self.chain}_{self.address}"
 
     def _fill_fromDict(self, data: dict):
@@ -48,13 +49,13 @@ class token(tool_mongodb_general,tool_database_id):
 
 
 @dataclass
-class pool(tool_mongodb_general,tool_database_id):
-    address:str
+class pool(tool_mongodb_general, tool_database_id):
+    address: str
     chain: str
     fee: int
     tokens: list[token]
 
-    def create_id(self)->str:
+    def create_id(self) -> str:
         return f"{self.chain}_{self.address}"
 
     def _fill_fromDict(self, data: dict):
@@ -99,7 +100,6 @@ class hypervisor_impermanent(tool_mongodb_general):
     vs_hodl_token0: float = 0
     vs_hodl_token1: float = 0
 
-
     def _fill_fromDict(self, data: dict):
         """create class from dictionary
 
@@ -113,7 +113,3 @@ class hypervisor_impermanent(tool_mongodb_general):
         self.vs_hodl_deposited = data["vs_hodl_deposited"]
         self.vs_hodl_token0 = data["vs_hodl_token0"]
         self.vs_hodl_token1 = data["vs_hodl_token1"]
-
-
-
-

@@ -52,11 +52,7 @@ async def benchmark_chart(
     hypervisor_address: str, startDate: str = "", endDate: str = ""
 ):
     return await v3data.common.charts.benchmark_chart(
-        PROTOCOL_UNISWAP_V3,
-        CHAIN_CELO,
-        hypervisor_address,
-        startDate,
-        endDate
+        PROTOCOL_UNISWAP_V3, CHAIN_CELO, hypervisor_address, startDate, endDate
     )
 
 
@@ -135,11 +131,33 @@ async def fee_returns_monthly():
     )
 
 
+@router.get("/hypervisors/impermanentDivergence/daily")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def impermanent_divergence_daily():
+    return await v3data.common.hypervisor.impermanent_divergence(
+        protocol=PROTOCOL_UNISWAP_V3, chain=CHAIN_CELO, days=1
+    )
+
+
+@router.get("/hypervisors/impermanentDivergence/weekly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def impermanent_divergence_weekly():
+    return await v3data.common.hypervisor.impermanent_divergence(
+        protocol=PROTOCOL_UNISWAP_V3, chain=CHAIN_CELO, days=7
+    )
+
+
+@router.get("/hypervisors/impermanentDivergence/monthly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def impermanent_divergence_monthly():
+    return await v3data.common.hypervisor.impermanent_divergence(
+        protocol=PROTOCOL_UNISWAP_V3, chain=CHAIN_CELO, days=30
+    )
+
+
 @router.get("/user/{address}")
 async def user_data(address: str):
-    return await v3data.common.users.user_data(
-        PROTOCOL_UNISWAP_V3, CHAIN_CELO, address
-    )
+    return await v3data.common.users.user_data(PROTOCOL_UNISWAP_V3, CHAIN_CELO, address)
 
 
 @router.get("/vault/{address}")

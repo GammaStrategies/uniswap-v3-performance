@@ -38,7 +38,7 @@ class MongoDbManager:
 
         # Setup collections and their indexes
         self.configure_collections()
-    
+
     def __enter__(self):
         return self
 
@@ -64,7 +64,6 @@ class MongoDbManager:
 
             # refresh database collection names
             self.database_collections = self.database.list_collection_names()
-
 
     def add_item(self, coll_name: str, dbFilter: dict, data: dict, upsert=True):
         """Add or Update item

@@ -12,7 +12,6 @@ from database.common.db_data_models import (
 from database.collections_common import db_collections_common
 
 
-
 @dataclass
 class hypervisor_static(tool_mongodb_general, tool_database_id):
     chain: str

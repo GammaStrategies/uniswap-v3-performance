@@ -94,7 +94,6 @@ async def feed_database_monthly_average_returns():
     await asyncio.gather(*requests)
 
 
-
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 asyncio.get_event_loop().run_forever()

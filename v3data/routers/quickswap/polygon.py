@@ -132,6 +132,30 @@ async def fee_returns_monthly():
     )
 
 
+@router.get("/hypervisors/impermanentDivergence/daily")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def impermanent_divergence_daily():
+    return await v3data.common.hypervisor.impermanent_divergence(
+        protocol=PROTOCOL_QUICKSWAP, chain=CHAIN_POLYGON, days=1
+    )
+
+
+@router.get("/hypervisors/impermanentDivergence/weekly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def impermanent_divergence_weekly():
+    return await v3data.common.hypervisor.impermanent_divergence(
+        protocol=PROTOCOL_QUICKSWAP, chain=CHAIN_POLYGON, days=7
+    )
+
+
+@router.get("/hypervisors/impermanentDivergence/monthly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def impermanent_divergence_monthly():
+    return await v3data.common.hypervisor.impermanent_divergence(
+        protocol=PROTOCOL_QUICKSWAP, chain=CHAIN_POLYGON, days=30
+    )
+
+
 @router.get("/allRewards")
 async def all_rewards():
     return await v3data.common.masterchef.info(PROTOCOL_QUICKSWAP, CHAIN_POLYGON)
@@ -147,6 +171,7 @@ async def user_rewards(user_address):
     return await v3data.common.masterchef.user_rewards(
         PROTOCOL_QUICKSWAP, CHAIN_POLYGON, user_address
     )
+
 
 @router.get("/userRewards2/{user_address}")
 async def user_rewards_2(user_address):

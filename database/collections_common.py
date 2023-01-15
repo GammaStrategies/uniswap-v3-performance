@@ -10,14 +10,17 @@ logger = logging.getLogger(__name__)
 
 
 class db_collections_common:
-
-    def __init__(self, mongo_url:str, db_name:str="gamma_db_v1", db_collections:dict={"static": {"id": True}, "returns": {"id": True}}):
+    def __init__(
+        self,
+        mongo_url: str,
+        db_name: str = "gamma_db_v1",
+        db_collections: dict = {"static": {"id": True}, "returns": {"id": True}},
+    ):
         # TODO: -> currently hardcoding optional mongo database name and collections untill we have more usecases for the database model
-        
+
         self._db_mongo_url = mongo_url
         self._db_name = db_name
         self._db_collections = db_collections
-
 
     # actual db saving
     async def save_items_to_database(
@@ -34,8 +37,10 @@ class db_collections_common:
 
         # create database manager/connector
         with MongoDbManager(
-                url=self._db_mongo_url, db_name=self._db_name, collections=self._db_collections
-            ) as _db_manager:
+            url=self._db_mongo_url,
+            db_name=self._db_name,
+            collections=self._db_collections,
+        ) as _db_manager:
 
             # add item by item to database
             for key, item in data.items():
@@ -74,7 +79,9 @@ class db_collections_common:
         # create database manager/connector
         try:
             return MongoDbManager(
-                url=self._db_mongo_url, db_name=self._db_name, collections=self._db_collections
+                url=self._db_mongo_url,
+                db_name=self._db_name,
+                collections=self._db_collections,
             )
         except Exception as e:
             logger.exception(e)
@@ -85,10 +92,14 @@ class db_collections_common:
         self,
         query: list[dict],
         collection_name: str,
-    )->list:
-        #db_manager = self.create_db_manager()
+    ) -> list:
+        # db_manager = self.create_db_manager()
         with MongoDbManager(
-                url=self._db_mongo_url, db_name=self._db_name, collections=self._db_collections
-            ) as _db_manager:
-            result = list(_db_manager.get_items(coll_name=collection_name, aggregate=query))
+            url=self._db_mongo_url,
+            db_name=self._db_name,
+            collections=self._db_collections,
+        ) as _db_manager:
+            result = list(
+                _db_manager.get_items(coll_name=collection_name, aggregate=query)
+            )
         return result

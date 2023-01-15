@@ -101,7 +101,7 @@ class HypervisorData:
         """
         variables = {"timestamp_start": timestamp_ago(time_delta)}
         response = await self.gamma_client.query(query, variables)
-        
+
         # TODO: hardcoded hypervisor address matches more than one --> MAINNET(xPSDN-ETH1) and OPTIMISM(xUSDC-DAI05)
         # TODO: specify chain on hardcoded overrides
         for hypervisor in response["data"]["uniswapV3Hypervisors"]:
@@ -439,7 +439,7 @@ class HypervisorInfo(HypervisorData):
                     "feeApr": hypervisor_returns["feeApr"],
                     "feeApy": hypervisor_returns["feeApy"],
                 },
-                "hasOutlier": hypervisor_returns["hasOutlier"]
+                "hasOutlier": hypervisor_returns["hasOutlier"],
             }
             for hypervisor, hypervisor_returns in fee_yield_output.items()
         }

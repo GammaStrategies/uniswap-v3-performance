@@ -119,13 +119,11 @@ class ImpermanentDivergence(FeesYield):
             for error in response["errors"]:
                 logger.error(
                     "[{}-{}] Error while getting hypervisors data at block {}. Thegraph response:{}".format(
-                        self.chain, self.protocol,
-                        block, error["message"]
+                        self.chain, self.protocol, block, error["message"]
                     )
                 )
 
         return response
-
 
     async def get_impermanent_data(self, get_data=True):
 
@@ -282,13 +280,27 @@ class ImpermanentDivergence(FeesYield):
                 # hypervisor didnt exist at start block
                 # zero sum content
                 struct[0] = struct[1]
-                logger.warning(" [{}-{}] Data not available for hypervisor {} at initial block {} (Hypervisor exists at block?). Forcing 0 impermanent divergence".format(self.chain, self.protocol, hypervisor_id, self.data["initial_block"]))
+                logger.warning(
+                    " [{}-{}] Data not available for hypervisor {} at initial block {} (Hypervisor exists at block?). Forcing 0 impermanent divergence".format(
+                        self.chain,
+                        self.protocol,
+                        hypervisor_id,
+                        self.data["initial_block"],
+                    )
+                )
 
             elif len(struct[1].keys()) == 0:
                 # hypervisor has errors
                 # zero sum content
                 struct[1] = struct[0]
-                logger.warning(" [{}-{}] Data not available for hypervisor {} at end block {} . Forcing 0 impermanent divergence".format(self.chain, self.protocol, hypervisor_id, self.data["current_block"]))
+                logger.warning(
+                    " [{}-{}] Data not available for hypervisor {} at end block {} . Forcing 0 impermanent divergence".format(
+                        self.chain,
+                        self.protocol,
+                        hypervisor_id,
+                        self.data["current_block"],
+                    )
+                )
 
             # time passed
             blocks_passed = int(struct[1]["block"]) - int(struct[0]["block"])
