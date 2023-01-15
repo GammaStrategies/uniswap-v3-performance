@@ -81,4 +81,3 @@ if __name__ == "__main__":
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))
-    po=""
