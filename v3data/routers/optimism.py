@@ -20,9 +20,7 @@ def root():
 
 @router.get("/status/subgraph")
 async def subgraph_status():
-    return await v3data.common.subgraph_status(
-        PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM
-    )
+    return await v3data.common.subgraph_status(PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM)
 
 
 @router.get("/charts/bollingerbands/{poolAddress}")
@@ -53,11 +51,7 @@ async def benchmark_chart(
     hypervisor_address: str, startDate: str = "", endDate: str = ""
 ):
     return await v3data.common.charts.benchmark_chart(
-        PROTOCOL_UNISWAP_V3,
-        CHAIN_OPTIMISM,
-        hypervisor_address,
-        startDate,
-        endDate
+        PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM, hypervisor_address, startDate, endDate
     )
 
 
@@ -139,14 +133,24 @@ async def fee_returns_monthly():
 
 @router.get("/allRewards")
 async def all_rewards():
-    return await v3data.common.masterchef.info(
-        PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM
-    )
+    return await v3data.common.masterchef.info(PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM)
+
+
+@router.get("/allRewards2")
+async def all_rewards_2():
+    return await v3data.common.masterchef_v2.info(PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM)
 
 
 @router.get("/userRewards/{user_address}")
 async def user_rewards(user_address):
     return await v3data.common.masterchef.user_rewards(
+        PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM, user_address
+    )
+
+
+@router.get("/userRewards2/{user_address}")
+async def user_rewards_2(user_address):
+    return await v3data.common.masterchef_v2.user_rewards(
         PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM, user_address
     )
 
