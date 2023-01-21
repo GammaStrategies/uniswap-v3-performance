@@ -2,6 +2,19 @@ import datetime
 from v3data.constants import BLOCK_TIME_SECONDS
 
 
+# historic used var
+STATIC_DATETIME_UTCNOW = None
+
+
+def __datetime_utcnow() -> datetime.datetime:
+    if STATIC_DATETIME_UTCNOW:
+        # return defined datetime
+        return STATIC_DATETIME_UTCNOW
+
+    # return current datetime
+    return datetime.datetime.utcnow()
+
+
 def timestamp_to_date(timestamp, format=None):
     """Converts UNIX timestamp to ISO date"""
     dt = datetime.datetime.utcfromtimestamp(timestamp)
@@ -33,7 +46,7 @@ def date_to_timestamp(date):
 def timestamp_ago(time_delta):
     """Returns timestamp of time_delta ago from now in UTC"""
     return int(
-        (datetime.datetime.utcnow() - time_delta)
+        (__datetime_utcnow() - time_delta)
         .replace(tzinfo=datetime.timezone.utc)
         .timestamp()
     )
@@ -60,12 +73,14 @@ def tick_to_priceDecimal(tick, token0_decimal, token1_decimal):
 def sub_in_256(x, y):
     difference = x - y
     if difference < 0:
-        difference += 2 ** 256
+        difference += 2**256
 
     return difference
 
 
-def estimate_block_from_timestamp_diff(chain, current_block, current_timestamp, initial_timestamp):
+def estimate_block_from_timestamp_diff(
+    chain, current_block, current_timestamp, initial_timestamp
+):
     ts_diff = current_timestamp - initial_timestamp
     block_diff = ts_diff // BLOCK_TIME_SECONDS[chain]
 

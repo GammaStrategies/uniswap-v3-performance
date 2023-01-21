@@ -29,8 +29,20 @@ CHAINS_PROTOCOLS = [
     for chain in GAMMA_SUBGRAPH_URLS[protocol].keys()
 ]
 
+# set cron vars
+EXPR_FORMATS = {
+    "daily": "0 0 * * *",
+    "weekly": "2 0 * * mon",
+    "monthly": "5 0 * * mon#1",
+}
+EXPR_PERIODS = {
+    "daily": [1],
+    "weekly": [7],
+    "monthly": [30],
+}
 
-#
+
+# cron job func
 async def feed_database_average_returns(periods: list, process_quickswap=True):
     logger.debug(" Starting database feeding process for average results data")
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
@@ -54,33 +66,63 @@ async def feed_database_average_returns(periods: list, process_quickswap=True):
     await asyncio.gather(*requests)
 
 
-# create event loop
-loop = asyncio.new_event_loop()
+async def feed_database_with_historic_data(
+    from_datetime: datetime, process_quickswap=False
+):
+    """Fill database with historic
 
-# set cron vars
-expr_formats = {
-    "daily": "0 0 * * *",
-    "weekly": "2 0 * * mon",
-    "monthly": "5 0 * * mon#1",
-}
-expr_periods = {
-    "daily": [1],
-    "weekly": [7],
-    "monthly": [30],
-}
-crons = {}
+    Args:
+        from_datetime (datetime): like datetime(2022, 12, 1, 0, 0, tzinfo=dt.timezone.utc)
+    """
 
-# create cron jobs ( utc timezone )
-for period, cron_ex_format in expr_formats.items():
-    crons[period] = crontab(
-        cron_ex_format,
-        func=feed_database_average_returns,
-        args=[expr_periods[period], True],
-        loop=loop,
-        start=True,
-        tz=dt.timezone.utc,
-    )
+    last_time = datetime.utcnow()
 
-# run forever
-asyncio.set_event_loop(loop)
-asyncio.get_event_loop().run_forever()
+    for period, cron_ex_format in EXPR_FORMATS.items():
+        # create croniter
+        c_iter = croniter(expr_format=cron_ex_format, start_time=from_datetime)
+        current_timestamp = c_iter.get_next(start_time=from_datetime.timestamp())
+
+        # set utils now
+        utils.static_datetime_utcnow = datetime.utcfromtimestamp(current_timestamp)
+        last_timestamp = last_time.timestamp()
+        while last_timestamp > current_timestamp:
+            print(" ")
+            print(
+                " Feeding {} database at  {:%Y-%m-%d  %H:%M:%S}  ".format(
+                    period, datetime.utcfromtimestamp(current_timestamp)
+                )
+            )
+            print(" ")
+
+            # database feed
+            await feed_database_average_returns(
+                periods=EXPR_PERIODS[period], process_quickswap=process_quickswap
+            )
+
+            # set next timestamp
+            current_timestamp = c_iter.get_next(start_time=current_timestamp)
+
+            # set utils now
+            utils.static_datetime_utcnow = datetime.utcfromtimestamp(current_timestamp)
+
+
+if __name__ == "__main__":
+
+    # create event loop
+    loop = asyncio.new_event_loop()
+
+    # create cron jobs ( utc timezone )
+    crons = {}
+    for period, cron_ex_format in EXPR_FORMATS.items():
+        crons[period] = crontab(
+            cron_ex_format,
+            func=feed_database_average_returns,
+            args=[EXPR_PERIODS[period], True],
+            loop=loop,
+            start=True,
+            tz=dt.timezone.utc,
+        )
+
+    # run forever
+    asyncio.set_event_loop(loop)
+    asyncio.get_event_loop().run_forever()
