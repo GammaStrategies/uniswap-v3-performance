@@ -79,7 +79,7 @@ async def feed_database_with_historic_data(
     """Fill database with historic
 
     Args:
-        from_datetime (datetime): like datetime(2022, 12, 1, 0, 0, tzinfo=dt.timezone.utc)
+        from_datetime (datetime): like datetime(2022, 12, 1, 0, 0, tzinfo=timezone.utc)
     """
 
     last_time = datetime.utcnow()
@@ -187,7 +187,7 @@ if __name__ == "__main__":
                 args=[EXPR_PERIODS[period], True],
                 loop=loop,
                 start=True,
-                tz=dt.timezone.utc,
+                tz=timezone.utc,
             )
 
         # run forever
