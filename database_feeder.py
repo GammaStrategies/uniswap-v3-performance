@@ -2,9 +2,14 @@
 #   Script to update mongoDb with periodic data
 #
 import os
+import sys
+import getopt
 import logging
 import asyncio
 from aiocron import crontab
+
+from croniter import croniter
+from datetime import datetime, timezone
 
 from v3data.constants import PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP
 from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS
@@ -106,23 +111,83 @@ async def feed_database_with_historic_data(
             utils.static_datetime_utcnow = datetime.utcfromtimestamp(current_timestamp)
 
 
+def convert_commandline_arguments(argv) -> dict:
+    """converts command line arguments to a dictionary of those
+
+    Arguments:
+       argv {} --
+
+    Returns:
+       dict --
+    """
+
+    # GET COMMAND LINE ARGUMENTS
+    prmtrs = dict()  # the parameters we will pass to simulation creation
+    prmtrs["historic"] = False
+
+    try:
+        opts, args = getopt.getopt(argv, "hs:", ["start=", "historic"])
+    except getopt.GetoptError as err:
+        print("             <filename>.py <options>")
+        print("Options:")
+        print(" -s <start date> or --start=<start date>")
+        print(" ")
+        print(" ")
+        print(" ")
+        print("to feed database with current data  (infinite loop):")
+        print("             <filename>.py")
+        print("to feed database with historic data: (no quickswap)")
+        print("             <filename>.py -h")
+        print("             <filename>.py -s <start date as %Y-%m-%d>")
+        print("error message: {}".format(err.msg))
+        print("opt message: {}".format(err.opt))
+        sys.exit(2)
+
+    # loop and retrieve each command
+    for opt, arg in opts:
+        if opt in ("-s", "start="):
+            # todo: check if it is a date
+            prmtrs["from_datetime"] = datetime.strptime(arg, "%Y-%m-%d")
+            prmtrs["historic"] = True
+        elif opt in ("-h", "historic"):
+            prmtrs["historic"] = True
+    return prmtrs
+
+
 if __name__ == "__main__":
 
-    # create event loop
-    loop = asyncio.new_event_loop()
+    # convert command line arguments to dict variables
+    cml_parameters = convert_commandline_arguments(sys.argv[1:])
 
-    # create cron jobs ( utc timezone )
-    crons = {}
-    for period, cron_ex_format in EXPR_FORMATS.items():
-        crons[period] = crontab(
-            cron_ex_format,
-            func=feed_database_average_returns,
-            args=[EXPR_PERIODS[period], True],
-            loop=loop,
-            start=True,
-            tz=dt.timezone.utc,
+    if cml_parameters["historic"]:
+        # historic feed
+        from_datetime = cml_parameters.get(
+            "from_datetime", datetime(2022, 12, 1, 0, 0, tzinfo=timezone.utc)
         )
+        # TODO: add quickswap command line args
+        asyncio.run(
+            feed_database_with_historic_data(
+                from_datetime=from_datetime, process_quickswap=False
+            )
+        )
+    else:
+        # actual feed
 
-    # run forever
-    asyncio.set_event_loop(loop)
-    asyncio.get_event_loop().run_forever()
+        # create event loop
+        loop = asyncio.new_event_loop()
+
+        # create cron jobs ( utc timezone )
+        crons = {}
+        for period, cron_ex_format in EXPR_FORMATS.items():
+            crons[period] = crontab(
+                cron_ex_format,
+                func=feed_database_average_returns,
+                args=[EXPR_PERIODS[period], True],
+                loop=loop,
+                start=True,
+                tz=dt.timezone.utc,
+            )
+
+        # run forever
+        asyncio.set_event_loop(loop)
+        asyncio.get_event_loop().run_forever()
