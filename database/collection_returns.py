@@ -108,7 +108,6 @@ class db_returns_manager(db_collections_common):
 
         await asyncio.gather(*requests)
 
-
     async def get_data(self, query: list[dict]):
         return self.get_items_from_database(
             query=query, collection_name=self.db_collection_name
@@ -134,152 +133,14 @@ class db_returns_manager(db_collections_common):
         Args:
             chain (str): _description_
             period (int, optional): _description_. Defaults to 0.
+            protocol (str)
+            hypervisor_address (str)
 
         Returns:
             list[dict]:
-            when querying with period != 0
-                { "_id" = hypervisor address, "min_timestamp", "max_timestamp", "min_block", "max_block", "av_feeApr", "av_feeApy",
-                    "av_imp_vs_hodl_usd", "av_imp_vs_hodl_deposited", "av_imp_vs_hodl_token0", "av_imp_vs_hodl_token1", "items" = items used to build result}
-
-            when querying with period=0
-                { "_id" = hypervisor address, "periods": { ... }  }
+                { "_id" = hypervisor address, "hipervisor":{ ... }, "periods": { ... }  }
 
         """
-        # setmatch vars
-        _match = {"chain": chain}
-        if period != 0:
-            _match["period"] = period
-        if hypervisor_address != "":
-            _match["address"] = hypervisor_address
-        if protocol != "":
-            _match["address"] = hypervisor_address
-
-        # return query
-        if period != 0:
-            return [
-                {"$match": _match},
-                {"$sort": {"block": 1}},
-                {
-                    "$project": {
-                        "address": "$address",
-                        "timestamp": "$timestamp",
-                        "block": "$block",
-                        "feeApr": "$fees.feeApr",
-                        "feeApy": "$fees.feeApy",
-                        "imp_vs_hodl_usd": "$impermanent.vs_hodl_usd",
-                        "imp_vs_hodl_deposited": "$impermanent.vs_hodl_deposited",
-                        "imp_vs_hodl_token0": "$impermanent.vs_hodl_token0",
-                        "imp_vs_hodl_token1": "$impermanent.vs_hodl_token1",
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": "$address",
-                        "min_timestamp": {"$min": "$timestamp"},
-                        "max_timestamp": {"$max": "$timestamp"},
-                        "min_block": {"$min": "$block"},
-                        "max_block": {"$max": "$block"},
-                        "av_feeApr": {"$avg": "$feeApr"},
-                        "av_feeApy": {"$avg": "$feeApy"},
-                        "av_imp_vs_hodl_usd": {"$avg": "$imp_vs_hodl_usd"},
-                        "av_imp_vs_hodl_deposited": {"$avg": "$imp_vs_hodl_deposited"},
-                        "av_imp_vs_hodl_token0": {"$avg": "$imp_vs_hodl_token0"},
-                        "av_imp_vs_hodl_token1": {"$avg": "$imp_vs_hodl_token1"},
-                    }
-                },
-            ]
-        else:
-            return [
-                {"$match": _match},
-                {"$sort": {"block": 1}},
-                {
-                    "$project": {
-                        "period": "$period",
-                        "address": "$address",
-                        "timestamp": "$timestamp",
-                        "block": "$block",
-                        "feeApr": "$fees.feeApr",
-                        "feeApy": "$fees.feeApy",
-                        "imp_vs_hodl_usd": "$impermanent.vs_hodl_usd",
-                        "imp_vs_hodl_deposited": "$impermanent.vs_hodl_deposited",
-                        "imp_vs_hodl_token0": "$impermanent.vs_hodl_token0",
-                        "imp_vs_hodl_token1": "$impermanent.vs_hodl_token1",
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": {"address": "$address", "period": "$period"},
-                        "min_timestamp": {"$min": "$timestamp"},
-                        "max_timestamp": {"$max": "$timestamp"},
-                        "min_block": {"$min": "$block"},
-                        "max_block": {"$max": "$block"},
-                        "av_feeApr": {"$avg": "$feeApr"},
-                        "av_feeApy": {"$avg": "$feeApy"},
-                        "av_imp_vs_hodl_usd": {"$avg": "$imp_vs_hodl_usd"},
-                        "av_imp_vs_hodl_deposited": {"$avg": "$imp_vs_hodl_deposited"},
-                        "av_imp_vs_hodl_token0": {"$avg": "$imp_vs_hodl_token0"},
-                        "av_imp_vs_hodl_token1": {"$avg": "$imp_vs_hodl_token1"},
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": "$_id.address",
-                        "periods": {
-                            "$push": {
-                                "k": {"$toString": "$_id.period"},
-                                "v": {
-                                    "period": "$_id.period",
-                                    "min_timestamp": "$min_timestamp",
-                                    "max_timestamp": "$max_timestamp",
-                                    "min_block": "$min_block",
-                                    "max_block": "$max_block",
-                                    "av_feeApr": "$av_feeApr",
-                                    "av_feeApy": "$av_feeApy",
-                                    "av_imp_vs_hodl_usd": "$av_imp_vs_hodl_usd",
-                                    "av_imp_vs_hodl_deposited": "$av_imp_vs_hodl_deposited",
-                                    "av_imp_vs_hodl_token0": "$av_imp_vs_hodl_token0",
-                                    "av_imp_vs_hodl_token1": "$av_imp_vs_hodl_token1",
-                                },
-                            },
-                        },
-                    }
-                },
-                {
-                    "$project": {
-                        "_id": "$_id",
-                        "periods": {"$arrayToObject": "$periods"},
-                    }
-                },
-                {
-                    "$lookup": {
-                        "from": "static",
-                        "localField": "_id",
-                        "foreignField": "address",
-                        "as": "hypervisor",
-                    }
-                },
-                {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
-                {
-                    "$replaceRoot": {
-                        "newRoot": {
-                            "$mergeObjects": [
-                                {"_id": "$_id"},
-                                {"address": "$hypervisor.address"},
-                                {"symbol": "$hypervisor.symbol"},
-                                {"pool": "$hypervisor.pool.address"},
-                                "$periods",
-                            ]
-                        }
-                    }
-                },
-            ]
-
-    @staticmethod
-    def _query_hypervisors_average_debug(
-        chain: str, period: int = 0, protocol:str="", hypervisor_address: str = ""
-    ) -> list[dict]:
-        """get all average returns from collection, including the details of items behind the calculations"""
-
         # setmatch vars
         _match = {"chain": chain}
         if period != 0:
@@ -291,95 +152,101 @@ class db_returns_manager(db_collections_common):
 
         # return query
         return [
-                {
-                    "$lookup": {
-                        "from": "static",
-                        "localField": "address",
-                        "foreignField": "address",
-                        "as": "hypervisor",
-                    }
-                },
-                {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
-                {"$match": _match},
-                {"$sort": {"block": 1}},
-                {
-                    "$project": {
-                        "period": "$period",
-                        "address": "$address",
-                        "timestamp": "$timestamp",
-                        "block": "$block",
-                        "feeApr": "$fees.feeApr",
-                        "feeApy": "$fees.feeApy",
-                        "imp_vs_hodl_usd": "$impermanent.vs_hodl_usd",
-                        "imp_vs_hodl_deposited": "$impermanent.vs_hodl_deposited",
-                        "imp_vs_hodl_token0": "$impermanent.vs_hodl_token0",
-                        "imp_vs_hodl_token1": "$impermanent.vs_hodl_token1",
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": {"address": "$address", "period": "$period"},
-                        "items": {"$push": "$$ROOT"},
-                        "min_timestamp": {"$min": "$timestamp"},
-                        "max_timestamp": {"$max": "$timestamp"},
-                        "min_block": {"$min": "$block"},
-                        "max_block": {"$max": "$block"},
-                        "av_feeApr": {"$avg": "$feeApr"},
-                        "av_feeApy": {"$avg": "$feeApy"},
-                        "av_imp_vs_hodl_usd": {"$avg": "$imp_vs_hodl_usd"},
-                        "av_imp_vs_hodl_deposited": {"$avg": "$imp_vs_hodl_deposited"},
-                        "av_imp_vs_hodl_token0": {"$avg": "$imp_vs_hodl_token0"},
-                        "av_imp_vs_hodl_token1": {"$avg": "$imp_vs_hodl_token1"},
-                    }
-                },
-                {
-                    "$group": {
-                        "_id": "$_id.address",
-                        "periods": {
-                            "$push": {
-                                "k": {"$toString": "$_id.period"},
-                                "v": {
-                                    "period": "$_id.period",
-                                    "items": "$items",
-                                    "min_timestamp": "$min_timestamp",
-                                    "max_timestamp": "$max_timestamp",
-                                    "min_block": "$min_block",
-                                    "max_block": "$max_block",
-                                    "av_feeApr": "$av_feeApr",
-                                    "av_feeApy": "$av_feeApy",
-                                    "av_imp_vs_hodl_usd": "$av_imp_vs_hodl_usd",
-                                    "av_imp_vs_hodl_deposited": "$av_imp_vs_hodl_deposited",
-                                    "av_imp_vs_hodl_token0": "$av_imp_vs_hodl_token0",
-                                    "av_imp_vs_hodl_token1": "$av_imp_vs_hodl_token1",
-                                },
+            {
+                "$lookup": {
+                    "from": "static",
+                    "localField": "address",
+                    "foreignField": "address",
+                    "as": "hypervisor",
+                }
+            },
+            {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
+            {"$match": _match},
+            {"$sort": {"block": 1}},
+            {
+                "$project": {
+                    "period": "$period",
+                    "address": "$address",
+                    "timestamp": "$timestamp",
+                    "block": "$block",
+                    "feeApr": "$fees.feeApr",
+                    "feeApy": "$fees.feeApy",
+                    "imp_vs_hodl_usd": "$impermanent.vs_hodl_usd",
+                    "imp_vs_hodl_deposited": "$impermanent.vs_hodl_deposited",
+                    "imp_vs_hodl_token0": "$impermanent.vs_hodl_token0",
+                    "imp_vs_hodl_token1": "$impermanent.vs_hodl_token1",
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"address": "$address", "period": "$period"},
+                    "min_timestamp": {"$min": "$timestamp"},
+                    "max_timestamp": {"$max": "$timestamp"},
+                    "min_block": {"$min": "$block"},
+                    "max_block": {"$max": "$block"},
+                    "av_feeApr": {"$avg": "$feeApr"},
+                    "av_feeApy": {"$avg": "$feeApy"},
+                    "av_imp_vs_hodl_usd": {"$avg": "$imp_vs_hodl_usd"},
+                    "av_imp_vs_hodl_deposited": {"$avg": "$imp_vs_hodl_deposited"},
+                    "av_imp_vs_hodl_token0": {"$avg": "$imp_vs_hodl_token0"},
+                    "av_imp_vs_hodl_token1": {"$avg": "$imp_vs_hodl_token1"},
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$_id.address",
+                    "periods": {
+                        "$push": {
+                            "k": {"$toString": "$_id.period"},
+                            "v": {
+                                "period": "$_id.period",
+                                "min_timestamp": "$min_timestamp",
+                                "max_timestamp": "$max_timestamp",
+                                "min_block": "$min_block",
+                                "max_block": "$max_block",
+                                "av_feeApr": "$av_feeApr",
+                                "av_feeApy": "$av_feeApy",
+                                "av_imp_vs_hodl_usd": "$av_imp_vs_hodl_usd",
+                                "av_imp_vs_hodl_deposited": "$av_imp_vs_hodl_deposited",
+                                "av_imp_vs_hodl_token0": "$av_imp_vs_hodl_token0",
+                                "av_imp_vs_hodl_token1": "$av_imp_vs_hodl_token1",
                             },
                         },
+                    },
+                }
+            },
+            {
+                "$project": {
+                    "_id": "$_id",
+                    "periods": {"$arrayToObject": "$periods"},
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "static",
+                    "localField": "_id",
+                    "foreignField": "address",
+                    "as": "hypervisor",
+                }
+            },
+            {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
+            {
+                "$replaceRoot": {
+                    "newRoot": {
+                        "$mergeObjects": [
+                            {"_id": "$_id"},
+                            {
+                                "hypervisor": {
+                                    "symbol": "$hypervisor.symbol",
+                                    "address": "$hypervisor.address",
+                                    "chain": "$hypervisor.chain",
+                                    "pool": "$hypervisor.pool",
+                                    "protocol": "$hypervisor.protocol",
+                                }
+                            },
+                            {"returns": "$periods"},
+                        ]
                     }
-                },
-                {
-                    "$project": {
-                        "_id": "$_id",
-                        "periods": {"$arrayToObject": "$periods"},
-                    }
-                },
-                {
-                    "$lookup": {
-                        "from": "static",
-                        "localField": "_id",
-                        "foreignField": "address",
-                        "as": "hypervisor",
-                    }
-                },
-                {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
-                {
-                    "$replaceRoot": {
-                        "newRoot": {
-                            "$mergeObjects": [
-                                {"_id": "$_id"},
-                                {"hypervisor": "$hypervisor"},
-                                {"returns": "$periods"},
-                            ]
-                        }
-                    }
-                },
-            ]
+                }
+            },
+        ]
