@@ -11,6 +11,8 @@ from aiocron import crontab
 from croniter import croniter
 from datetime import datetime, timezone
 
+from v3data import utils
+
 from v3data.constants import PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP
 from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS
 
@@ -88,7 +90,7 @@ async def feed_database_with_historic_data(
         current_timestamp = c_iter.get_next(start_time=from_datetime.timestamp())
 
         # set utils now
-        utils.static_datetime_utcnow = datetime.utcfromtimestamp(current_timestamp)
+        utils.STATIC_DATETIME_UTCNOW = datetime.utcfromtimestamp(current_timestamp)
         last_timestamp = last_time.timestamp()
         while last_timestamp > current_timestamp:
             print(" ")
@@ -108,7 +110,7 @@ async def feed_database_with_historic_data(
             current_timestamp = c_iter.get_next(start_time=current_timestamp)
 
             # set utils now
-            utils.static_datetime_utcnow = datetime.utcfromtimestamp(current_timestamp)
+            utils.STATIC_DATETIME_UTCNOW = datetime.utcfromtimestamp(current_timestamp)
 
 
 def convert_commandline_arguments(argv) -> dict:
