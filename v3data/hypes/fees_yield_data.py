@@ -213,7 +213,7 @@ class YieldData:
 
         response = await self.uniswap_client.query(pool_query, variables)
 
-        return response["data"]
+        return response.get("data", {})
 
     async def _get_block_timestamps(self):
         initial_timestamp = timestamp_ago(timedelta(days=self.period_days))
@@ -331,7 +331,7 @@ class YieldData:
                 response["limitUpper"][0]["tickIdx"] if response["limitUpper"] else 0,
             ): response
             for index, response in enumerate(pool_responses)
-            if response.get("pool", {}).get("id")
+            if response.get("pool", {}) and response.get("pool", {}).get("id")
         }
 
     async def get_data(self):
