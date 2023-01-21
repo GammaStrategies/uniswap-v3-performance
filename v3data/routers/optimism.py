@@ -70,6 +70,17 @@ async def hypervisor_apy(response: Response, hypervisor_address):
     )
 
 
+# TODO: implement response
+@router.get("/hypervisor/{hypervisor_address}/averageReturns")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def hypervisor_average_apy(response: Response, hypervisor_address):
+    return await v3data.common.hypervisor.hypervisor_average_return(
+        protocol=PROTOCOL_UNISWAP_V3,
+        chain=CHAIN_OPTIMISM,
+        hypervisor_address=hypervisor_address,
+    )
+
+
 @router.get("/hypervisor/{hypervisor_address}/uncollectedFees")
 async def hypervisor_uncollected_fees(hypervisor_address: str):
     return await v3data.common.hypervisor.uncollected_fees(
@@ -88,6 +99,14 @@ async def aggregate_stats():
 @cache(expire=APY_CACHE_TIMEOUT)
 async def hypervisors_return():
     return await v3data.common.hypervisor.hypervisors_return(
+        PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM
+    )
+
+
+@router.get("/hypervisors/averageReturns")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def hypervisors_average_return():
+    return await v3data.common.hypervisor.hypervisors_average_return(
         PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM
     )
 
