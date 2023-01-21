@@ -1,12 +1,5 @@
-import asyncio
 import logging
-from datetime import timedelta
-
-from v3data import GammaClient, LlamaClient, UniswapV3Client
 from v3data.hypes.fees import Fees
-
-from v3data.utils import timestamp_ago
-from v3data.constants import BLOCK_TIME_SECONDS
 from v3data.hypes.fees_yield import FeesYield
 
 logger = logging.getLogger(__name__)

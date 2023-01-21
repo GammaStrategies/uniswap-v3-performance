@@ -81,7 +81,7 @@ async def hypervisor_apy(response: Response, hypervisor_address):
 
 
 # TODO: implement response
-@router.get("/hypervisor/{hypervisor_address}/average_returns")
+@router.get("/hypervisor/{hypervisor_address}/averageReturns")
 @cache(expire=APY_CACHE_TIMEOUT)
 async def hypervisor_average_apy(response: Response, hypervisor_address):
     return await v3data.common.hypervisor.hypervisor_average_return(
@@ -120,7 +120,7 @@ async def hypervisors_return():
     )
 
 
-@router.get("/hypervisors/average_returns")
+@router.get("/hypervisors/averageReturns")
 @cache(expire=APY_CACHE_TIMEOUT)
 async def hypervisors_average_return():
     return await v3data.common.hypervisor.hypervisors_average_return(

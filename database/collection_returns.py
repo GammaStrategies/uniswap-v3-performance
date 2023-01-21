@@ -95,7 +95,7 @@ class db_returns_manager(db_collections_common):
 
     async def feed_db(self, chain: str, protocol: str, periods: list[int] = [1, 7, 30]):
 
-        # TODO: replace hardcoded days list
+        # TODO: replace hardcoded periods list
         requests = [
             self.save_items_to_database(
                 data=await self.create_data(
@@ -108,13 +108,6 @@ class db_returns_manager(db_collections_common):
 
         await asyncio.gather(*requests)
 
-        # for days in [1, 7, 30]:
-        #     await self.save_items_to_database(
-        #         data=await self.create_data(
-        #             chain=chain, protocol=protocol, period_days=days
-        #         ),
-        #         collection_name=self.db_collection_name,
-        #     )
 
     async def get_data(self, query: list[dict]):
         return self.get_items_from_database(
@@ -134,7 +127,7 @@ class db_returns_manager(db_collections_common):
     # TODO: use a limited number of items back? ( $limit )
     @staticmethod
     def query_hypervisors_average(
-        chain: str, period: int = 0, hypervisor_address: str = ""
+        chain: str, period: int = 0, protocol: str = "", hypervisor_address: str = ""
     ) -> list[dict]:
         """get all average returns from collection
 
@@ -157,6 +150,8 @@ class db_returns_manager(db_collections_common):
         if period != 0:
             _match["period"] = period
         if hypervisor_address != "":
+            _match["address"] = hypervisor_address
+        if protocol != "":
             _match["address"] = hypervisor_address
 
         # return query
@@ -281,7 +276,7 @@ class db_returns_manager(db_collections_common):
 
     @staticmethod
     def _query_hypervisors_average_debug(
-        chain: str, period: int = 0, hypervisor_address: str = ""
+        chain: str, period: int = 0, protocol:str="", hypervisor_address: str = ""
     ) -> list[dict]:
         """get all average returns from collection, including the details of items behind the calculations"""
 
@@ -291,44 +286,20 @@ class db_returns_manager(db_collections_common):
             _match["period"] = period
         if hypervisor_address != "":
             _match["address"] = hypervisor_address
+        if protocol != "":
+            _match["hypervisor.protocol"] = protocol
 
         # return query
-        if period != 0:
-            return [
-                {"$match": _match},
-                {"$sort": {"block": 1}},
+        return [
                 {
-                    "$project": {
-                        "address": "$address",
-                        "timestamp": "$timestamp",
-                        "block": "$block",
-                        "feeApr": "$fees.feeApr",
-                        "feeApy": "$fees.feeApy",
-                        "imp_vs_hodl_usd": "$impermanent.vs_hodl_usd",
-                        "imp_vs_hodl_deposited": "$impermanent.vs_hodl_deposited",
-                        "imp_vs_hodl_token0": "$impermanent.vs_hodl_token0",
-                        "imp_vs_hodl_token1": "$impermanent.vs_hodl_token1",
+                    "$lookup": {
+                        "from": "static",
+                        "localField": "address",
+                        "foreignField": "address",
+                        "as": "hypervisor",
                     }
                 },
-                {
-                    "$group": {
-                        "_id": "$address",
-                        "items": {"$push": "$$ROOT"},
-                        "min_timestamp": {"$min": "$timestamp"},
-                        "max_timestamp": {"$max": "$timestamp"},
-                        "min_block": {"$min": "$block"},
-                        "max_block": {"$max": "$block"},
-                        "av_feeApr": {"$avg": "$feeApr"},
-                        "av_feeApy": {"$avg": "$feeApy"},
-                        "av_imp_vs_hodl_usd": {"$avg": "$imp_vs_hodl_usd"},
-                        "av_imp_vs_hodl_deposited": {"$avg": "$imp_vs_hodl_deposited"},
-                        "av_imp_vs_hodl_token0": {"$avg": "$imp_vs_hodl_token0"},
-                        "av_imp_vs_hodl_token1": {"$avg": "$imp_vs_hodl_token1"},
-                    }
-                },
-            ]
-        else:
-            return [
+                {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
                 {"$match": _match},
                 {"$sort": {"block": 1}},
                 {
@@ -405,10 +376,8 @@ class db_returns_manager(db_collections_common):
                         "newRoot": {
                             "$mergeObjects": [
                                 {"_id": "$_id"},
-                                {"address": "$hypervisor.address"},
-                                {"symbol": "$hypervisor.symbol"},
-                                {"pool": "$hypervisor.pool.address"},
-                                "$periods",
+                                {"hypervisor": "$hypervisor"},
+                                {"returns": "$periods"},
                             ]
                         }
                     }
