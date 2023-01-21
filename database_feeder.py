@@ -30,27 +30,9 @@ CHAINS_PROTOCOLS = [
 ]
 
 
-# every day
-@crontab("0 0 * * *", start=True)
-async def feed_database_daily_average_returns():
-    logger.debug(" Starting daily database feeding process for average results data")
-    periods = [1]
-    returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
-    requests = [
-        returns_manager.feed_db(
-            chain=chain, protocol=PROTOCOL_UNISWAP_V3, periods=periods
-        )
-        for chain, procol in CHAINS_PROTOCOLS
-    ]
-
-    await asyncio.gather(*requests)
-
-
-# every week
-@crontab("2 0 * * mon", start=True)
-async def feed_database_weekly_average_returns():
-    logger.debug(" Starting weekly database feeding process for average results data")
-    periods = [7]
+#
+async def feed_database_average_returns(periods: list, process_quickswap=True):
+    logger.debug(" Starting database feeding process for average results data")
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     requests = [
         returns_manager.feed_db(
@@ -58,42 +40,47 @@ async def feed_database_weekly_average_returns():
         )
         for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_UNISWAP_V3].keys()
     ]
-    requests.extend(
-        [
-            returns_manager.feed_db(
-                chain=chain, protocol=PROTOCOL_QUICKSWAP, periods=periods
-            )
-            for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_QUICKSWAP].keys()
-        ]
-    )
 
-    await asyncio.gather(*requests)
-
-
-# every month
-@crontab("5 0 * * mon#1", start=True)
-async def feed_database_monthly_average_returns():
-    logger.debug(" Starting monthly database feeding process for average results data")
-    periods = [30]
-    returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
-    requests = [
-        returns_manager.feed_db(
-            chain=chain, protocol=PROTOCOL_UNISWAP_V3, periods=periods
+    if process_quickswap:
+        requests.extend(
+            [
+                returns_manager.feed_db(
+                    chain=chain, protocol=PROTOCOL_QUICKSWAP, periods=periods
+                )
+                for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_QUICKSWAP].keys()
+            ]
         )
-        for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_UNISWAP_V3].keys()
-    ]
-    requests.extend(
-        [
-            returns_manager.feed_db(
-                chain=chain, protocol=PROTOCOL_QUICKSWAP, periods=periods
-            )
-            for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_QUICKSWAP].keys()
-        ]
-    )
 
     await asyncio.gather(*requests)
 
 
+# create event loop
 loop = asyncio.new_event_loop()
+
+# set cron vars
+expr_formats = {
+    "daily": "0 0 * * *",
+    "weekly": "2 0 * * mon",
+    "monthly": "5 0 * * mon#1",
+}
+expr_periods = {
+    "daily": [1],
+    "weekly": [7],
+    "monthly": [30],
+}
+crons = {}
+
+# create cron jobs ( utc timezone )
+for period, cron_ex_format in expr_formats.items():
+    crons[period] = crontab(
+        cron_ex_format,
+        func=feed_database_average_returns,
+        args=[expr_periods[period], True],
+        loop=loop,
+        start=True,
+        tz=dt.timezone.utc,
+    )
+
+# run forever
 asyncio.set_event_loop(loop)
 asyncio.get_event_loop().run_forever()
