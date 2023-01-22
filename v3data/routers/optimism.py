@@ -179,6 +179,11 @@ async def all_rewards():
     return await v3data.common.masterchef.info(PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM)
 
 
+@router.get("/allRewards2")
+async def all_rewards_2():
+    return await v3data.common.masterchef_v2.info(PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM)
+
+
 @router.get("/userRewards/{user_address}")
 async def user_rewards(user_address):
     return await v3data.common.masterchef.user_rewards(

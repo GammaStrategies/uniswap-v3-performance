@@ -20,6 +20,7 @@ CURRENT_FOLDER = os.path.dirname(os.path.realpath(__file__))
 PARENT_FOLDER = os.path.dirname(CURRENT_FOLDER)
 sys.path.append(PARENT_FOLDER)
 
+
 from v3data.constants import PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP
 from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS
 
@@ -110,6 +111,7 @@ def get_timepassed_string(start_time: dt.datetime) -> str:
 if __name__ == "__main__":
     # start time log
     _startime = dt.datetime.utcnow()
+
 
     asyncio.run(test_get_data_from_Mongodb_v2())
 
