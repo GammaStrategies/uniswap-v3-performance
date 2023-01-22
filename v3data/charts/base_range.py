@@ -18,7 +18,7 @@ BASE_TOKEN_PRIORITY = {
 
 # Priority value if neither tokens are base_tokens
 NONE_PRIORITY = 9999
-
+# TODO: xplain override
 OVERRIDE_TS = [1625162739, 1625332777, 1627458476]
 
 

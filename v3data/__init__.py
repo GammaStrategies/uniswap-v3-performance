@@ -33,7 +33,16 @@ class SubgraphClient:
         #                                                         ssl.SSLError:   [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure
         #
         response = await async_client.post(self._url, json=params)
-        return response.json()
+        if response.status_code != 204 and response.headers[
+            "content-type"
+        ].strip().startswith("application/json"):
+            try:
+                return response.json()
+            except ValueError:
+                # TODO: error handling
+                pass
+
+        return {}
 
     async def paginate_query(self, query, paginate_variable, variables={}):
 
