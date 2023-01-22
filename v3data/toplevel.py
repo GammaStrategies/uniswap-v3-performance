@@ -158,7 +158,7 @@ class TopLevelData:
         data, gamma_prices = await asyncio.gather(
             self.get_recent_rebalance_data(hours), token_price("GAMMA")
         )
-        gamma_price_usd = gamma_prices["gamma_in_usdc"]
+        gamma_price_usd = gamma_prices["token_in_usdc"]
         df_fees = DataFrame(data, dtype=np.float64)
 
         df_fees["grossFeesGAMMA"] = df_fees.grossFeesUSD / gamma_price_usd
