@@ -67,10 +67,13 @@ class pool(tool_mongodb_general, tool_database_id):
         Returns:
             _type_: _description_
         """
-        self.address = data["feeApr"]
-        self.chain = data["feeApy"]
-        self.fee = data["hasOutlier"]
-        self.tokens = []
+        self.address = data["address"]
+        self.chain = data["chain"]
+        self.fee = data["fee"]
+        self.tokens = [
+            token(x["address"], x["symbol"], x["chain"], x["position"])
+            for x in data["tokens"]
+        ]
 
 
 @dataclass
