@@ -1,9 +1,12 @@
 import asyncio
+import logging
 from datetime import timedelta
 
 from v3data import GammaClient, DexFeeGrowthClient, LlamaClient
 from v3data.utils import timestamp_ago, estimate_block_from_timestamp_diff
 from v3data.constants import BLOCK_TIME_SECONDS
+
+logger = logging.getLogger(__name__)
 
 
 class YieldData:
@@ -213,6 +216,21 @@ class YieldData:
 
         response = await self.uniswap_client.query(pool_query, variables)
 
+        # log errors
+        if "errors" in response:
+            for error in response["errors"]:
+                logger.error(
+                    "[{}-{}] Error while getting {} pool data at block {}. Thegraph response:{}".format(
+                        self.chain, self.protocol, pool_address, block, error["message"]
+                    )
+                )
+        elif not "data" in response:
+            logger.warning(
+                "[{}-{}] No pool data found for {} at block {}.".format(
+                    self.chain, self.protocol, pool_address, block
+                )
+            )
+
         return response.get("data", {})
 
     async def _get_block_timestamps(self):
@@ -306,33 +324,129 @@ class YieldData:
             for hypervisor in hypervisors
         ]
 
-        pool_requests = [
-            self._get_pool_data_at_block(
-                int(params["block"]),
-                params["hypervisor"]["pool"]["id"],
-                params["hypervisor"]["baseLower"],
-                params["hypervisor"]["baseUpper"],
-                params["hypervisor"]["limitLower"],
-                params["hypervisor"]["limitUpper"],
-            )
-            for params in pool_query_params
-            if params["hypervisor"].get("pool", {}).get("id")
-        ]
+        # init and fill pool data requests
+        pool_requests = list()
+        for params in pool_query_params:
+            if not "pool" in params["hypervisor"]:
+                logger.error(
+                    "[{}-{}] No pool data found for hypervisor {} ({}) while building requests.".format(
+                        self.chain,
+                        self.protocol,
+                        params["hypervisor"]["symbol"],
+                        params["hypervisor"]["id"],
+                    )
+                )
+            elif not "id" in params["hypervisor"]["pool"]:
+                logger.error(
+                    "[{}-{}] No pool id found for hypervisor {} ({}) while building requests.".format(
+                        self.chain,
+                        self.protocol,
+                        params["hypervisor"]["symbol"],
+                        params["hypervisor"]["id"],
+                    )
+                )
+            else:
+                # add request
+                pool_requests.append(
+                    self._get_pool_data_at_block(
+                        int(params["block"]),
+                        params["hypervisor"]["pool"]["id"],
+                        params["hypervisor"]["baseLower"],
+                        params["hypervisor"]["baseUpper"],
+                        params["hypervisor"]["limitLower"],
+                        params["hypervisor"]["limitUpper"],
+                    )
+                )
 
+        # retrieve responses
         pool_responses = await asyncio.gather(*pool_requests)
 
-        self._pool_data = {
-            self.tick_id(
-                pool_query_params[index]["block"],
-                response["pool"]["id"],
-                response["baseLower"][0]["tickIdx"] if response["baseLower"] else 0,
-                response["baseUpper"][0]["tickIdx"] if response["baseUpper"] else 0,
-                response["limitLower"][0]["tickIdx"] if response["limitLower"] else 0,
-                response["limitUpper"][0]["tickIdx"] if response["limitUpper"] else 0,
-            ): response
-            for index, response in enumerate(pool_responses)
-            if response.get("pool", {}) and response.get("pool", {}).get("id")
-        }
+        # init and fill pool data
+        self._pool_data = dict()
+        for index, response in enumerate(pool_responses):
+
+            if "errors" in response:
+                for error in response["errors"]:
+                    try:
+                        err_hypervisor_id = pool_query_params[index]["hypervisor"]["id"]
+                        err_hypervisor_name = pool_query_params[index]["hypervisor"][
+                            "symbol"
+                        ]
+                        logger.error(
+                            "[{}-{}] Error while getting pool data for hypervisor {} ({}). Thegraph response:{}".format(
+                                self.chain,
+                                self.protocol,
+                                err_hypervisor_name,
+                                err_hypervisor_id,
+                                error["message"],
+                            )
+                        )
+                    except:
+                        logger.error(
+                            "[{}-{}] Error while getting pool data. Thegraph response:{}".format(
+                                self.chain, self.protocol, error["message"]
+                            )
+                        )
+            elif not "pool" in response:
+                try:
+                    err_hypervisor_id = pool_query_params[index]["hypervisor"]["id"]
+                    err_hypervisor_name = pool_query_params[index]["hypervisor"][
+                        "symbol"
+                    ]
+                    logger.error(
+                        "[{}-{}] No pool data found for hypervisor {} ({}).".format(
+                            self.chain,
+                            self.protocol,
+                            err_hypervisor_name,
+                            err_hypervisor_id,
+                        )
+                    )
+                except:
+                    logger.error(
+                        "[{}-{}] No pool data found for hypervisor's query parameters index num. {}".format(
+                            self.chain, self.protocol, index
+                        )
+                    )
+            elif not "id" in response["pool"]:
+                try:
+                    err_hypervisor_id = pool_query_params[index]["hypervisor"]["id"]
+                    err_hypervisor_name = pool_query_params[index]["hypervisor"][
+                        "symbol"
+                    ]
+                    logger.error(
+                        "[{}-{}] No pool id found for hypervisor {} ({}).".format(
+                            self.chain,
+                            self.protocol,
+                            err_hypervisor_name,
+                            err_hypervisor_id,
+                        )
+                    )
+                except:
+                    logger.error(
+                        "[{}-{}] No pool id found for hypervisor's query parameters index num. {}".format(
+                            self.chain, self.protocol, index
+                        )
+                    )
+            else:
+                # add to pool
+                self._pool_data[
+                    self.tick_id(
+                        pool_query_params[index]["block"],
+                        response["pool"]["id"],
+                        response["baseLower"][0]["tickIdx"]
+                        if response["baseLower"]
+                        else 0,
+                        response["baseUpper"][0]["tickIdx"]
+                        if response["baseUpper"]
+                        else 0,
+                        response["limitLower"][0]["tickIdx"]
+                        if response["limitLower"]
+                        else 0,
+                        response["limitUpper"][0]["tickIdx"]
+                        if response["limitUpper"]
+                        else 0,
+                    )
+                ] = response
 
     async def get_data(self):
         # Get transition data to identify blocks for making time-travel query
