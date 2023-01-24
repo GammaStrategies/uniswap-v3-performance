@@ -3,8 +3,7 @@ import os
 import datetime as dt
 import logging
 import asyncio
-import csv
-from pathlib import Path
+
 
 logging.basicConfig(
     format="[%(asctime)s:%(levelname)s:%(name)s]:%(message)s",

@@ -3,8 +3,7 @@ import os
 import datetime as dt
 import logging
 import asyncio
-import csv
-from pathlib import Path
+
 
 # force test environment
 # os.environ["MONGO_DB_URL"] = "mongodb://localhost:27072"
@@ -27,6 +26,7 @@ from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS
 from database.collection_returns import db_returns_manager
 from database.collection_static import db_static_manager
 from v3data.common import hypervisor
+import database_feeder
 
 logger = logging.getLogger(__name__)
 
@@ -41,18 +41,28 @@ async def test_put_data_to_Mongodb_v1():
     ]
 
     # return requests
-    # returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
-    # requests = [returns_manager.feed_db(chain=chain, protocol=protocol) for chain,protocol in chains_protocols]
-
-    # static requests
-    static_manager = db_static_manager(mongo_url=MONGO_DB_URL)
+    returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     requests = [
-        static_manager.feed_db(chain=chain, protocol=protocol)
+        returns_manager.feed_db(chain=chain, protocol=protocol)
         for chain, protocol in chains_protocols
     ]
 
+    # static requests
+    # static_manager = db_static_manager(mongo_url=MONGO_DB_URL)
+    # requests = [
+    #    static_manager.feed_db(chain=chain, protocol=protocol)
+    #    for chain, protocol in chains_protocols
+    # ]
+
     # execute queries
     await asyncio.gather(*requests)
+
+
+async def test_put_historicData_to_Mongodb():
+    await database_feeder.feed_database_with_historic_data(
+        from_datetime=dt.datetime(2022, 10, 1, 0, 0, tzinfo=dt.timezone.utc),
+        process_quickswap=False,
+    )
 
 
 async def test_get_data_from_Mongodb_v1():
@@ -112,8 +122,7 @@ if __name__ == "__main__":
     # start time log
     _startime = dt.datetime.utcnow()
 
-
-    asyncio.run(test_get_data_from_Mongodb_v2())
+    asyncio.run(test_put_historicData_to_Mongodb())
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))
