@@ -40,7 +40,7 @@ async def test_put_data_to_Mongodb_v1():
         for chain in GAMMA_SUBGRAPH_URLS[protocol].keys()
     ]
 
-    # return requests
+    return requests
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     requests = [
         returns_manager.feed_db(chain=chain, protocol=protocol)
@@ -48,20 +48,33 @@ async def test_put_data_to_Mongodb_v1():
     ]
 
     # static requests
-    # static_manager = db_static_manager(mongo_url=MONGO_DB_URL)
-    # requests = [
-    #    static_manager.feed_db(chain=chain, protocol=protocol)
-    #    for chain, protocol in chains_protocols
-    # ]
+    static_manager = db_static_manager(mongo_url=MONGO_DB_URL)
+    requests = [
+        static_manager.feed_db(chain=chain, protocol=protocol)
+        for chain, protocol in chains_protocols
+    ]
 
     # execute queries
     await asyncio.gather(*requests)
 
 
 async def test_put_historicData_to_Mongodb():
+
+    # force period
+    database_feeder.EXPR_FORMATS = {
+        "daily": "0 0 * * *",
+        "weekly": "2 0 * * mon",
+        "monthly": "5 0 * * mon#1",
+    }
+    database_feeder.EXPR_PERIODS = {
+        "daily": [1],
+        "weekly": [7],
+        "monthly": [30],
+    }
+
     await database_feeder.feed_database_with_historic_data(
-        from_datetime=dt.datetime(2022, 10, 1, 0, 0, tzinfo=dt.timezone.utc),
-        process_quickswap=False,
+        from_datetime=dt.datetime(2023, 1, 1, 0, 0, tzinfo=dt.timezone.utc),
+        process_quickswap=True,
     )
 
 
