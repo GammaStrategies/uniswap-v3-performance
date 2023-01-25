@@ -112,6 +112,9 @@ async def feed_database_with_historic_data(
             # set utils now
             utils.STATIC_DATETIME_UTCNOW = datetime.utcfromtimestamp(current_timestamp)
 
+    # reset utils now
+    utils.STATIC_DATETIME_UTCNOW = None
+
 
 def convert_commandline_arguments(argv) -> dict:
     """converts command line arguments to a dictionary of those
