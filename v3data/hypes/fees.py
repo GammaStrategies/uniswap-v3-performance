@@ -270,10 +270,10 @@ class Fees(FeesData):
         ) / X128
 
         # apply filter to result
-        return calc_fees_filter(uncollectedFees_0, uncollectedFees_1)
+        return Fees.calc_fees_filter(uncollectedFees_0, uncollectedFees_1)
 
     @staticmethod
-    def calc_fees_filter(fees_0: int, fees_1: int) -> tuple:
+    def calc_fees_filter(fees_0, fees_1) -> tuple:
         """Filter weird uncollected fees figures applying a true/false weirdness using a maximum value.
             Zero fees are returned if found weird.
 
@@ -289,8 +289,6 @@ class Fees(FeesData):
         if fees_0 >= maximum_value or fees_1 >= maximum_value:
             logger.warning(
                 " Fee filter applied to 0: {}   1: {}. Forcing 0 fees".format(
-                    self.chain,
-                    self.protocol,
                     fees_0,
                     fees_1,
                 )
