@@ -1,5 +1,6 @@
 import httpx
 from web3 import Web3
+import logging
 
 from v3data.config import (
     ALCHEMY_URLS,
@@ -15,6 +16,7 @@ from v3data.config import (
 
 from v3data import abi
 
+logger = logging.getLogger(__name__)
 async_client = httpx.AsyncClient(timeout=180)
 
 
@@ -39,9 +41,18 @@ class SubgraphClient:
             try:
                 return response.json()
             except ValueError:
-                # TODO: error handling
-                pass
+                logger.error(
+                    " Unexpected error while converting response to json: resp.text: {} ".format(
+                        response.text,
+                    )
+                )
 
+        logger.warning(
+            " Unexpected response code {} received  resp.text: {} ".format(
+                response.status_code,
+                response.text,
+            )
+        )
         return {}
 
     async def paginate_query(self, query, paginate_variable, variables={}):
