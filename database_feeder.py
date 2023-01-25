@@ -74,17 +74,25 @@ async def feed_database_average_returns(periods: list, process_quickswap=True):
 
 
 async def feed_database_with_historic_data(
-    from_datetime: datetime, process_quickswap=False
+    from_datetime: datetime, process_quickswap=False, periods=[]
 ):
     """Fill database with historic
 
     Args:
         from_datetime (datetime): like datetime(2022, 12, 1, 0, 0, tzinfo=timezone.utc)
+        process_quickswap (bool): should quickswap protocol be included ?
+        periods (list): list of periods as ["daily", "weekly", "monthly"]
     """
 
     last_time = datetime.utcnow()
 
-    for period, cron_ex_format in EXPR_FORMATS.items():
+    # define periods when empty
+    if len(periods) == 0:
+        periods = EXPR_PERIODS
+
+    for period in periods:
+        cron_ex_format = EXPR_FORMATS[period]
+
         # create croniter
         c_iter = croniter(expr_format=cron_ex_format, start_time=from_datetime)
         current_timestamp = c_iter.get_next(start_time=from_datetime.timestamp())
