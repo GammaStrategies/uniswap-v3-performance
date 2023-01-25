@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from v3data import GammaClient, DexFeeGrowthClient, LlamaClient
 from v3data.utils import timestamp_ago, estimate_block_from_timestamp_diff
@@ -244,9 +244,17 @@ class YieldData:
         )
 
         if not current_block:
+            # could not get block number from Llama. Calculate it.
+            blocks_passed = (
+                datetime.utcnow().timestamp() - current_timestamp
+            ) // BLOCK_TIME_SECONDS[self.chain]
             current_block = (
-                int(self._transition_data["_meta"]["block"]["number"])
-                - self.delay_buffer_seconds // BLOCK_TIME_SECONDS[self.chain]
+                int(self._transition_data["_meta"]["block"]["number"]) - blocks_passed
+            )
+            logger.debug(
+                " Converted {} timestamp to {} block using block time seconds defined for {}".format(
+                    current_timestamp, current_block, self.chain
+                )
             )
 
         if not initial_block:
@@ -407,7 +415,7 @@ class YieldData:
                             self.chain, self.protocol, index
                         )
                     )
-            elif not "id" in response["pool"]:
+            elif response["pool"] == None or not "id" in response["pool"]:
                 try:
                     err_hypervisor_id = pool_query_params[index]["hypervisor"]["id"]
                     err_hypervisor_name = pool_query_params[index]["hypervisor"][
