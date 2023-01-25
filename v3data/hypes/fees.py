@@ -1,7 +1,9 @@
 from datetime import timedelta
-
+import logging
 from v3data.hypes.fees_data import FeesData
 from v3data.utils import sub_in_256, timestamp_ago
+
+logger = logging.getLogger(__name__)
 
 
 class Fees(FeesData):
@@ -267,4 +269,32 @@ class Fees(FeesData):
             liquidity * (sub_in_256(fees_accum_now_1, fee_growth_inside_last_1))
         ) / X128
 
-        return uncollectedFees_0, uncollectedFees_1
+        # apply filter to result
+        return calc_fees_filter(uncollectedFees_0, uncollectedFees_1)
+
+    @staticmethod
+    def calc_fees_filter(fees_0: int, fees_1: int) -> tuple:
+        """Filter weird uncollected fees figures applying a true/false weirdness using a maximum value.
+            Zero fees are returned if found weird.
+
+        Args:
+            fees_0 (int): uncollected fees 0
+            fees_1 (int): uncollected fees 1
+
+        Returns:
+            tuple: fees_0, fees_1
+        """
+
+        maximum_value = 10**27  # TODO: convert to envir variable
+        if fees_0 >= maximum_value or fees_1 >= maximum_value:
+            logger.warning(
+                " Fee filter applied to 0: {}   1: {}. Forcing 0 fees".format(
+                    self.chain,
+                    self.protocol,
+                    fees_0,
+                    fees_1,
+                )
+            )
+            return 0, 0
+
+        return fees_0, fees_1
