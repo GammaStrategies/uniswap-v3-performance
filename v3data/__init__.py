@@ -36,7 +36,7 @@ class SubgraphClient:
         #
         response = await async_client.post(self._url, json=params)
 
-        if response.status_code == "200":
+        if response.status_code == 200:
             if parsed_response := response.json():
                 return parsed_response
             else:
