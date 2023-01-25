@@ -24,7 +24,11 @@ class FeesYield(YieldData):
                 hypervisor_address, hypervisors
             )
 
-            logger.info((f"Processing {symbol}: {hypervisor_address}"))
+            logger.info(
+                (
+                    f"[{self.chain}-{self.protocol}] Processing {symbol}: {hypervisor_address}"
+                )
+            )
             returns = self._calculate_returns(hype_data)
 
             if returns:
