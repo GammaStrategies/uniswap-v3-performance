@@ -35,24 +35,27 @@ class SubgraphClient:
         #                                                         ssl.SSLError:   [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure
         #
         response = await async_client.post(self._url, json=params)
-        if response.status_code != 204 and response.headers[
-            "content-type"
-        ].strip().startswith("application/json"):
-            try:
-                return response.json()
-            except ValueError:
+
+        if response.status_code == "200":
+            if parsed_response := response.json():
+                return parsed_response
+            else:
+                # handle bad gql query
                 logger.error(
-                    " Unexpected error while converting response to json: resp.text: {} ".format(
+                    " Unexpected error while converting response to json. resp.text: {} ".format(
                         response.text,
                     )
                 )
-
-        logger.warning(
-            " Unexpected response code {} received  resp.text: {} ".format(
-                response.status_code,
-                response.text,
+        else:
+            # handle bad status code
+            # Can expand this to handle specific codes once we have specific examples
+            logger.error(
+                " Unexpected response code {} received  resp.text: {} ".format(
+                    response.status_code,
+                    response.text,
+                )
             )
-        )
+        # error return
         return {}
 
     async def paginate_query(self, query, paginate_variable, variables={}):
