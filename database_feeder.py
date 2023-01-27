@@ -74,7 +74,7 @@ async def feed_database_average_returns(periods: list, process_quickswap=True):
 
 
 async def feed_database_with_historic_data(
-    from_datetime: datetime, process_quickswap=False, periods=[]
+    from_datetime: datetime, process_quickswap=True, periods=[]
 ):
     """Fill database with historic
 
