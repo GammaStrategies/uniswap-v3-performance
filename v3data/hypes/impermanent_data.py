@@ -138,7 +138,7 @@ class ImpermanentDivergence(FeesYield):
         for idx, block in enumerate(
             [self.data["initial_block"], self.data["current_block"]]
         ):
-            for hypervisor in hypervisor_dta[block]:
+            for hypervisor in hypervisor_dta.get(block, []):
 
                 pool = None
                 try:
