@@ -40,7 +40,7 @@ async def test_put_data_to_Mongodb_v1():
         for chain in GAMMA_SUBGRAPH_URLS[protocol].keys()
     ]
 
-    return requests
+    # returns requests
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     requests = [
         returns_manager.feed_db(chain=chain, protocol=protocol)
@@ -68,7 +68,7 @@ async def test_put_historicData_to_Mongodb():
     }
 
     await database_feeder.feed_database_with_historic_data(
-        from_datetime=dt.datetime(2023, 1, 1, 0, 0, tzinfo=dt.timezone.utc),
+        from_datetime=dt.datetime(2022, 12, 1, 0, 0, tzinfo=dt.timezone.utc),
         process_quickswap=True,
         periods=periods,
     )
