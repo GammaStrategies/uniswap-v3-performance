@@ -61,16 +61,16 @@ async def hypervisors_return(protocol: str, chain: str):
 
 
 async def hypervisors_average_return(protocol: str, chain: str):
-    # TODO: protocol ¿?
     average_returns_mngr = db_returns_manager(mongo_url=MONGO_DB_URL)
-    return await average_returns_mngr.get_hypervisors_average(chain=chain)
+    return await average_returns_mngr.get_hypervisors_average(
+        chain=chain, protocol=protocol
+    )
 
 
 async def hypervisor_average_return(protocol: str, chain: str, hypervisor_address: str):
-    # TODO: protocol ¿?
     average_returns_mngr = db_returns_manager(mongo_url=MONGO_DB_URL)
     return await average_returns_mngr.get_hypervisor_average(
-        chain=chain, hypervisor_address=hypervisor_address
+        chain=chain, hypervisor_address=hypervisor_address, protocol=protocol
     )
 
 
