@@ -113,13 +113,24 @@ class db_returns_manager(db_collections_common):
             query=query, collection_name=self.db_collection_name
         )
 
-    async def get_hypervisors_average(self, chain: str) -> dict:
-        return await self.get_data(query=self.query_hypervisors_average(chain=chain))
-
-    async def get_hypervisor_average(self, chain: str, hypervisor_address: str) -> dict:
+    async def get_hypervisors_average(
+        self, chain: str, period: int = 0, protocol: str = ""
+    ) -> dict:
         return await self.get_data(
             query=self.query_hypervisors_average(
-                chain=chain, hypervisor_address=hypervisor_address
+                chain=chain, period=period, protocol=protocol
+            )
+        )
+
+    async def get_hypervisor_average(
+        self, chain: str, hypervisor_address: str, period: int = 0, protocol: str = ""
+    ) -> dict:
+        return await self.get_data(
+            query=self.query_hypervisors_average(
+                chain=chain,
+                hypervisor_address=hypervisor_address,
+                period=period,
+                protocol=protocol,
             )
         )
 
