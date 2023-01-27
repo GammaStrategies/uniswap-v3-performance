@@ -280,7 +280,7 @@ class YieldData:
             initial_block: initial_timestamp,
             current_block: current_timestamp,
         }
-        for hypervisor in self._transition_data["uniswapV3Hypervisors"]:
+        for hypervisor in self._transition_data.get("uniswapV3Hypervisors", []):
             block_hypervisor_map[initial_block].append(hypervisor["id"])
             block_hypervisor_map[current_block].append(hypervisor["id"])
             for tx_type in ["deposits", "withdraws", "rebalances"]:
@@ -323,6 +323,7 @@ class YieldData:
                 "uniswapV3Hypervisors"
             ]
             for index, response in enumerate(hypervisor_responses)
+            if "data" in response
         }
 
     async def _get_pool_data_for_all_blocks(self):
