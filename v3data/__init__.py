@@ -17,7 +17,12 @@ from v3data.config import (
 from v3data import abi
 
 logger = logging.getLogger(__name__)
-async_client = httpx.AsyncClient(timeout=180)
+async_client = httpx.AsyncClient(
+    transport=httpx.AsyncHTTPTransport(
+        retries=1,
+    ),
+    timeout=180,
+)
 
 
 class SubgraphClient:
