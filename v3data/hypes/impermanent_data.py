@@ -326,7 +326,7 @@ class ImpermanentDivergence(FeesYield):
                 ini_hodl_deposited = (
                     initial_tvl0 * struct[1]["token0_usd_price"]
                     + initial_tvl1 * struct[1]["token1_usd_price"]
-                ) / struct[1]["totalSupply"]
+                ) / struct[0]["totalSupply"]
                 cur_hodl_deposited = cur_hodl_usd
                 vs_hodl_deposited = (
                     ((cur_hodl_deposited - ini_hodl_deposited) / ini_hodl_deposited)
