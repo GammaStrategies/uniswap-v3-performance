@@ -167,6 +167,20 @@ def convert_commandline_arguments(argv) -> dict:
     return prmtrs
 
 
+def get_timepassed_string(start_time: dt.datetime) -> str:
+    _timelapse = dt.datetime.utcnow() - start_time
+    _passed = _timelapse.total_seconds()
+    if _passed < 60:
+        _timelapse_unit = "seconds"
+    elif _passed < 60 * 60:
+        _timelapse_unit = "minutes"
+        _passed /= 60
+    elif _passed < 60 * 60 * 24:
+        _timelapse_unit = "hours"
+        _passed /= 60 * 60
+    return "{:,.2f} {}".format(_passed, _timelapse_unit)
+
+
 if __name__ == "__main__":
 
     # convert command line arguments to dict variables
@@ -174,13 +188,31 @@ if __name__ == "__main__":
 
     if cml_parameters["historic"]:
         # historic feed
+
         from_datetime = cml_parameters.get(
             "from_datetime", datetime(2022, 12, 1, 0, 0, tzinfo=timezone.utc)
         )
+
+        print(
+            " Feeding database with historic data from {:%Y-%m-%d} to now".format(
+                from_datetime
+            )
+        )
+
+        # start time log
+        _startime = dt.datetime.utcnow()
+
         # TODO: add quickswap command line args
         asyncio.run(
             feed_database_with_historic_data(
                 from_datetime=from_datetime, process_quickswap=False
+            )
+        )
+
+        # end time log
+        print(
+            " took {} to complete the historic feed".format(
+                get_timepassed_string(_startime)
             )
         )
     else:
