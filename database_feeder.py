@@ -167,8 +167,8 @@ def convert_commandline_arguments(argv) -> dict:
     return prmtrs
 
 
-def get_timepassed_string(start_time: dt.datetime) -> str:
-    _timelapse = dt.datetime.utcnow() - start_time
+def get_timepassed_string(start_time: datetime) -> str:
+    _timelapse = datetime.utcnow() - start_time
     _passed = _timelapse.total_seconds()
     if _passed < 60:
         _timelapse_unit = "seconds"
