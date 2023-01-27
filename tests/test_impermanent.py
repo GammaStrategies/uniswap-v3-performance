@@ -33,9 +33,39 @@ async def test_impermanent_divergence(
     days, protocol: str = PROTOCOL_UNISWAP_V3, chain: str = "mainnet"
 ):
 
-    return await hypervisor.impermanent_divergence(
+    data = await hypervisor.impermanent_divergence(
         protocol=protocol, chain=chain, days=days
     )
+
+    # log weird data
+    logger.info("[{}-{}] weird data:".format(chain, protocol))
+    for hypervisor_id, data in data.items():
+        for key in [
+            "vs_hodl_usd",
+            "vs_hodl_deposited",
+            "vs_hodl_token0",
+            "vs_hodl_token1",
+        ]:
+            if data[key] > 6:
+                logger.warning("data: {} \r".format(data))
+
+
+async def test_impermanent_divergence_all():
+    days = [1, 7, 30]
+    protocols = [PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP]
+    chains = ["mainnet", "polygon", "optimism", "arbitrum", "celo"]
+
+    for chain in chains:
+        for protocol in protocols:
+            if protocol == PROTOCOL_QUICKSWAP and chain != "polygon":
+                continue
+            # elif protocol == PROTOCOL_UNISWAP_V3 and chain == "polygon":
+            #     continue
+
+            for day in days:
+                await test_impermanent_divergence(
+                    days=day, protocol=protocol, chain=chain
+                )
 
 
 async def test_all_endpoints():
@@ -94,11 +124,7 @@ if __name__ == "__main__":
     # start time log
     _startime = dt.datetime.utcnow()
 
-    data = asyncio.run(
-        test_impermanent_divergence(
-            days=1, protocol=PROTOCOL_UNISWAP_V3, chain="arbitrum"
-        )
-    )
+    data = asyncio.run(test_impermanent_divergence_all())
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))

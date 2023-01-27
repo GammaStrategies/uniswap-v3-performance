@@ -61,12 +61,7 @@ async def test_put_data_to_Mongodb_v1():
 async def test_put_historicData_to_Mongodb():
 
     # force period
-    database_feeder.EXPR_FORMATS = {
-        "daily": "0 0 * * *",
-        "weekly": "2 0 * * mon",
-        "monthly": "5 0 * * mon#1",
-    }
-    database_feeder.EXPR_PERIODS = {
+    periods = {
         "daily": [1],
         "weekly": [7],
         "monthly": [30],
@@ -75,6 +70,7 @@ async def test_put_historicData_to_Mongodb():
     await database_feeder.feed_database_with_historic_data(
         from_datetime=dt.datetime(2023, 1, 1, 0, 0, tzinfo=dt.timezone.utc),
         process_quickswap=True,
+        periods=periods,
     )
 
 
