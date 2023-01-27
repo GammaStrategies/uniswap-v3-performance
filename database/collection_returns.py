@@ -152,32 +152,27 @@ class db_returns_manager(db_collections_common):
                 { "_id" = hypervisor address, "hipervisor":{ ... }, "periods": { ... }  }
 
         """
-        # setmatch vars
-        _match = {"chain": chain}
+        # set return match vars
+        _returns_match = {"chain": chain}
+
         if period != 0:
-            _match["period"] = period
+            _returns_match["period"] = period
         if hypervisor_address != "":
-            _match["address"] = hypervisor_address
+            _returns_match["address"] = hypervisor_address
+
+        # set return match vars
+        _static_match = dict()
         if protocol != "":
-            _match["hypervisor.protocol"] = protocol
+            _static_match["hypervisor.protocol"] = protocol
 
         # return query
         return [
-            {
-                "$lookup": {
-                    "from": "static",
-                    "localField": "address",
-                    "foreignField": "address",
-                    "as": "hypervisor",
-                }
-            },
-            {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
-            {"$match": _match},
-            {"$sort": {"block": 1}},
+            {"$match": _returns_match},
             {
                 "$project": {
                     "period": "$period",
                     "address": "$address",
+                    "hypervisor_id": {"$concat": ["$chain", "_", "$address"]},
                     "timestamp": "$timestamp",
                     "block": "$block",
                     "feeApr": "$fees.feeApr",
@@ -186,6 +181,32 @@ class db_returns_manager(db_collections_common):
                     "imp_vs_hodl_deposited": "$impermanent.vs_hodl_deposited",
                     "imp_vs_hodl_token0": "$impermanent.vs_hodl_token0",
                     "imp_vs_hodl_token1": "$impermanent.vs_hodl_token1",
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "static",
+                    "localField": "hypervisor_id",
+                    "foreignField": "id",
+                    "as": "hypervisor",
+                }
+            },
+            {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
+            {"$match": _static_match},
+            {"$sort": {"block": 1}},
+            {
+                "$project": {
+                    "period": "$period",
+                    "address": "$address",
+                    "timestamp": "$timestamp",
+                    "block": "$block",
+                    "feeApr": "$feeApr",
+                    "feeApy": "$feeApy",
+                    "imp_vs_hodl_usd": "$imp_vs_hodl_usd",
+                    "imp_vs_hodl_deposited": "$imp_vs_hodl_deposited",
+                    "imp_vs_hodl_token0": "$imp_vs_hodl_token0",
+                    "imp_vs_hodl_token1": "$imp_vs_hodl_token1",
+                    "hypervisor": "$hypervisor",
                 }
             },
             {
@@ -201,6 +222,7 @@ class db_returns_manager(db_collections_common):
                     "av_imp_vs_hodl_deposited": {"$avg": "$imp_vs_hodl_deposited"},
                     "av_imp_vs_hodl_token0": {"$avg": "$imp_vs_hodl_token0"},
                     "av_imp_vs_hodl_token1": {"$avg": "$imp_vs_hodl_token1"},
+                    "hypervisor": {"$first": "$hypervisor"},
                 }
             },
             {
@@ -211,6 +233,7 @@ class db_returns_manager(db_collections_common):
                             "k": {"$toString": "$_id.period"},
                             "v": {
                                 "period": "$_id.period",
+                                "items": "$items",
                                 "min_timestamp": "$min_timestamp",
                                 "max_timestamp": "$max_timestamp",
                                 "min_block": "$min_block",
@@ -220,44 +243,24 @@ class db_returns_manager(db_collections_common):
                                 "av_imp_vs_hodl_usd": "$av_imp_vs_hodl_usd",
                                 "av_imp_vs_hodl_deposited": "$av_imp_vs_hodl_deposited",
                                 "av_imp_vs_hodl_token0": "$av_imp_vs_hodl_token0",
-                                "av_imp_vs_hodl_token1": "$av_imp_vs_hodl_token1",
+                                "av_imp_vs_hodl_token1": "$imp_vs_hodl_token1",
                             },
                         },
                     },
+                    "hypervisor": {"$first": "$hypervisor"},
                 }
             },
             {
                 "$project": {
                     "_id": "$_id",
-                    "periods": {"$arrayToObject": "$periods"},
-                }
-            },
-            {
-                "$lookup": {
-                    "from": "static",
-                    "localField": "_id",
-                    "foreignField": "address",
-                    "as": "hypervisor",
-                }
-            },
-            {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
-            {
-                "$replaceRoot": {
-                    "newRoot": {
-                        "$mergeObjects": [
-                            {"_id": "$_id"},
-                            {
-                                "hypervisor": {
-                                    "symbol": "$hypervisor.symbol",
-                                    "address": "$hypervisor.address",
-                                    "chain": "$hypervisor.chain",
-                                    "pool": "$hypervisor.pool",
-                                    "protocol": "$hypervisor.protocol",
-                                }
-                            },
-                            {"returns": "$periods"},
-                        ]
-                    }
+                    "hypervisor": {
+                        "symbol": "$hypervisor.symbol",
+                        "address": "$hypervisor.address",
+                        "chain": "$hypervisor.chain",
+                        "pool": "$hypervisor.pool",
+                        "protocol": "$hypervisor.protocol",
+                    },
+                    "returns": {"$arrayToObject": "$periods"},
                 }
             },
         ]
