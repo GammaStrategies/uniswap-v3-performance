@@ -8,7 +8,8 @@ class UniV3PriceData:
     def __init__(self, pool: str, chain: str = "mainnet"):
         self.uniswap_client = UniswapV3Client("uniswap_v3", chain)
         self.pool = pool
-        self.data = {}
+        self.pool_data = {}
+        self.native_data = {}
 
     async def _get_data(self):
         query = """
@@ -33,7 +34,8 @@ class UniV3PriceData:
         """
         variables = {"id": self.pool}
         response = await self.uniswap_client.query(query, variables)
-        self.data = response["data"]
+        self.pool_data = response["data"]["pool"]
+        self.native_data = response["data"]["bundle"]
 
 
 class QuickswapV3PriceData:
