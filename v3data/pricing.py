@@ -1,18 +1,54 @@
+from abc import ABC, abstractmethod
+
 from v3data import UniswapV3Client
 from v3data.utils import sqrtPriceX96_to_priceDecimal
 
 
-class UniV3PriceData:
-    """Class for querying GAMMA related data"""
+class DexPriceData(ABC):
+    """Base class for dex prices"""
 
-    def __init__(self, pool: str, chain: str = "mainnet"):
-        self.uniswap_client = UniswapV3Client("uniswap_v3", chain)
+    def __init__(self, protocol: str, pool: str, chain: str) -> None:
+        self.uniswap_client = UniswapV3Client(protocol, chain)
         self.pool = pool
+        self.pool_query = ""
+        self.native_query = ""
         self.pool_data = {}
         self.native_data = {}
 
+    @abstractmethod
+    def _init_queries(self):
+        """Set queries"""
+        # self.pool_query = ""
+        # self.native_query = ""
+        pass
+
     async def _get_data(self):
-        query = """
+        self._init_queries()
+        if self.pool == "native":
+            await self._get_native_data()
+        else:
+            await self._get_pool_data()
+
+    async def _get_pool_data(self):
+        variables = {"id": self.pool}
+        print(self.pool_query)
+        response = await self.uniswap_client.query(self.pool_query, variables)
+        self.pool_data = response["data"]["pool"]
+        self.native_data = response["data"]["bundle"]
+
+    async def _get_native_data(self):
+        response = await self.uniswap_client.query(self.native_query)
+        self.native_data = response["data"]["bundle"]
+
+
+class UniV3PriceData(DexPriceData):
+    """Class for querying GAMMA related data"""
+
+    def __init__(self, pool: str, chain: str = "mainnet"):
+        super().__init__("uniswap_v3", pool, chain)
+
+    def _init_queries(self):
+        self.pool_query = """
         query tokenPrice($id: String!){
             pool(
                 id: $id
@@ -32,29 +68,24 @@ class UniV3PriceData:
             }
         }
         """
-        variables = {"id": self.pool}
-        response = await self.uniswap_client.query(query, variables)
-        self.pool_data = response["data"]["pool"]
-        self.native_data = response["data"]["bundle"]
+
+        self.native_query = """
+        query nativePrice{
+            bundle(id:1){
+                nativePriceUSD: ethPriceUSD
+            }
+        }
+        """
 
 
-class QuickswapV3PriceData:
-    """Class for querying GAMMA related data"""
+class QuickswapV3PriceData(DexPriceData):
+    """Class for querying quickswap price data"""
 
-    def __init__(self, pool: str, chain: str = "polygon"):
-        self.uniswap_client = UniswapV3Client("quickswap", chain)
-        self.pool = pool
-        self.pool_data = {}
-        self.native_data = {}
+    def __init__(self, pool: str, chain: str = "mainnet"):
+        super().__init__("quickswap", pool, chain)
 
-    async def _get_data(self):
-        if self.pool == "native":
-            await self._get_native_data()
-        else:
-            await self._get_pool_data()
-
-    async def _get_pool_data(self):
-        query = """
+    def _init_queries(self):
+        self.pool_query = """
         query tokenPrice($id: String!){
             pool(
                 id: $id
@@ -74,21 +105,14 @@ class QuickswapV3PriceData:
             }
         }
         """
-        variables = {"id": self.pool}
-        response = await self.uniswap_client.query(query, variables)
-        self.pool_data = response["data"]["pool"]
-        self.native_data = response["data"]["bundle"]
 
-    async def _get_native_data(self):
-        query = """
+        self.native_query = """
         query nativePrice{
             bundle(id:1){
                 nativePriceUSD: maticPriceUSD
             }
         }
         """
-        response = await self.uniswap_client.query(query)
-        self.native_data = response["data"]["bundle"]
 
 
 class UniV3Price:
@@ -154,7 +178,7 @@ async def token_price_from_address(chain: str, token_address: str):
             },
         },
         "polygon": {
-            "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270": {  #WMATIC
+            "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270": {  # WMATIC
                 "protocol": "quickswap",
                 "pool_address": "native",
                 "inverse": False,
