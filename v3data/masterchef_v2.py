@@ -91,7 +91,6 @@ class MasterchefV2Info(MasterchefV2Data):
             await self._get_masterchef_data()
 
         info = {}
-        print(self.data)
         for masterChef in self.data:
             pool_info = {}
             for pool in masterChef["pools"]:
@@ -133,8 +132,7 @@ class MasterchefV2Info(MasterchefV2Data):
                     reward_per_second_usdc += (
                         weighted_reward_per_second * reward_token_price["token_in_usdc"]
                     )
-                    print(reward_token_symbol)
-                    print(reward_token_price["token_in_usdc"])
+
                 try:
                     apr = (
                         reward_per_second_usdc
