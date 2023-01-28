@@ -139,6 +139,11 @@ async def token_price_from_address(chain: str, token_address: str):
                 "pool_address": "0x9f1a8caf3c8e94e43aa64922d67dff4dc3e88a42",  # WMATC/QUICK
                 "inverse": True,
             },
+            "0x958d208cdf087843e9ad98d23823d32e17d723a1": {
+                "protocol": "quickswap",
+                "pool_address": "0xb8d00c66accdc01e78fd7957bf24050162916ae2",  # WMATIC/dQUICK
+                "inverse": True
+            }
         },
     }
 
