@@ -7,7 +7,7 @@ import v3data.common.masterchef_v2
 
 from fastapi import APIRouter, Response
 from fastapi_cache.decorator import cache
-from v3data.config import APY_CACHE_TIMEOUT
+from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT
 from v3data.constants import PROTOCOL_QUICKSWAP
 
 CHAIN_POLYGON = "polygon"
@@ -95,6 +95,7 @@ async def hypervisors_return():
 
 
 @router.get("/hypervisors/allData")
+@cache(expire=ALLDATA_CACHE_TIMEOUT)
 async def hypervisors_all():
     return await v3data.common.hypervisor.hypervisors_all(
         PROTOCOL_QUICKSWAP, CHAIN_POLYGON
@@ -138,6 +139,7 @@ async def all_rewards():
 
 
 @router.get("/allRewards2")
+@cache(expire=ALLDATA_CACHE_TIMEOUT)
 async def all_rewards_2():
     return await v3data.common.masterchef_v2.info(PROTOCOL_QUICKSWAP, CHAIN_POLYGON)
 
@@ -147,6 +149,7 @@ async def user_rewards(user_address):
     return await v3data.common.masterchef.user_rewards(
         PROTOCOL_QUICKSWAP, CHAIN_POLYGON, user_address
     )
+
 
 @router.get("/userRewards2/{user_address}")
 async def user_rewards_2(user_address):
