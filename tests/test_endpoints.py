@@ -25,7 +25,7 @@ from v3data.charts.base_range import BaseLimit
 from v3data.charts.benchmark import Benchmark
 
 from v3data.toplevel import TopLevelData
-
+from v3data.accounts import AccountInfo
 
 from database.collection_returns import db_returns_manager
 from database.collection_static import db_static_manager
@@ -47,6 +47,14 @@ async def recent_fees(protocol: str, chain: str, hours: int = 24):
     recent_fees = await top_level.recent_fees(hours)
 
     return {"periodHours": hours, "fees": recent_fees}
+
+
+async def account():
+    address = "0x8A0Dcd7cf2f6242Ff03ad126c980d60f7fFCbeC7"
+    chain = "polygon"
+    protocol = PROTOCOL_UNISWAP_V3
+    account_info = AccountInfo(protocol, chain, address)
+    popo = await account_info.output()
 
 
 def get_timepassed_string(start_time: dt.datetime) -> str:
@@ -74,9 +82,7 @@ if __name__ == "__main__":
     # )
 
     # recent fees
-    data = asyncio.run(
-        recent_fees(protocol=PROTOCOL_UNISWAP_V3, chain="mainnet", hours=24 * 2)
-    )
+    data = asyncio.run(account())
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))

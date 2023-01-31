@@ -74,6 +74,29 @@ async def test_put_historicData_to_Mongodb():
     )
 
 
+async def test_put_historicData_to_Mongodb_vExpert(
+    chain="polygon", periods=[1], process_quickswap=True
+):
+
+    returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
+    requests = [
+        returns_manager.feed_db(
+            chain=chain, protocol=PROTOCOL_UNISWAP_V3, periods=periods
+        )
+    ]
+
+    if process_quickswap:
+        requests.extend(
+            [
+                returns_manager.feed_db(
+                    chain=chain, protocol=PROTOCOL_QUICKSWAP, periods=periods
+                )
+            ]
+        )
+
+    await asyncio.gather(*requests)
+
+
 async def test_get_data_from_Mongodb_v1():
 
     chains = ["mainnet", "optimism", "polygon", "arbitrum", "celo"]
@@ -131,7 +154,7 @@ if __name__ == "__main__":
     # start time log
     _startime = dt.datetime.utcnow()
 
-    asyncio.run(test_put_historicData_to_Mongodb())
+    asyncio.run(test_put_historicData_to_Mongodb_vExpert())
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))
