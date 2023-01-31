@@ -121,6 +121,9 @@ class MasterchefV2Info(MasterchefV2Data):
                     else:
                         weighted_reward_per_second = 0
 
+                    if pool["poolId"] in ["16", "17"]:
+                        weighted_reward_per_second = 0
+
                     rewarder_info[rewarderPool["rewarder"]["id"]] = {
                         "rewardToken": reward_token,
                         "rewardTokenSymbol": reward_token_symbol,
@@ -143,6 +146,9 @@ class MasterchefV2Info(MasterchefV2Data):
                         )
                     )
                 except ZeroDivisionError:
+                    apr = 0
+
+                if pool["poolId"] in ["16", "17"]:
                     apr = 0
 
                 pool_info[pool["hypervisor"]["id"]] = {
