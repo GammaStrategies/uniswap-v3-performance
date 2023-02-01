@@ -6,7 +6,12 @@ from v3data.hypes.fees import Fees
 from v3data.hypes.fees_yield import FeesYield
 from v3data.hypes.impermanent_data import ImpermanentDivergence
 
-from database.collection_returns import db_returns_manager
+from database.collection_endpoint import (
+    db_returns_manager,
+    db_allData_manager,
+    db_allRewards2_manager,
+    db_static_manager,
+)
 from v3data.config import MONGO_DB_URL
 
 
@@ -75,8 +80,14 @@ async def hypervisor_average_return(protocol: str, chain: str, hypervisor_addres
 
 
 async def hypervisors_all(protocol: str, chain: str):
-    hypervisor_info = HypervisorInfo(protocol, chain)
-    return await hypervisor_info.all_data()
+    # TODO: if statement check database content ( maybe datetime field)
+
+    _mngr = db_allData_manager(mongo_url=MONGO_DB_URL)
+    result = await _mngr.get_data(chain=chain, protocol=protocol)
+    return result
+
+    # hypervisor_info = HypervisorInfo(protocol, chain)
+    # return await hypervisor_info.all_data()
 
 
 async def uncollected_fees(protocol: str, chain: str, hypervisor_address: str):

@@ -341,7 +341,7 @@ class db_allData_manager(db_collections_common):
 
         # add id and datetime to data
         allData["id"] = f"{chain}_{protocol}"
-        allData["timestamp"] = datetime.utcnow()
+        allData["datetime"] = datetime.utcnow()
 
         return allData
 
