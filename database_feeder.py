@@ -47,10 +47,7 @@ EXPR_FORMATS = {
         "weekly": "2 0 * * mon",
         "monthly": "5 0 * * mon#1",
     },
-    "allData": {
-        "mins": "*/5 * * * *",
-    },
-    "allRewards2": {
+    "inSecuence": {
         "mins": "*/5 * * * *",
     },
 }
@@ -99,7 +96,7 @@ async def feed_database_allData():
 
     requests.extend(
         [
-            _manager.feed_db(chain=chain, protocol=PROTOCOL_QUICKSWAP, periods=periods)
+            _manager.feed_db(chain=chain, protocol=PROTOCOL_QUICKSWAP)
             for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_QUICKSWAP].keys()
         ]
     )
@@ -120,12 +117,17 @@ async def feed_database_allRewards2():
 
     requests.extend(
         [
-            _manager.feed_db(chain=chain, protocol=PROTOCOL_QUICKSWAP, periods=periods)
+            _manager.feed_db(chain=chain, protocol=PROTOCOL_QUICKSWAP)
             for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_QUICKSWAP].keys()
         ]
     )
 
     await asyncio.gather(*requests)
+
+
+async def feed_database_inSecuence():
+    await feed_database_allData()
+    await feed_database_allRewards2()
 
 
 async def feed_database_with_historic_data(
@@ -194,11 +196,13 @@ def convert_commandline_arguments(argv) -> dict:
     prmtrs["historic"] = False
 
     try:
-        opts, args = getopt.getopt(argv, "hs:", ["start=", "historic"])
+        opts, args = getopt.getopt(argv, "hs:m:", ["historic", "start=", "manual="])
     except getopt.GetoptError as err:
         print("             <filename>.py <options>")
         print("Options:")
         print(" -s <start date> or --start=<start date>")
+        print(" -m <option> or --manual=<option>")
+        print("           <option> being: secuence")
         print(" ")
         print(" ")
         print(" ")
@@ -219,6 +223,8 @@ def convert_commandline_arguments(argv) -> dict:
             prmtrs["historic"] = True
         elif opt in ("-h", "historic"):
             prmtrs["historic"] = True
+        elif opt in ("-m", "manual="):
+            prmtrs["manual"] = arg
     return prmtrs
 
 
@@ -236,10 +242,12 @@ def get_timepassed_string(start_time: datetime) -> str:
     return "{:,.2f} {}".format(_passed, _timelapse_unit)
 
 
+# set functions here
 EXPR_FUNCS = {
     "average_returns": feed_database_average_returns,
     "allData": feed_database_allData,
     "allRewards2": feed_database_allRewards2,
+    "inSecuence": feed_database_inSecuence,
 }
 
 if __name__ == "__main__":
@@ -261,7 +269,7 @@ if __name__ == "__main__":
         )
 
         # start time log
-        _startime = dt.datetime.utcnow()
+        _startime = datetime.utcnow()
 
         # TODO: add quickswap command line args
         asyncio.run(
@@ -276,6 +284,21 @@ if __name__ == "__main__":
                 get_timepassed_string(_startime)
             )
         )
+
+    elif "manual" in cml_parameters:
+        print(" Manually executing sequencer ")
+
+        # start time log
+        _startime = datetime.utcnow()
+
+        asyncio.run(feed_database_inSecuence())
+
+        # end time log
+        print(
+            " took {} to complete the sequencer feed".format(
+                get_timepassed_string(_startime)
+            )
+        )
     else:
         # actual feed
 
@@ -286,11 +309,11 @@ if __name__ == "__main__":
         crons = {}
         for function, formats in EXPR_FORMATS.items():
             for key, cron_ex_format in EXPR_FORMATS[function].items():
-                args = [EXPR_ARGS.get(function, {}).get(key)]
+                args = EXPR_ARGS.get(function, {}).get(key)
                 crons[f"{function}_{key}"] = crontab(
                     cron_ex_format,
                     func=EXPR_FUNCS[function],
-                    args=args if len(args) > 0 else (),
+                    args=args if args else (),
                     loop=loop,
                     start=True,
                     tz=timezone.utc,

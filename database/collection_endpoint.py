@@ -406,7 +406,7 @@ class db_allRewards2_manager(db_collections_common):
 
         # add id and datetime to data
         data["id"] = f"{chain}_{protocol}"
-        data["timestamp"] = datetime.utcnow()
+        data["datetime"] = datetime.utcnow()
 
         return data
 

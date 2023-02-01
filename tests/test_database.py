@@ -7,7 +7,7 @@ import asyncio
 
 # force test environment
 # os.environ["MONGO_DB_URL"] = "mongodb://localhost:27072"
-os.environ["MONGO_DB_URL"] = "mongodb://10.10.0.39:32768"
+# os.environ["GAMMA_SUBGRAPH_POLYGON"] = "test"
 
 logging.basicConfig(
     format="[%(asctime)s:%(levelname)s:%(name)s]:%(message)s",
@@ -44,7 +44,6 @@ async def test_put_data_to_Mongodb_v1():
         (chain, protocol)
         for protocol in protocols
         for chain in GAMMA_SUBGRAPH_URLS[protocol].keys()
-        if not (chain == "polygon" and protocol == PROTOCOL_UNISWAP_V3)
     ]
     requests = list()
 
