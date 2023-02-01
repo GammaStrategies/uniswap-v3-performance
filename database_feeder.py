@@ -286,10 +286,11 @@ if __name__ == "__main__":
         crons = {}
         for function, formats in EXPR_FORMATS.items():
             for key, cron_ex_format in EXPR_FORMATS[function].items():
+                args = [EXPR_ARGS.get(function, {}).get(key)]
                 crons[f"{function}_{key}"] = crontab(
                     cron_ex_format,
                     func=EXPR_FUNCS[function],
-                    args=EXPR_ARGS.get(function, {}).get(key, ()),
+                    args=args,
                     loop=loop,
                     start=True,
                     tz=timezone.utc,
