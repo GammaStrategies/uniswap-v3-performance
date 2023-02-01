@@ -33,10 +33,9 @@ logger = logging.getLogger(__name__)
 
 
 # using gamma subgraph keys to build chain,protocol list
-PROTOCOLS = [PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP]
 CHAINS_PROTOCOLS = [
     (chain, protocol)
-    for protocol in PROTOCOLS
+    for protocol in [PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP]
     for chain in GAMMA_SUBGRAPH_URLS[protocol].keys()
 ]
 
@@ -64,21 +63,10 @@ async def feed_database_average_returns(periods: list, process_quickswap=True):
     logger.debug(" Starting database feeding process for average results data")
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     requests = [
-        returns_manager.feed_db(
-            chain=chain, protocol=PROTOCOL_UNISWAP_V3, periods=periods
-        )
-        for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_UNISWAP_V3].keys()
+        returns_manager.feed_db(chain=chain, protocol=protocol, periods=periods)
+        for chain, protocol in CHAINS_PROTOCOLS
+        if (not process_quickswap and not protocol == PROTOCOL_QUICKSWAP)
     ]
-
-    if process_quickswap:
-        requests.extend(
-            [
-                returns_manager.feed_db(
-                    chain=chain, protocol=PROTOCOL_QUICKSWAP, periods=periods
-                )
-                for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_QUICKSWAP].keys()
-            ]
-        )
 
     await asyncio.gather(*requests)
 
@@ -89,17 +77,10 @@ async def feed_database_allData():
     requests = [
         _manager.feed_db(
             chain=chain,
-            protocol=PROTOCOL_UNISWAP_V3,
+            protocol=protocol,
         )
-        for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_UNISWAP_V3].keys()
+        for chain, protocol in CHAINS_PROTOCOLS
     ]
-
-    requests.extend(
-        [
-            _manager.feed_db(chain=chain, protocol=PROTOCOL_QUICKSWAP)
-            for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_QUICKSWAP].keys()
-        ]
-    )
 
     await asyncio.gather(*requests)
 
@@ -110,17 +91,10 @@ async def feed_database_allRewards2():
     requests = [
         _manager.feed_db(
             chain=chain,
-            protocol=PROTOCOL_UNISWAP_V3,
+            protocol=protocol,
         )
-        for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_UNISWAP_V3].keys()
+        for chain, protocol in CHAINS_PROTOCOLS
     ]
-
-    requests.extend(
-        [
-            _manager.feed_db(chain=chain, protocol=PROTOCOL_QUICKSWAP)
-            for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_QUICKSWAP].keys()
-        ]
-    )
 
     await asyncio.gather(*requests)
 
@@ -145,10 +119,10 @@ async def feed_database_with_historic_data(
 
     # define periods when empty
     if len(periods) == 0:
-        periods = EXPR_PERIODS
+        periods = EXPR_ARGS["average_returns"].keys()
 
     for period in periods:
-        cron_ex_format = EXPR_FORMATS[period]
+        cron_ex_format = EXPR_FORMATS["average_returns"][period]
 
         # create croniter
         c_iter = croniter(expr_format=cron_ex_format, start_time=from_datetime)
@@ -158,17 +132,16 @@ async def feed_database_with_historic_data(
         utils.STATIC_DATETIME_UTCNOW = datetime.utcfromtimestamp(current_timestamp)
         last_timestamp = last_time.timestamp()
         while last_timestamp > current_timestamp:
-            print(" ")
-            print(
+            logger.info(
                 " Feeding {} database at  {:%Y-%m-%d  %H:%M:%S}  ".format(
                     period, datetime.utcfromtimestamp(current_timestamp)
                 )
             )
-            print(" ")
 
             # database feed
             await feed_database_average_returns(
-                periods=EXPR_PERIODS[period], process_quickswap=process_quickswap
+                periods=EXPR_PERIODS["average_returns"][period],
+                process_quickswap=process_quickswap,
             )
 
             # set next timestamp
@@ -262,7 +235,7 @@ if __name__ == "__main__":
             "from_datetime", datetime(2022, 12, 1, 0, 0, tzinfo=timezone.utc)
         )
 
-        print(
+        logger.info(
             " Feeding database with historic data from {:%Y-%m-%d} to now".format(
                 from_datetime
             )
@@ -279,14 +252,13 @@ if __name__ == "__main__":
         )
 
         # end time log
-        print(
+        logger.info(
             " took {} to complete the historic feed".format(
                 get_timepassed_string(_startime)
             )
         )
-
     elif "manual" in cml_parameters:
-        print(" Manually executing sequencer ")
+        logger.info(" Starting manual execution of sequencer ")
 
         # start time log
         _startime = datetime.utcnow()
@@ -294,14 +266,14 @@ if __name__ == "__main__":
         asyncio.run(feed_database_inSecuence())
 
         # end time log
-        print(
+        logger.info(
             " took {} to complete the sequencer feed".format(
                 get_timepassed_string(_startime)
             )
         )
     else:
         # actual feed
-
+        logger.info(" Starting loop feed  ")
         # create event loop
         loop = asyncio.new_event_loop()
 

@@ -149,7 +149,7 @@ GAMMA_SUBGRAPH_URLS = {
             os.environ.get("GAMMA_SUBGRAPH_MAINNET", "prod")
         ],
         "polygon": gamma_subgraphs["uniswap_v3"]["polygon"][
-            os.environ.get("GAMMA_SUBGRAPH_POLYGON", "prod")
+            os.environ.get("GAMMA_SUBGRAPH_POLYGON", "test")
         ],
         "arbitrum": gamma_subgraphs["uniswap_v3"]["arbitrum"][
             os.environ.get("GAMMA_SUBGRAPH_ARBITRUM", "prod")
