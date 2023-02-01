@@ -79,27 +79,6 @@ async def test_put_data_to_Mongodb_v1():
     await asyncio.gather(*requests)
 
 
-async def test_put_data_to_Mongodb_vData():
-
-    protocols = [PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP]
-    chains_protocols = [
-        (chain, protocol)
-        for protocol in protocols
-        for chain in GAMMA_SUBGRAPH_URLS[protocol].keys()
-    ]
-
-    # data
-    _manager = db_allRewards2_manager(mongo_url=MONGO_DB_URL)
-    requests = [
-        _manager.feed_db(chain=chain, protocol=protocol)
-        for chain, protocol in chains_protocols
-        if not (chain == "polygon" and protocol == PROTOCOL_UNISWAP_V3)
-    ]
-
-    # execute queries
-    await asyncio.gather(*requests)
-
-
 async def test_put_historicData_to_Mongodb():
 
     # force period
@@ -141,7 +120,20 @@ async def test_put_historicData_to_Mongodb_vExpert(
 
 async def test_get_data_from_Mongodb_v1():
 
-    chains = ["mainnet", "optimism", "polygon", "arbitrum", "celo"]
+    protocols = [PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP]
+    chains_protocols = [
+        (chain, protocol)
+        for protocol in protocols
+        for chain in GAMMA_SUBGRAPH_URLS[protocol].keys()
+    ]
+    requests = list()
+
+    #  managers
+    allData_manager = db_allData_manager(mongo_url=MONGO_DB_URL)
+    allRewards2_manager = db_allRewards2_manager(mongo_url=MONGO_DB_URL)
+    for chain, protocol in chains_protocols:
+        allData = await allData_manager.get_data(chain=chain, protocol=protocol)
+        Rewards2 = await allRewards2_manager.get_data(chain=chain, protocol=protocol)
 
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     result_requests = [
@@ -196,7 +188,7 @@ if __name__ == "__main__":
     # start time log
     _startime = dt.datetime.utcnow()
 
-    asyncio.run(test_put_data_to_Mongodb_v1())
+    asyncio.run(test_get_data_from_Mongodb_v1())
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))

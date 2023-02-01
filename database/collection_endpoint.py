@@ -359,9 +359,8 @@ class db_allData_manager(db_collections_common):
         )
 
     async def get_data(self, chain: str, protocol: str) -> dict:
-        return self.__get_data(
-            query=self.query_all(chain=chain, protocol=protocol),
-            collection_name=self.db_collection_name,
+        return await self.__get_data(
+            query=self.query_all(chain=chain, protocol=protocol)
         )
 
     @staticmethod
@@ -424,9 +423,8 @@ class db_allRewards2_manager(db_collections_common):
         )
 
     async def get_data(self, chain: str, protocol: str) -> dict:
-        return self.__get_data(
-            query=self.query_all(chain=chain, protocol=protocol),
-            collection_name=self.db_collection_name,
+        return await self.__get_data(
+            query=self.query_all(chain=chain, protocol=protocol)
         )
 
     @staticmethod
