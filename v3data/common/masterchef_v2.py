@@ -1,5 +1,6 @@
 from v3data.masterchef_v2 import MasterchefV2Info, UserRewardsV2
 from database.collection_endpoint import db_allRewards2_manager
+from v3data.config import MONGO_DB_URL
 
 
 async def info(protocol: str, chain: str):
