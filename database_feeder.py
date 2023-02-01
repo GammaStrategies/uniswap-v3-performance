@@ -290,7 +290,7 @@ if __name__ == "__main__":
                 crons[f"{function}_{key}"] = crontab(
                     cron_ex_format,
                     func=EXPR_FUNCS[function],
-                    args=args,
+                    args=args if len(args) > 0 else (),
                     loop=loop,
                     start=True,
                     tz=timezone.utc,
