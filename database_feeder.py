@@ -16,8 +16,12 @@ from v3data import utils
 from v3data.constants import PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP
 from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS
 
-from database.collection_returns import db_returns_manager
-from database.collection_static import db_static_manager
+from database.collection_endpoint import (
+    db_returns_manager,
+    db_static_manager,
+    db_allData_manager,
+    db_allRewards2_manager,
+)
 
 
 logging.basicConfig(
@@ -38,16 +42,25 @@ CHAINS_PROTOCOLS = [
 
 # set cron vars
 EXPR_FORMATS = {
-    "daily": "0 0 * * *",
-    "weekly": "2 0 * * mon",
-    "monthly": "5 0 * * mon#1",
+    "average_returns": {
+        "daily": "0 0 * * *",
+        "weekly": "2 0 * * mon",
+        "monthly": "5 0 * * mon#1",
+    },
+    "allData": {
+        "mins": "6 0 * * *",
+    },
+    "allRewards2": {
+        "mins": "4 0 * * *",
+    },
 }
-EXPR_PERIODS = {
-    "daily": [1],
-    "weekly": [7],
-    "monthly": [30],
+EXPR_ARGS = {
+    "average_returns": {
+        "daily": [[1], True],
+        "weekly": [[7], True],
+        "monthly": [[30], True],
+    }
 }
-
 
 # cron job func
 async def feed_database_average_returns(periods: list, process_quickswap=True):
@@ -69,6 +82,48 @@ async def feed_database_average_returns(periods: list, process_quickswap=True):
                 for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_QUICKSWAP].keys()
             ]
         )
+
+    await asyncio.gather(*requests)
+
+
+async def feed_database_allData():
+    logger.debug(" Starting database feeding process for allData")
+    _manager = db_allData_manager(mongo_url=MONGO_DB_URL)
+    requests = [
+        _manager.feed_db(
+            chain=chain,
+            protocol=PROTOCOL_UNISWAP_V3,
+        )
+        for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_UNISWAP_V3].keys()
+    ]
+
+    requests.extend(
+        [
+            _manager.feed_db(chain=chain, protocol=PROTOCOL_QUICKSWAP, periods=periods)
+            for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_QUICKSWAP].keys()
+        ]
+    )
+
+    await asyncio.gather(*requests)
+
+
+async def feed_database_allRewards2():
+    logger.debug(" Starting database feeding process for allRewards2 data")
+    _manager = db_allRewards2_manager(mongo_url=MONGO_DB_URL)
+    requests = [
+        _manager.feed_db(
+            chain=chain,
+            protocol=PROTOCOL_UNISWAP_V3,
+        )
+        for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_UNISWAP_V3].keys()
+    ]
+
+    requests.extend(
+        [
+            _manager.feed_db(chain=chain, protocol=PROTOCOL_QUICKSWAP, periods=periods)
+            for chain in GAMMA_SUBGRAPH_URLS[PROTOCOL_QUICKSWAP].keys()
+        ]
+    )
 
     await asyncio.gather(*requests)
 
@@ -181,6 +236,12 @@ def get_timepassed_string(start_time: datetime) -> str:
     return "{:,.2f} {}".format(_passed, _timelapse_unit)
 
 
+EXPR_FUNCS = {
+    "average_returns": feed_database_average_returns,
+    "allData": feed_database_allData,
+    "allRewards2": feed_database_allRewards2,
+}
+
 if __name__ == "__main__":
 
     # convert command line arguments to dict variables
@@ -223,15 +284,16 @@ if __name__ == "__main__":
 
         # create cron jobs ( utc timezone )
         crons = {}
-        for period, cron_ex_format in EXPR_FORMATS.items():
-            crons[period] = crontab(
-                cron_ex_format,
-                func=feed_database_average_returns,
-                args=[EXPR_PERIODS[period], True],
-                loop=loop,
-                start=True,
-                tz=timezone.utc,
-            )
+        for function, formats in EXPR_FORMATS.items():
+            for key, cron_ex_format in EXPR_FORMATS[function].items():
+                crons[f"{function}_{key}"] = crontab(
+                    cron_ex_format,
+                    func=EXPR_FUNCS[function],
+                    args=EXPR_ARGS.get(function, {}).get(key, ()),
+                    loop=loop,
+                    start=True,
+                    tz=timezone.utc,
+                )
 
         # run forever
         asyncio.set_event_loop(loop)

@@ -1,9 +1,9 @@
 import logging
 import asyncio
 from dataclasses import dataclass, field, asdict, InitVar
+from math import log
 
 from database.common.db_managers import MongoDbManager
-from database.common.db_data_models import tool_mongodb_general, tool_database_id
 
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,12 @@ class db_collections_common:
         self,
         mongo_url: str,
         db_name: str = "gamma_db_v1",
-        db_collections: dict = {"static": {"id": True}, "returns": {"id": True}},
+        db_collections: dict = {
+            "static": {"id": True},
+            "returns": {"id": True},
+            "allData": {"id": True},  # id = network
+            "allRewards2": {"id": True},  # id = network
+        },
     ):
         # TODO: -> currently hardcoding optional mongo database name and collections untill we have more usecases for the database model
 
@@ -25,7 +30,7 @@ class db_collections_common:
     # actual db saving
     async def save_items_to_database(
         self,
-        data: list[tool_mongodb_general],
+        data: dict,
         collection_name: str,
     ):
         """Save dictionary values to the database collection replacing any equal id defined
@@ -45,28 +50,43 @@ class db_collections_common:
             # add item by item to database
             for key, item in data.items():
                 # add to mongodb
-                self.save_item_to_database(
+                self.__add_item_to_database(
                     db_manager=_db_manager, data=item, collection_name=collection_name
                 )
 
-    def save_item_to_database(
+    async def save_item_to_database(
+        self,
+        data: dict,
+        collection_name: str,
+    ):
+        """Save dictionary values to the database collection replacing any equal id defined
+
+        Args:
+            data (list): data list following tool_mongodb_general class to be saved to database in a dict format
+            collection_name (str): collection name to save data to
+        """
+
+        # create database manager/connector
+        with MongoDbManager(
+            url=self._db_mongo_url,
+            db_name=self._db_name,
+            collections=self._db_collections,
+        ) as _db_manager:
+            # add to mongodb
+            self.__add_item_to_database(
+                db_manager=_db_manager, data=data, collection_name=collection_name
+            )
+
+    def __add_item_to_database(
         self,
         db_manager: MongoDbManager,
-        data: tool_database_id,
+        data: dict,
         collection_name: str,
     ):
         try:
-            # enforce type match
-            if not issubclass(type(data), tool_mongodb_general) and not issubclass(
-                type(data), tool_database_id
-            ):
-                logger.exception(
-                    " data passed to be saved to mongodb is in an incorrect format".format()
-                )
-
             # add to mongodb
             db_manager.add_item(
-                coll_name=collection_name, dbFilter={"id": data.id}, data=data.asdict()
+                coll_name=collection_name, dbFilter={"id": data["id"]}, data=data
             )
         except Exception as e:
             logger.exception(
@@ -103,3 +123,12 @@ class db_collections_common:
                 _db_manager.get_items(coll_name=collection_name, aggregate=query)
             )
         return result
+
+    # TOOLING
+    @staticmethod
+    def bytes_needed(n):
+        if n == 0:
+            return 1
+        if n < 0:
+            return int(log(abs(n), 256)) + 2
+        return int(log(n, 256)) + 1

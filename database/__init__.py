@@ -1,1 +1,4 @@
-from database import collection_returns, collection_static, collections_common
+from database import (
+    collection_endpoint,
+    collections_common,
+)

@@ -7,6 +7,7 @@ import asyncio
 
 # force test environment
 # os.environ["MONGO_DB_URL"] = "mongodb://localhost:27072"
+os.environ["MONGO_DB_URL"] = "mongodb://10.10.0.39:32768"
 
 logging.basicConfig(
     format="[%(asctime)s:%(levelname)s:%(name)s]:%(message)s",
@@ -21,10 +22,15 @@ sys.path.append(PARENT_FOLDER)
 
 
 from v3data.constants import PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP
-from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS
+from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS, DEFAULT_TIMEZONE
 
-from database.collection_returns import db_returns_manager
-from database.collection_static import db_static_manager
+from database.collection_endpoint import (
+    db_returns_manager,
+    db_static_manager,
+    db_allData_manager,
+    db_allRewards2_manager,
+)
+
 from v3data.common import hypervisor
 import database_feeder
 
@@ -38,20 +44,57 @@ async def test_put_data_to_Mongodb_v1():
         (chain, protocol)
         for protocol in protocols
         for chain in GAMMA_SUBGRAPH_URLS[protocol].keys()
+        if not (chain == "polygon" and protocol == PROTOCOL_UNISWAP_V3)
     ]
+    requests = list()
 
     # returns requests
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
-    requests = [
+    requests += [
         returns_manager.feed_db(chain=chain, protocol=protocol)
         for chain, protocol in chains_protocols
     ]
 
     # static requests
     static_manager = db_static_manager(mongo_url=MONGO_DB_URL)
-    requests = [
+    requests += [
         static_manager.feed_db(chain=chain, protocol=protocol)
         for chain, protocol in chains_protocols
+    ]
+
+    # AllData requests
+    allData_manager = db_allData_manager(mongo_url=MONGO_DB_URL)
+    requests += [
+        allData_manager.feed_db(chain=chain, protocol=protocol)
+        for chain, protocol in chains_protocols
+    ]
+
+    # allRewards2 requests
+    allRewards2_manager = db_allRewards2_manager(mongo_url=MONGO_DB_URL)
+    requests += [
+        allRewards2_manager.feed_db(chain=chain, protocol=protocol)
+        for chain, protocol in chains_protocols
+    ]
+
+    # execute queries
+    await asyncio.gather(*requests)
+
+
+async def test_put_data_to_Mongodb_vData():
+
+    protocols = [PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP]
+    chains_protocols = [
+        (chain, protocol)
+        for protocol in protocols
+        for chain in GAMMA_SUBGRAPH_URLS[protocol].keys()
+    ]
+
+    # data
+    _manager = db_allRewards2_manager(mongo_url=MONGO_DB_URL)
+    requests = [
+        _manager.feed_db(chain=chain, protocol=protocol)
+        for chain, protocol in chains_protocols
+        if not (chain == "polygon" and protocol == PROTOCOL_UNISWAP_V3)
     ]
 
     # execute queries
@@ -154,7 +197,7 @@ if __name__ == "__main__":
     # start time log
     _startime = dt.datetime.utcnow()
 
-    asyncio.run(test_put_historicData_to_Mongodb_vExpert())
+    asyncio.run(test_put_data_to_Mongodb_v1())
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))
