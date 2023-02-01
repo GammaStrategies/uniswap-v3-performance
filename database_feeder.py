@@ -47,7 +47,7 @@ EXPR_FORMATS = {
         "monthly": "5 0 * * mon#1",
     },
     "inSecuence": {
-        "mins": "*/5 * * * *",
+        "mins": "*/1 * * * *",
     },
 }
 EXPR_ARGS = {
@@ -60,7 +60,7 @@ EXPR_ARGS = {
 
 # cron job func
 async def feed_database_average_returns(periods: list, process_quickswap=True):
-    logger.debug(" Starting database feeding process for average results data")
+    logger.info(" Starting database feeding process for average results data")
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     requests = [
         returns_manager.feed_db(chain=chain, protocol=protocol, periods=periods)
@@ -72,7 +72,10 @@ async def feed_database_average_returns(periods: list, process_quickswap=True):
 
 
 async def feed_database_allData():
-    logger.debug(" Starting database feeding process for allData")
+    logger.info(" Starting database feeding process for allData")
+    # start time log
+    _startime = datetime.utcnow()
+
     _manager = db_allData_manager(mongo_url=MONGO_DB_URL)
     requests = [
         _manager.feed_db(
@@ -82,11 +85,20 @@ async def feed_database_allData():
         for chain, protocol in CHAINS_PROTOCOLS
     ]
 
+    # execute feed
     await asyncio.gather(*requests)
+
+    # end time log
+    logger.info(
+        " took {} to complete the allData feed".format(get_timepassed_string(_startime))
+    )
 
 
 async def feed_database_allRewards2():
-    logger.debug(" Starting database feeding process for allRewards2 data")
+    logger.info(" Starting database feeding process for allRewards2 data")
+    # start time log
+    _startime = datetime.utcnow()
+
     _manager = db_allRewards2_manager(mongo_url=MONGO_DB_URL)
     requests = [
         _manager.feed_db(
@@ -96,12 +108,32 @@ async def feed_database_allRewards2():
         for chain, protocol in CHAINS_PROTOCOLS
     ]
 
+    # execute feed
     await asyncio.gather(*requests)
+
+    # end time log
+    logger.info(
+        " took {} to complete the allRewards2 feed".format(
+            get_timepassed_string(_startime)
+        )
+    )
 
 
 async def feed_database_inSecuence():
+    # start time log
+    _startime = datetime.utcnow()
+
     await feed_database_allData()
     await feed_database_allRewards2()
+
+    _endtime = datetime.utcnow()
+    if (_endtime - _startime).total_seconds() > (60 * 1):
+        # end time log
+        logger.warning(
+            " Consider increasing cron schedule ->  took {} to complete database feeder loop.".format(
+                get_timepassed_string(_startime, _endtime)
+            )
+        )
 
 
 async def feed_database_with_historic_data(
@@ -201,8 +233,10 @@ def convert_commandline_arguments(argv) -> dict:
     return prmtrs
 
 
-def get_timepassed_string(start_time: datetime) -> str:
-    _timelapse = datetime.utcnow() - start_time
+def get_timepassed_string(start_time: datetime, end_time: datetime = None) -> str:
+    if not end_time:
+        end_time = datetime.utcnow()
+    _timelapse = end_time - start_time
     _passed = _timelapse.total_seconds()
     if _passed < 60:
         _timelapse_unit = "seconds"
@@ -293,4 +327,5 @@ if __name__ == "__main__":
 
         # run forever
         asyncio.set_event_loop(loop)
-        asyncio.get_event_loop().run_forever()
+        loop.run_forever()
+        # asyncio.get_event_loop().run_forever()
