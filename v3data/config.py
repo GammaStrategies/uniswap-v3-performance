@@ -61,8 +61,8 @@ gamma_subgraphs = {
             "lab": "https://api.thegraph.com/subgraphs/name/l0c4t0r/laboratory",
         },
         "polygon": {
-            "test": "https://api.thegraph.com/subgraphs/name/gammastrategies/polygon",
-            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-polygon",
+            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/polygon",
+            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-polygon",
         },
         "arbitrum": {
             "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/arbitrum",
