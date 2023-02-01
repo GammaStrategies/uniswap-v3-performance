@@ -48,10 +48,10 @@ EXPR_FORMATS = {
         "monthly": "5 0 * * mon#1",
     },
     "allData": {
-        "mins": "6 0 * * *",
+        "mins": "*/5 * * * *",
     },
     "allRewards2": {
-        "mins": "4 0 * * *",
+        "mins": "*/5 * * * *",
     },
 }
 EXPR_ARGS = {
