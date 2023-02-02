@@ -138,28 +138,18 @@ class YieldData:
         self._transition_data = response["data"]
 
     async def _get_fee_update_data(self, period_days):
-        #  Workaround until feeUpdate is added to hype entity
-        query_hypes = """
-        query hypes{
-            uniswapV3Hypervisors(first: 1000) {
-                id
-            }
-        }
-        """
-        hype_response = await self.gamma_client.query(query_hypes)
-
         query = """
         query transitions($timestamp_start: Int!, $timestamp_end: Int!){
-            uniswapV3FeeUpdates(
-                first: 1000
-                where: {
-                    timestamp_gt: $timestamp_start
-                    timestamp_lt: $timestamp_end
+            uniswapV3Hypervisors(first: 1000) {
+                id
+                feeUpdates(
+                    where: {
+                        timestamp_gt: $timestamp_start
+                        timestamp_lt: $timestamp_end}
+                ) {
+                    block
+                    timestamp
                 }
-            ){
-                hypervisor { id }
-                block
-                timestamp
             }
             _meta {
                 block {
@@ -180,25 +170,7 @@ class YieldData:
         }
         response = await self.gamma_client.query(query, variables)
 
-        transformed_data = {hype["id"]: [] for hype in hype_response["data"]["uniswapV3Hypervisors"]}
-        for updates in response["data"]["uniswapV3FeeUpdates"]:
-
-            if not transformed_data.get(updates["hypervisor"]["id"]):
-                transformed_data[updates["hypervisor"]["id"]] = []
-
-            transformed_data[updates["hypervisor"]["id"]].append(
-                {"block": updates["block"], "timestamp": updates["timestamp"]}
-            )
-
-        transformed_data = [
-            {"id": hypervisor, "transitions": transitions}
-            for hypervisor, transitions in transformed_data.items()
-        ]
-
-        self._transition_data = {
-            "uniswapV3Hypervisors": transformed_data,
-            "meta": response["data"]["_meta"],
-        }
+        self._transition_data = response["data"]
 
     async def _get_pool_data_at_block(
         self, block, pool_address, base_lower, base_upper, limit_lower, limit_upper
@@ -348,7 +320,7 @@ class YieldData:
             block_hypervisor_map[current_block].append(hypervisor["id"])
 
             if self.protocol == "quickswap":
-                tx_types = ["transitions"]
+                tx_types = ["feeUpdates"]
             else:
                 tx_types = ["deposits", "withdraws", "rebalances"]
 
