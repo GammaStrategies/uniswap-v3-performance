@@ -52,7 +52,6 @@ visor_subgraphs = {
     "lab": "https://api.thegraph.com/subgraphs/name/l0c4t0r/laboratory",
 }
 
-# TODO: change polygon prod test fields
 gamma_subgraphs = {
     "uniswap_v3": {
         "mainnet": {
@@ -201,3 +200,11 @@ ALCHEMY_URLS = {
 }
 
 MONGO_DB_URL = os.environ.get("MONGO_DB_URL", "mongodb://localhost:27072")
+MONGO_DB_TIMEOUTMS = os.environ.get("MONGO_DB_TIMEOUTMS", 2000)
+MONGO_DB_COLLECTIONS = {
+    "static": {"id": True},  #      no historic
+    "returns": {"id": True},  #     historic
+    "allData": {"id": True},  # id = <chain_protocol>       no historic
+    "allRewards2": {"id": True},  # id = <chain_protocol>   no historic
+    "agregateStats": {"id": True},  # id = <chain_protocol_timestamp>    historic
+}

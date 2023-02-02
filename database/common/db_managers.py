@@ -2,11 +2,19 @@ import logging
 from pymongo import MongoClient
 from pymongo import errors as MongoErrors
 
+from v3data.config import MONGO_DB_TIMEOUTMS
+
 logger = logging.getLogger(__name__)
 
 
 class MongoDbManager:
-    def __init__(self, url: str, db_name: str, collections: dict):
+    def __init__(
+        self,
+        url: str,
+        db_name: str,
+        collections: dict,
+        serverSelectionTimeoutMS: int = MONGO_DB_TIMEOUTMS,
+    ):
         """Mongo database helper
 
         Args:
@@ -21,13 +29,20 @@ class MongoDbManager:
                                        {"id":True
                                        },
                                }
+            serverSelectionTimeoutMS (int): maximum number of milliseconds to timeout connection
         """
 
         # connect to mongo database
         try:
-            self.mongo_client = MongoClient(url)
+            self.mongo_client = MongoClient(
+                url, serverSelectionTimeoutMS=serverSelectionTimeoutMS
+            )
+        except MongoErrors.ServerSelectionTimeoutError:
+            raise Exception(
+                f" Connection timed out using {serverSelectionTimeoutMS} ms. Try increasing this value if u know server is responding"
+            )
         except MongoErrors.ConnectionFailure:
-            raise Exception("Failed not connect to {}".format(url))
+            raise Exception("Failed to connect to {}".format(url))
         self.database = self.mongo_client[db_name]
 
         # Retrieve database collection names

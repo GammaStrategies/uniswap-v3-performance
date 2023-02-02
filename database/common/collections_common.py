@@ -4,7 +4,7 @@ from dataclasses import dataclass, field, asdict, InitVar
 from math import log
 
 from database.common.db_managers import MongoDbManager
-
+from v3data.config import MONGO_DB_COLLECTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -14,12 +14,7 @@ class db_collections_common:
         self,
         mongo_url: str,
         db_name: str = "gamma_db_v1",
-        db_collections: dict = {
-            "static": {"id": True},
-            "returns": {"id": True},
-            "allData": {"id": True},  # id = network
-            "allRewards2": {"id": True},  # id = network
-        },
+        db_collections: dict = MONGO_DB_COLLECTIONS,
     ):
         # TODO: -> currently hardcoding optional mongo database name and collections untill we have more usecases for the database model
 
