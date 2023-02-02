@@ -7,7 +7,7 @@ from v3data.constants import DAY_SECONDS, YEAR_SECONDS
 from v3data.hypes.fees import Fees
 from v3data.hypes.fees_yield_data import YieldData
 
-YIELD_PER_DAY_MAX = 30
+YIELD_PER_DAY_MAX = 3
 
 logger = logging.getLogger(__name__)
 

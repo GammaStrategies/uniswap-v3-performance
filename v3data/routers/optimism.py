@@ -5,7 +5,7 @@ import v3data.common.users
 
 from fastapi import APIRouter, Response
 from fastapi_cache.decorator import cache
-from v3data.config import APY_CACHE_TIMEOUT
+from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT
 from v3data.constants import PROTOCOL_UNISWAP_V3
 
 CHAIN_OPTIMISM = "optimism"
@@ -112,7 +112,7 @@ async def hypervisors_average_return():
 
 
 @router.get("/hypervisors/allData")
-@cache(expire=APY_CACHE_TIMEOUT)
+@cache(expire=ALLDATA_CACHE_TIMEOUT)
 async def hypervisors_all():
     return await v3data.common.hypervisor.hypervisors_all(
         PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM
@@ -180,6 +180,7 @@ async def all_rewards():
 
 
 @router.get("/allRewards2")
+@cache(expire=ALLDATA_CACHE_TIMEOUT)
 async def all_rewards_2():
     return await v3data.common.masterchef_v2.info(PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM)
 

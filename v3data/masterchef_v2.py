@@ -91,7 +91,6 @@ class MasterchefV2Info(MasterchefV2Data):
             await self._get_masterchef_data()
 
         info = {}
-        print(self.data)
         for masterChef in self.data:
             pool_info = {}
             for pool in masterChef["pools"]:
@@ -122,6 +121,9 @@ class MasterchefV2Info(MasterchefV2Data):
                     else:
                         weighted_reward_per_second = 0
 
+                    if pool["poolId"] in ["16", "17"]:
+                        weighted_reward_per_second = 0
+
                     rewarder_info[rewarderPool["rewarder"]["id"]] = {
                         "rewardToken": reward_token,
                         "rewardTokenSymbol": reward_token_symbol,
@@ -133,8 +135,7 @@ class MasterchefV2Info(MasterchefV2Data):
                     reward_per_second_usdc += (
                         weighted_reward_per_second * reward_token_price["token_in_usdc"]
                     )
-                    print(reward_token_symbol)
-                    print(reward_token_price["token_in_usdc"])
+
                 try:
                     apr = (
                         reward_per_second_usdc
@@ -145,6 +146,9 @@ class MasterchefV2Info(MasterchefV2Data):
                         )
                     )
                 except ZeroDivisionError:
+                    apr = 0
+
+                if pool["poolId"] in ["16", "17"]:
                     apr = 0
 
                 pool_info[pool["hypervisor"]["id"]] = {
