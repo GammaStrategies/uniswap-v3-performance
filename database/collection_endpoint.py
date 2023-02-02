@@ -8,7 +8,7 @@ from v3data.hypervisor import HypervisorInfo, HypervisorData
 from v3data.masterchef_v2 import MasterchefV2Info, UserRewardsV2
 from v3data.hypes.impermanent_data import ImpermanentDivergence
 
-from database.collections_common import db_collections_common
+from database.common.collections_common import db_collections_common
 
 
 class db_static_manager(db_collections_common):
