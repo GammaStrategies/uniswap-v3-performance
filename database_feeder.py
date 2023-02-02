@@ -48,7 +48,7 @@ EXPR_FORMATS = {
         "monthly": "5 0 * * mon#1",
     },
     "inSecuence": {
-        "mins": "*/1 * * * *",
+        "mins": "*/3 * * * *",
     },
     "aggregateStats": {
         "mins": "0 */1 * * *",
@@ -158,6 +158,12 @@ async def feed_database_inSecuence():
                 get_timepassed_string(_startime, _endtime)
             )
         )
+
+
+async def feed_all():
+    await feed_database_allData()
+    await feed_database_allRewards2()
+    await feed_database_aggregateStats()
 
 
 # Manual script execution
@@ -323,7 +329,7 @@ if __name__ == "__main__":
         # start time log
         _startime = datetime.utcnow()
 
-        asyncio.run(feed_database_inSecuence())
+        asyncio.run(feed_all())
 
         # end time log
         logger.info(
