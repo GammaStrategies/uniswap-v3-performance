@@ -205,6 +205,7 @@ async def token_distributions(
     days: int = 6,
     timezone: str = DEFAULT_TIMEZONE,
 ):
+    token_symbol = token_symbol.lower()
     timezone = timezone.upper()
 
     if token_symbol not in ["gamma", "visr", "eth"]:

@@ -31,7 +31,6 @@ class DexPriceData(ABC):
 
     async def _get_pool_data(self):
         variables = {"id": self.pool}
-        print(self.pool_query)
         response = await self.uniswap_client.query(self.pool_query, variables)
         self.pool_data = response["data"]["pool"]
         self.native_data = response["data"]["bundle"]
