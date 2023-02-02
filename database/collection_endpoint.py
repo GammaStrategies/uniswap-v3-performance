@@ -166,16 +166,20 @@ class db_returns_manager(db_collection_manager):
     async def get_hypervisors_average(
         self, chain: str, period: int = 0, protocol: str = ""
     ) -> dict:
-        return await self._get_data(
+        result = await self._get_data(
             query=self.query_hypervisors_average(
                 chain=chain, period=period, protocol=protocol
             )
         )
+        try:
+            return result[0]
+        except:
+            return {}
 
     async def get_hypervisor_average(
         self, chain: str, hypervisor_address: str, period: int = 0, protocol: str = ""
     ) -> dict:
-        return await self._get_data(
+        result = await self._get_data(
             query=self.query_hypervisors_average(
                 chain=chain,
                 hypervisor_address=hypervisor_address,
@@ -183,6 +187,10 @@ class db_returns_manager(db_collection_manager):
                 protocol=protocol,
             )
         )
+        try:
+            return result[0]
+        except:
+            return {}
 
     # TODO: use a limited number of items back? ( $limit )
     @staticmethod
