@@ -21,6 +21,7 @@ from database.collection_endpoint import (
     db_static_manager,
     db_allData_manager,
     db_allRewards2_manager,
+    db_aggregateStats_manager,
 )
 
 
@@ -49,6 +50,9 @@ EXPR_FORMATS = {
     "inSecuence": {
         "mins": "*/1 * * * *",
     },
+    "aggregateStats": {
+        "mins": "0 */1 * * *",
+    },
 }
 EXPR_ARGS = {
     "average_returns": {
@@ -58,7 +62,7 @@ EXPR_ARGS = {
     }
 }
 
-# cron job func
+# feed jobs
 async def feed_database_average_returns(periods: list, process_quickswap=True):
     logger.info(" Starting database feeding process for average results data")
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
@@ -95,7 +99,8 @@ async def feed_database_allData():
 
 
 async def feed_database_allRewards2():
-    logger.info(" Starting database feeding process for allRewards2 data")
+    name = "allRewards2"
+    logger.info(f" Starting database feeding process for {name} data")
     # start time log
     _startime = datetime.utcnow()
 
@@ -112,13 +117,32 @@ async def feed_database_allRewards2():
     await asyncio.gather(*requests)
 
     # end time log
-    logger.info(
-        " took {} to complete the allRewards2 feed".format(
-            get_timepassed_string(_startime)
+    logger.info(f" took {get_timepassed_string(_startime)} to complete the {name} feed")
+
+
+async def feed_database_aggregateStats():
+    name = "aggregateStats"
+    logger.info(f" Starting database feeding process for {name} data")
+    # start time log
+    _startime = datetime.utcnow()
+
+    _manager = db_aggregateStats_manager(mongo_url=MONGO_DB_URL)
+    requests = [
+        _manager.feed_db(
+            chain=chain,
+            protocol=protocol,
         )
-    )
+        for chain, protocol in CHAINS_PROTOCOLS
+    ]
+
+    # execute feed
+    await asyncio.gather(*requests)
+
+    # end time log
+    logger.info(f" took {get_timepassed_string(_startime)} to complete the {name} feed")
 
 
+# Multiple feeds in one
 async def feed_database_inSecuence():
     # start time log
     _startime = datetime.utcnow()
@@ -136,6 +160,7 @@ async def feed_database_inSecuence():
         )
 
 
+# Manual script execution
 async def feed_database_with_historic_data(
     from_datetime: datetime, process_quickswap=True, periods=[]
 ):
@@ -254,6 +279,7 @@ EXPR_FUNCS = {
     "average_returns": feed_database_average_returns,
     "allData": feed_database_allData,
     "allRewards2": feed_database_allRewards2,
+    "aggregateStats": feed_database_aggregateStats,
     "inSecuence": feed_database_inSecuence,
 }
 
@@ -308,6 +334,8 @@ if __name__ == "__main__":
     else:
         # actual feed
         logger.info(" Starting loop feed  ")
+        # maybe log cron jobs using https://github.com/bradymholt/cron-expression-descriptor ??
+
         # create event loop
         loop = asyncio.new_event_loop()
 

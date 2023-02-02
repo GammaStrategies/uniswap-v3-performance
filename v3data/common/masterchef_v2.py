@@ -4,12 +4,17 @@ from v3data.config import MONGO_DB_URL
 
 
 async def info(protocol: str, chain: str):
-    # TODO: if statement check database content ( maybe datetime field)
-    _mngr = db_allRewards2_manager(mongo_url=MONGO_DB_URL)
-    result = await _mngr.get_data(chain=chain, protocol=protocol)
-    return result
-    # masterchef_info = MasterchefV2Info(protocol, chain)
-    # return await masterchef_info.output(get_data=True)
+    try:
+        _mngr = db_allRewards2_manager(mongo_url=MONGO_DB_URL)
+        result = await _mngr.get_data(chain=chain, protocol=protocol)
+        return result
+    except:
+        # DB may not respond
+        logger.warning(
+            " Could not get database allRewards2 data for {protocol} in {chain}. Return calculated data."
+        )
+        masterchef_info = MasterchefV2Info(protocol, chain)
+        return await masterchef_info.output(get_data=True)
 
 
 async def user_rewards(protocol: str, chain: str, user_address: str):

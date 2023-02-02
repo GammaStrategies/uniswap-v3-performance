@@ -11,8 +11,13 @@ from database.collection_endpoint import (
     db_allData_manager,
     db_allRewards2_manager,
     db_static_manager,
+    db_aggregateStats_manager,
 )
 from v3data.config import MONGO_DB_URL
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def hypervisor_basic_stats(
@@ -42,14 +47,23 @@ async def hypervisor_apy(
 
 
 async def aggregate_stats(protocol: str, chain: str):
-    top_level = TopLevelData(protocol, chain)
-    top_level_data = await top_level.all_stats()
 
-    return {
-        "totalValueLockedUSD": top_level_data["tvl"],
-        "pairCount": top_level_data["pool_count"],
-        "totalFeesClaimedUSD": top_level_data["fees_claimed"],
-    }
+    try:
+        _mngr = db_aggregateStats_manager(mongo_url=MONGO_DB_URL)
+        result = await _mngr.get_data(chain=chain, protocol=protocol)
+        return result
+    except:
+        logger.warning(
+            " Could not get database aggregateStats data for {protocol} in {chain}. Return calculated data."
+        )
+        top_level = TopLevelData(protocol, chain)
+        top_level_data = await top_level.all_stats()
+
+        return {
+            "totalValueLockedUSD": top_level_data["tvl"],
+            "pairCount": top_level_data["pool_count"],
+            "totalFeesClaimedUSD": top_level_data["fees_claimed"],
+        }
 
 
 async def recent_fees(protocol: str, chain: str, hours: int = 24):
@@ -80,14 +94,17 @@ async def hypervisor_average_return(protocol: str, chain: str, hypervisor_addres
 
 
 async def hypervisors_all(protocol: str, chain: str):
-    # TODO: if statement check database content ( maybe datetime field)
-
-    _mngr = db_allData_manager(mongo_url=MONGO_DB_URL)
-    result = await _mngr.get_data(chain=chain, protocol=protocol)
-    return result
-
-    # hypervisor_info = HypervisorInfo(protocol, chain)
-    # return await hypervisor_info.all_data()
+    try:
+        _mngr = db_allData_manager(mongo_url=MONGO_DB_URL)
+        result = await _mngr.get_data(chain=chain, protocol=protocol)
+        return result
+    except:
+        logger.warning(
+            " Could not get database allData for {protocol} in {chain}. Return calculated data."
+        )
+        # DB may not respond
+        hypervisor_info = HypervisorInfo(protocol, chain)
+        return await hypervisor_info.all_data()
 
 
 async def uncollected_fees(protocol: str, chain: str, hypervisor_address: str):

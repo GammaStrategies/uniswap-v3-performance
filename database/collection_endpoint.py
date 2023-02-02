@@ -7,11 +7,27 @@ from v3data.config import MONGO_DB_URL, DEFAULT_TIMEZONE
 from v3data.hypervisor import HypervisorInfo, HypervisorData
 from v3data.masterchef_v2 import MasterchefV2Info, UserRewardsV2
 from v3data.hypes.impermanent_data import ImpermanentDivergence
+from v3data.toplevel import TopLevelData
 
 from database.common.collections_common import db_collections_common
 
 
-class db_static_manager(db_collections_common):
+class db_collection_manager(db_collections_common):
+    db_collection_name = ""
+
+    async def feed_db(self, chain: str, protocol: str):
+        await self.save_items_to_database(
+            data=await self.create_data(chain=chain, protocol=protocol),
+            collection_name=self.db_collection_name,
+        )
+
+    async def _get_data(self, query: list[dict]):
+        return self.get_items_from_database(
+            query=query, collection_name=self.db_collection_name
+        )
+
+
+class db_static_manager(db_collection_manager):
     db_collection_name = "static"
 
     async def create_data(self, chain: str, protocol: str) -> dict:
@@ -67,18 +83,8 @@ class db_static_manager(db_collections_common):
 
         return result
 
-    async def feed_db(self, chain: str, protocol: str):
 
-        await self.save_items_to_database(
-            data=await self.create_data(chain=chain, protocol=protocol),
-            collection_name=self.db_collection_name,
-        )
-
-    async def __get_data(self, chain: str, protocol: str) -> dict:
-        pass
-
-
-class db_returns_manager(db_collections_common):
+class db_returns_manager(db_collection_manager):
     db_collection_name = "returns"
 
     # format data to be used with mongo db
@@ -157,15 +163,10 @@ class db_returns_manager(db_collections_common):
 
         await asyncio.gather(*requests)
 
-    async def __get_data(self, query: list[dict]):
-        return self.get_items_from_database(
-            query=query, collection_name=self.db_collection_name
-        )
-
     async def get_hypervisors_average(
         self, chain: str, period: int = 0, protocol: str = ""
     ) -> dict:
-        return await self.__get_data(
+        return await self._get_data(
             query=self.query_hypervisors_average(
                 chain=chain, period=period, protocol=protocol
             )
@@ -174,7 +175,7 @@ class db_returns_manager(db_collections_common):
     async def get_hypervisor_average(
         self, chain: str, hypervisor_address: str, period: int = 0, protocol: str = ""
     ) -> dict:
-        return await self.__get_data(
+        return await self._get_data(
             query=self.query_hypervisors_average(
                 chain=chain,
                 hypervisor_address=hypervisor_address,
@@ -315,7 +316,7 @@ class db_returns_manager(db_collections_common):
         ]
 
 
-class db_allData_manager(db_collections_common):
+class db_allData_manager(db_collection_manager):
     db_collection_name = "allData"
 
     async def create_data(self, chain: str, protocol: str) -> dict:
@@ -353,13 +354,8 @@ class db_allData_manager(db_collections_common):
             collection_name=self.db_collection_name,
         )
 
-    async def __get_data(self, query: list[dict]) -> dict:
-        return self.get_items_from_database(
-            query=query, collection_name=self.db_collection_name
-        )
-
     async def get_data(self, chain: str, protocol: str) -> dict:
-        result = await self.__get_data(
+        result = await self._get_data(
             query=self.query_all(chain=chain, protocol=protocol)
         )
         try:
@@ -385,7 +381,7 @@ class db_allData_manager(db_collections_common):
         return [{"$match": _match}, {"$unset": ["_id", "id"]}]
 
 
-class db_allRewards2_manager(db_collections_common):
+class db_allRewards2_manager(db_collection_manager):
     db_collection_name = "allRewards2"
 
     async def create_data(self, chain: str, protocol: str) -> dict:
@@ -421,13 +417,8 @@ class db_allRewards2_manager(db_collections_common):
             collection_name=self.db_collection_name,
         )
 
-    async def __get_data(self, query: list[dict]) -> dict:
-        return self.get_items_from_database(
-            query=query, collection_name=self.db_collection_name
-        )
-
     async def get_data(self, chain: str, protocol: str) -> dict:
-        result = await self.__get_data(
+        result = await self._get_data(
             query=self.query_all(chain=chain, protocol=protocol)
         )
         try:
@@ -451,3 +442,70 @@ class db_allRewards2_manager(db_collections_common):
 
         # return query
         return [{"$match": _match}, {"$unset": ["_id", "id"]}]
+
+
+class db_aggregateStats_manager(db_collection_manager):
+    db_collection_name = "agregateStats"
+
+    async def create_data(self, chain: str, protocol: str) -> dict:
+        """
+
+        Args:
+            chain (str): _description_
+            protocol (str): _description_
+
+        Returns:
+            dict:
+        """
+
+        top_level = TopLevelData(protocol=protocol, chain=chain)
+        top_level_data = await top_level.all_stats()
+
+        dtime = datetime.utcnow()
+        return {
+            "id": f"{chain}_{protocol}_{dtime.timestamp()}",
+            "chain": chain,
+            "protocol": protocol,
+            "datetime": dtime,
+            "totalValueLockedUSD": top_level_data["tvl"],
+            "pairCount": top_level_data["pool_count"],
+            "totalFeesClaimedUSD": top_level_data["fees_claimed"],
+        }
+
+    async def feed_db(self, chain: str, protocol: str):
+
+        # save as 1 item ( not separated)
+        await self.save_item_to_database(
+            data=await self.create_data(chain=chain, protocol=protocol),
+            collection_name=self.db_collection_name,
+        )
+
+    async def get_data(self, chain: str, protocol: str) -> dict:
+        result = await self._get_data(
+            query=self.query_last(chain=chain, protocol=protocol)
+        )
+        try:
+            return result[0]
+        except:
+            return {}
+
+    @staticmethod
+    def query_last(chain: str, protocol: str = "") -> list[dict]:
+        """Query last item ( highest datetime )
+        Args:
+            chain (str):
+            protocol (str)
+
+        Returns:
+            list[dict]:
+
+        """
+        # set return match vars
+        _match = {"chain": chain, "protocol": protocol}
+
+        # return query
+        return [
+            {"$match": _match},
+            {"$sort": {"datetime": -1}},
+            {"$unset": ["_id", "id", "chain", "protocol"]},
+        ]
