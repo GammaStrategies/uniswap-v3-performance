@@ -136,21 +136,13 @@ async def test_get_data_from_Mongodb_v1():
     #  managers
     allData_manager = db_allData_manager(mongo_url=MONGO_DB_URL)
     allRewards2_manager = db_allRewards2_manager(mongo_url=MONGO_DB_URL)
+    returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     for chain, protocol in chains_protocols:
         allData = await allData_manager.get_data(chain=chain, protocol=protocol)
         Rewards2 = await allRewards2_manager.get_data(chain=chain, protocol=protocol)
-
-    returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
-    result_requests = [
-        returns_manager.get_data(
-            query=db_returns_manager.query_hypervisors_average(chain=chain)
+        returns = await returns_manager.get_hypervisors_average(
+            chain=chain, protocol=protocol
         )
-        for chain in ["mainnet", "optimism", "polygon", "arbitrum", "celo"]
-    ]
-    result_responses = {
-        chains[idx]: list(x)
-        for idx, x in enumerate(await asyncio.gather(*result_requests))
-    }
 
 
 async def test_get_data_from_Mongodb_v2():
@@ -193,7 +185,7 @@ if __name__ == "__main__":
     # start time log
     _startime = dt.datetime.utcnow()
 
-    asyncio.run(test_put_data_to_Mongodb_v1())
+    asyncio.run(test_get_data_from_Mongodb_v1())
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))

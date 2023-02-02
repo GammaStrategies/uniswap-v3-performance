@@ -172,7 +172,7 @@ class db_returns_manager(db_collection_manager):
             )
         )
         try:
-            return result[0]
+            return result
         except:
             return {}
 
@@ -188,11 +188,12 @@ class db_returns_manager(db_collection_manager):
             )
         )
         try:
-            return result[0]
+            return result
         except:
             return {}
 
     # TODO: use a limited number of items back? ( $limit )
+    # TODO: return dict item with hypervisor id's as keys and 1 item list only ... to match others
     @staticmethod
     def query_hypervisors_average(
         chain: str, period: int = 0, protocol: str = "", hypervisor_address: str = ""
