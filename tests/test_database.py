@@ -5,10 +5,6 @@ import logging
 import asyncio
 
 
-# force test environment
-# os.environ["MONGO_DB_URL"] = "mongodb://localhost:27072"
-# os.environ["GAMMA_SUBGRAPH_POLYGON"] = "test"
-
 logging.basicConfig(
     format="[%(asctime)s:%(levelname)s:%(name)s]:%(message)s",
     datefmt="%Y/%m/%d %I:%M:%S",
@@ -29,6 +25,7 @@ from database.collection_endpoint import (
     db_static_manager,
     db_allData_manager,
     db_allRewards2_manager,
+    db_aggregateStats_manager,
 )
 
 from v3data.common import hypervisor
@@ -39,6 +36,7 @@ logger = logging.getLogger(__name__)
 
 async def test_put_data_to_Mongodb_v1():
 
+    # create a chain protocol list
     protocols = [PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP]
     chains_protocols = [
         (chain, protocol)
@@ -72,6 +70,13 @@ async def test_put_data_to_Mongodb_v1():
     allRewards2_manager = db_allRewards2_manager(mongo_url=MONGO_DB_URL)
     requests += [
         allRewards2_manager.feed_db(chain=chain, protocol=protocol)
+        for chain, protocol in chains_protocols
+    ]
+
+    # aggregatedStats requests
+    aggregatedStats_manager = db_aggregateStats_manager(mongo_url=MONGO_DB_URL)
+    requests += [
+        aggregatedStats_manager.feed_db(chain=chain, protocol=protocol)
         for chain, protocol in chains_protocols
     ]
 
@@ -188,7 +193,7 @@ if __name__ == "__main__":
     # start time log
     _startime = dt.datetime.utcnow()
 
-    asyncio.run(test_get_data_from_Mongodb_v1())
+    asyncio.run(test_put_data_to_Mongodb_v1())
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))
