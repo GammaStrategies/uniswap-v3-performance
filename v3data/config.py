@@ -216,10 +216,10 @@ MONGO_DB_COLLECTIONS = {
 
 # local chain name <-> standard chain short name convention as in https://chainid.network/chains.json  or https://chainid.network/chains_mini.json
 CHAIN_NAME_CONVERSION = {
-    "mainnet": "eth",
-    "polygon": "matic",
-    "optimism": "oeth",
-    "arbitrum": "arb1",
+    "eth": "mainnet",
+    "matic": "polygon",
+    "oeth": "optimism",
+    "arb1": "arbitrum",
     "celo": "celo",
 }
 
