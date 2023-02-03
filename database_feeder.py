@@ -367,4 +367,3 @@ if __name__ == "__main__":
         # run forever
         asyncio.set_event_loop(loop)
         loop.run_forever()
-        # asyncio.get_event_loop().run_forever()
