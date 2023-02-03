@@ -42,13 +42,12 @@ class SubgraphClient:
         response = await async_client.post(self._url, json=params)
 
         if response.status_code == 200:
-            if parsed_response := response.json():
-                return parsed_response
-            else:
-                # handle bad gql query
+            try:
+                return response.json()
+            except:
                 logger.error(
-                    " Unexpected error while converting response to json. resp.text: {} ".format(
-                        response.text,
+                    " Unexpected error while converting response to json. resp.text: {}  ".format(
+                        response.text
                     )
                 )
         else:
