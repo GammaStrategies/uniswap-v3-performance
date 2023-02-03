@@ -1,5 +1,10 @@
 import datetime
+import logging
+
 from v3data.constants import BLOCK_TIME_SECONDS
+from v3data.config import CHAIN_NAME_CONVERSION
+
+logger = logging.getLogger(__name__)
 
 
 # historic used var
@@ -86,3 +91,48 @@ def estimate_block_from_timestamp_diff(
 
     initial_block = current_block - block_diff
     return initial_block
+
+
+def filter_addresses_byChain(addresses: list[str], chain: str) -> list[str]:
+    """Return only addresses belonging to the specified chain.
+        addresses list must follow EIP-3770 (https://eips.ethereum.org/EIPS/eip-3770)
+        and will be converted to local format using config CHAIN_NAME_CONVERSION var
+
+    Args:
+        addresses (list): EIP-3770 formatted addresses list
+        chain (str):
+
+    Returns:
+        list: of addresses
+    """
+    result = list()
+    for item in addressess:
+        try:
+            k, addres = parse_address_eip(item)
+            if CHAIN_NAME_CONVERSION[k.lower()] == chain.lower():
+                result.append(address)
+        except ValueError as err:
+            logger.warning(err)
+        except:
+            logger.exception(f" Unexpected error parsing address item: {item}")
+
+    return result
+
+
+def parse_address_eip(address: str) -> tuple[str, str]:
+    """convert EIP 3770 address format to chain,address values
+
+    Args:
+        address (str): in EIP 3770 address format
+
+    Raises:
+        ValueError:
+
+    Returns:
+        tuple[str,str]: <chain>, <address>
+    """
+    base = address.split(":")
+    if len(base) == 2:
+        return base[0], base[1]
+    else:
+        raise ValueError(f" Address does not follow standard  {address}")

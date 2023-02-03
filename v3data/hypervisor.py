@@ -5,7 +5,7 @@ from datetime import timedelta
 from pandas import DataFrame
 
 from v3data import GammaClient, UniswapV3Client
-from v3data.utils import timestamp_ago, timestamp_to_date
+from v3data.utils import timestamp_ago, timestamp_to_date, filter_addresses_byChain
 from v3data.constants import DAYS_IN_PERIOD, SECONDS_IN_DAYS
 from v3data.config import EXCLUDED_HYPERVISORS, FALLBACK_DAYS
 from v3data.hypes.fees_yield import FeesYield
@@ -26,6 +26,10 @@ class HypervisorData:
         self.basics_data = {}
         self.pools_data = {}
         self.fees_data = {}
+
+        self.excluded_hypervisors = filter_addresses_byChain(
+            EXCLUDED_HYPERVISORS, chain
+        )
 
     async def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
         query = """
@@ -391,7 +395,7 @@ class HypervisorInfo(HypervisorData):
 
         results = {}
         for hypervisor in self.all_rebalance_data:
-            if hypervisor["id"] not in EXCLUDED_HYPERVISORS:
+            if hypervisor["id"] not in self.excluded_hypervisors:
                 # uncollected_fees_data = await UncollectedFees(
                 #     self.chain
                 # ).output_for_returns_calc(hypervisor["id"])
