@@ -76,7 +76,7 @@ async def feed_database_average_returns(periods: list, process_quickswap=True):
 
 
 async def feed_database_allData():
-    logger.info(" Starting database feeding process for allData")
+    logger.info(f" Starting database feeding process for allData: {CHAINS_PROTOCOLS}")
     # start time log
     _startime = datetime.utcnow()
 
