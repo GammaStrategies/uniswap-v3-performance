@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 from v3data import utils
 
 from v3data.constants import PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP
-from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS
+from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS, EXCLUDED_HYPERVISORS
 
 from database.collection_endpoint import (
     db_returns_manager,
@@ -76,7 +76,10 @@ async def feed_database_average_returns(periods: list, process_quickswap=True):
 
 
 async def feed_database_allData():
-    logger.info(f" Starting database feeding process for allData: {CHAINS_PROTOCOLS}")
+    logger.info(" Starting database feeding process for allData")
+    logger.info(f"     chains prot.: {CHAINS_PROTOCOLS}")
+    logger.info(f"     excluded_hyp: {EXCLUDED_HYPERVISORS}")
+
     # start time log
     _startime = datetime.utcnow()
 
@@ -324,7 +327,9 @@ if __name__ == "__main__":
             )
         )
     elif "manual" in cml_parameters:
-        logger.info(" Starting manual execution of sequencer ")
+        logger.info(" Starting one-time manual execution ")
+        logger.info(f"     chains prot.: {CHAINS_PROTOCOLS}")
+        logger.info(f"     excluded_hyp: {EXCLUDED_HYPERVISORS}")
 
         # start time log
         _startime = datetime.utcnow()
