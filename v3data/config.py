@@ -1,7 +1,4 @@
 import os
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 V3_FACTORY_ADDRESS = "0x1F98431c8aD98523631AE4a59f267346ea31F984"
@@ -222,16 +219,3 @@ CHAIN_NAME_CONVERSION = {
     "arb1": "arbitrum",
     "celo": "celo",
 }
-
-# LOG configuration loaded
-logger.info("Loaded from variables (among others): ")
-logger.info(f" CHARTS_CACHE_TIMEOUT: {CHARTS_CACHE_TIMEOUT} ")
-logger.info(f" APY_CACHE_TIMEOUT: {APY_CACHE_TIMEOUT} ")
-logger.info(f" DASHBOARD_CACHE_TIMEOUT: {DASHBOARD_CACHE_TIMEOUT} ")
-logger.info(f" ALLDATA_CACHE_TIMEOUT: {ALLDATA_CACHE_TIMEOUT} ")
-logger.info(f" DB_CACHE_TIMEOUT: {DB_CACHE_TIMEOUT} ")
-
-logger.info(f" MONGO_DB_URL: {MONGO_DB_URL}")
-logger.info(f" MONGO_DB_TIMEOUTMS: {MONGO_DB_TIMEOUTMS}")
-
-logger.info(f" EXCLUDED_HYPERVISORS: {EXCLUDED_HYPERVISORS}")
