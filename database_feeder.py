@@ -48,10 +48,10 @@ EXPR_FORMATS = {
         "monthly": "5 0 * * mon#1",
     },
     "inSecuence": {
-        "mins": "*/3 * * * *",
+        "mins": "*/2 * * * *",
     },
     "aggregateStats": {
-        "mins": "0 */1 * * *",
+        "mins": "*30 * * * *",
     },
 }
 EXPR_ARGS = {
@@ -76,7 +76,8 @@ async def feed_database_average_returns(periods: list, process_quickswap=True):
 
 
 async def feed_database_allData():
-    logger.info(" Starting database feeding process for allData")
+    name = "allData"
+    logger.info(f" Starting database feeding process for {name} data")
     logger.info(f"     chains prot.: {CHAINS_PROTOCOLS}")
     logger.info(f"     excluded_hyp: {EXCLUDED_HYPERVISORS}")
 
@@ -96,9 +97,7 @@ async def feed_database_allData():
     await asyncio.gather(*requests)
 
     # end time log
-    logger.info(
-        " took {} to complete the allData feed".format(get_timepassed_string(_startime))
-    )
+    logger.info(f" took {get_timepassed_string(_startime)} to complete the {name} feed")
 
 
 async def feed_database_allRewards2():
