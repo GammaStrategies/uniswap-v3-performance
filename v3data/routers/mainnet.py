@@ -10,6 +10,7 @@ from v3data.config import (
     DASHBOARD_CACHE_TIMEOUT,
     DEFAULT_TIMEZONE,
     DB_CACHE_TIMEOUT,
+    ALLDATA_CACHE_TIMEOUT,
 )
 from v3data.dashboard import Dashboard
 from v3data.eth import EthDistribution
