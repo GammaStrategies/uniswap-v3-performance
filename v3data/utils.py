@@ -106,7 +106,7 @@ def filter_addresses_byChain(addresses: list[str], chain: str) -> list[str]:
         list: of addresses
     """
     result = list()
-    for item in addressess:
+    for item in addresses:
         try:
             k, addres = parse_address_eip(item)
             if CHAIN_NAME_CONVERSION[k.lower()] == chain.lower():
