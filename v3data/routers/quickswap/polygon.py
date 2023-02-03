@@ -74,7 +74,7 @@ async def hypervisor_apy(response: Response, hypervisor_address):
 
 # TODO: implement response
 @router.get("/hypervisor/{hypervisor_address}/averageReturns")
-@cache(expire=APY_CACHE_TIMEOUT)
+@cache(expire=DB_CACHE_TIMEOUT)
 async def hypervisor_average_apy(response: Response, hypervisor_address):
     return await v3data.common.hypervisor.hypervisor_average_return(
         protocol=PROTOCOL_QUICKSWAP,
@@ -106,7 +106,7 @@ async def hypervisors_return():
 
 
 @router.get("/hypervisors/averageReturns")
-@cache(expire=APY_CACHE_TIMEOUT)
+@cache(expire=DB_CACHE_TIMEOUT)
 async def hypervisors_average_return():
     return await v3data.common.hypervisor.hypervisors_average_return(
         PROTOCOL_QUICKSWAP, CHAIN_POLYGON
@@ -182,7 +182,7 @@ async def all_rewards():
 
 
 @router.get("/allRewards2")
-@cache(expire=ALLDATA_CACHE_TIMEOUT)
+@cache(expire=DB_CACHE_TIMEOUT)
 async def all_rewards_2():
     return await v3data.common.masterchef_v2.info(PROTOCOL_QUICKSWAP, CHAIN_POLYGON)
 

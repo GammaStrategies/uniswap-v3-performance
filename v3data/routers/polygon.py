@@ -6,7 +6,7 @@ import v3data.common.masterchef
 
 from fastapi import APIRouter, Response
 from fastapi_cache.decorator import cache
-from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT
+from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT, DB_CACHE_TIMEOUT
 from v3data.constants import PROTOCOL_UNISWAP_V3
 
 CHAIN_POLYGON = "polygon"
@@ -73,7 +73,7 @@ async def hypervisor_apy(response: Response, hypervisor_address):
 
 # TODO: implement response
 @router.get("/hypervisor/{hypervisor_address}/averageReturns")
-@cache(expire=APY_CACHE_TIMEOUT)
+@cache(expire=DB_CACHE_TIMEOUT)
 async def hypervisor_average_apy(response: Response, hypervisor_address):
     return await v3data.common.hypervisor.hypervisor_average_return(
         protocol=PROTOCOL_UNISWAP_V3,
@@ -105,7 +105,7 @@ async def hypervisors_return():
 
 
 @router.get("/hypervisors/averageReturns")
-@cache(expire=APY_CACHE_TIMEOUT)
+@cache(expire=DB_CACHE_TIMEOUT)
 async def hypervisors_average_return():
     return await v3data.common.hypervisor.hypervisors_average_return(
         PROTOCOL_UNISWAP_V3, CHAIN_POLYGON
