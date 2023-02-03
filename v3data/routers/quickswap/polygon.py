@@ -7,7 +7,7 @@ import v3data.common.masterchef_v2
 
 from fastapi import APIRouter, Response
 from fastapi_cache.decorator import cache
-from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT
+from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT, DB_CACHE_TIMEOUT
 from v3data.constants import PROTOCOL_QUICKSWAP
 
 CHAIN_POLYGON = "polygon"
