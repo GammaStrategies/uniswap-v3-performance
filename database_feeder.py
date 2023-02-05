@@ -51,7 +51,7 @@ EXPR_FORMATS = {
         "mins": "*/2 * * * *",
     },
     "aggregateStats": {
-        "mins": "*30 * * * *",
+        "mins": "*/15 * * * *",
     },
 }
 EXPR_ARGS = {
