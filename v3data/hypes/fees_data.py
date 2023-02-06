@@ -2,6 +2,10 @@ import asyncio
 from dataclasses import dataclass
 
 from v3data import GammaClient, DexFeeGrowthClient
+from v3data.config import EXCLUDED_HYPERVISORS
+from v3data.utils import filter_addresses_byChain
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -20,12 +24,54 @@ class FeesData:
         self.uniswap_client = DexFeeGrowthClient(protocol, chain)
         self.data = {}
 
+        self.excluded_hypervisors = filter_addresses_byChain(
+            EXCLUDED_HYPERVISORS, chain
+        )
+
     async def _get_hypervisor_data(self, hypervisors=None):
         hypervisor_list_query = """
         query hypervisor($ids: [String!]!){
             uniswapV3Hypervisors(
                 where: {
                     id_in: $ids
+                }
+            ){
+                id
+                symbol
+                pool{
+                    id
+                    token0 {decimals}
+                    token1 {decimals}
+                }
+                baseLiquidity
+                baseLower
+                baseUpper
+                baseTokensOwed0
+                baseTokensOwed1
+                baseFeeGrowthInside0LastX128
+                baseFeeGrowthInside1LastX128
+                limitLiquidity
+                limitLower
+                limitUpper
+                limitTokensOwed0
+                limitTokensOwed1
+                limitFeeGrowthInside0LastX128
+                limitFeeGrowthInside1LastX128
+                conversion {
+                    baseTokenIndex
+                    priceTokenInBase
+                    priceBaseInUSD
+                }
+                tvlUSD
+            }
+        }
+        """
+
+        hypervisor_all_but_query = """
+        query hypervisor($ids: [String!]!){
+            uniswapV3Hypervisors(
+                where: {
+                    id_not_in: $ids
                 }
             ){
                 id
@@ -97,6 +143,15 @@ class FeesData:
 
         if hypervisors:
             variables = {"ids": [hypervisor.lower() for hypervisor in hypervisors]}
+            response = await self.gamma_client.query(hypervisor_list_query, variables)
+        elif len(self.excluded_hypervisors) > 0:
+            # excluding
+            logger.debug(
+                f" Excluding hypervisors from subgraph query: {self.excluded_hypervisors}"
+            )
+            variables = {
+                "ids": [hypervisor.lower() for hypervisor in self.excluded_hypervisors]
+            }
             response = await self.gamma_client.query(hypervisor_list_query, variables)
         else:
             response = await self.gamma_client.query(hypervisor_all_query)
