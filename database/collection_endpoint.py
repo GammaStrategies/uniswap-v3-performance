@@ -324,6 +324,128 @@ class db_returns_manager(db_collection_manager):
             },
         ]
 
+    @staticmethod
+    def query_hypervisors_returns_average(
+        chain: str, period: int = 0, protocol: str = "", hypervisor_address: str = ""
+    ) -> list[dict]:
+        """get all average returns from collection
+
+        Args:
+            chain (str): _description_
+            period (int, optional): _description_. Defaults to 0.
+            protocol (str)
+            hypervisor_address (str)
+
+        Returns:
+            list[dict]:
+                { "_id" = hypervisor address, "hipervisor":{ ... }, "periods": { ... }  }
+
+        """
+        # set return match vars
+        _returns_match = {
+            "chain": chain,
+            "$and": [{"fees.feeApr": {"$gt": 0}}, {"fees.feeApr": {"$lt": 8}}],
+            "$and": [{"fees.feeApy": {"$gt": 0}}, {"fees.feeApy": {"$lt": 8}}],
+        }
+
+        if period != 0:
+            _returns_match["period"] = period
+        if hypervisor_address != "":
+            _returns_match["address"] = hypervisor_address
+
+        # set return match vars
+        _static_match = dict()
+        if protocol != "":
+            _static_match["hypervisor.protocol"] = protocol
+
+        # return query
+        return [
+            {"$match": _returns_match},
+            {
+                "$project": {
+                    "period": "$period",
+                    "address": "$address",
+                    "hypervisor_id": {"$concat": ["$chain", "_", "$address"]},
+                    "timestamp": "$timestamp",
+                    "block": "$block",
+                    "feeApr": "$fees.feeApr",
+                    "feeApy": "$fees.feeApy",
+                    "imp_vs_hodl_usd": "$impermanent.vs_hodl_usd",
+                    "imp_vs_hodl_deposited": "$impermanent.vs_hodl_deposited",
+                    "imp_vs_hodl_token0": "$impermanent.vs_hodl_token0",
+                    "imp_vs_hodl_token1": "$impermanent.vs_hodl_token1",
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "static",
+                    "localField": "hypervisor_id",
+                    "foreignField": "id",
+                    "as": "hypervisor",
+                }
+            },
+            {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
+            {"$match": _static_match},
+            {"$sort": {"block": 1}},
+            {
+                "$project": {
+                    "period": "$period",
+                    "address": "$address",
+                    "timestamp": "$timestamp",
+                    "block": "$block",
+                    "feeApr": "$feeApr",
+                    "feeApy": "$feeApy",
+                    "hypervisor": "$hypervisor",
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"address": "$address", "period": "$period"},
+                    "min_timestamp": {"$min": "$timestamp"},
+                    "max_timestamp": {"$max": "$timestamp"},
+                    "min_block": {"$min": "$block"},
+                    "max_block": {"$max": "$block"},
+                    "av_feeApr": {"$avg": "$feeApr"},
+                    "av_feeApy": {"$avg": "$feeApy"},
+                    "hypervisor": {"$first": "$hypervisor"},
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$_id.address",
+                    "periods": {
+                        "$push": {
+                            "k": {"$toString": "$_id.period"},
+                            "v": {
+                                "period": "$_id.period",
+                                "items": "$items",
+                                "min_timestamp": "$min_timestamp",
+                                "max_timestamp": "$max_timestamp",
+                                "min_block": "$min_block",
+                                "max_block": "$max_block",
+                                "av_feeApr": "$av_feeApr",
+                                "av_feeApy": "$av_feeApy",
+                            },
+                        },
+                    },
+                    "hypervisor": {"$first": "$hypervisor"},
+                }
+            },
+            {
+                "$project": {
+                    "_id": "$_id",
+                    "hypervisor": {
+                        "symbol": "$hypervisor.symbol",
+                        "address": "$hypervisor.address",
+                        "chain": "$hypervisor.chain",
+                        "pool": "$hypervisor.pool",
+                        "protocol": "$hypervisor.protocol",
+                    },
+                    "returns": {"$arrayToObject": "$periods"},
+                }
+            },
+        ]
+
 
 class db_allData_manager(db_collection_manager):
     db_collection_name = "allData"
