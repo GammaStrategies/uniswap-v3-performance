@@ -198,3 +198,7 @@ ALCHEMY_URLS = {
     "polygon": f"https://polygon-mainnet.g.alchemy.com/v2/{os.environ.get('ALCHEMY_POLYGON_KEY', '')}",
     "optimism": f"https://opt-mainnet.g.alchemy.com/v2/{os.environ.get('ALCHEMY_OPTIMISM_KEY', '')}",
 }
+
+DISABLE_POOL_APR = {"true": True, "false": False}.get(
+    os.environ.get("DISABLE_POOL_APR", "true").lower(), True
+)
