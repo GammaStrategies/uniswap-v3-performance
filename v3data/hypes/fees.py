@@ -107,7 +107,16 @@ class Fees(FeesData):
                         hypervisor["baseFeeGrowthInside1LastX128"]
                     ),
                 )
-            except IndexError:
+            except IndexError as err:
+                logger.error(
+                    f" Index error while calc. base fees. Forcing 0 fees  {err}"
+                )
+                base_fees_0 = 0
+                base_fees_1 = 0
+            except TypeError as err:
+                logger.error(
+                    f" Index error while calc base fees. Forcing 0 fees  {err}"
+                )
                 base_fees_0 = 0
                 base_fees_1 = 0
 
@@ -145,7 +154,16 @@ class Fees(FeesData):
                         hypervisor["limitFeeGrowthInside1LastX128"]
                     ),
                 )
-            except IndexError:
+            except IndexError as err:
+                logger.error(
+                    f" Index error while calc. limit fees. Forcing 0 fees  {err}"
+                )
+                limit_fees_0 = 0
+                limit_fees_1 = 0
+            except TypeError as err:
+                logger.error(
+                    f" Index error while calc. limit fees. Forcing 0 fees  {err}"
+                )
                 limit_fees_0 = 0
                 limit_fees_1 = 0
 
