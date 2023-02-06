@@ -201,6 +201,10 @@ ALCHEMY_URLS = {
     "optimism": f"https://opt-mainnet.g.alchemy.com/v2/{os.environ.get('ALCHEMY_OPTIMISM_KEY', '')}",
 }
 
+DISABLE_POOL_APR = {"true": True, "false": False}.get(
+    os.environ.get("DISABLE_POOL_APR", "true").lower(), True
+)
+
 MONGO_DB_URL = os.environ.get("MONGO_DB_URL", "mongodb://localhost:27072")
 MONGO_DB_TIMEOUTMS = os.environ.get("MONGO_DB_TIMEOUTMS", 2000)
 MONGO_DB_COLLECTIONS = {
