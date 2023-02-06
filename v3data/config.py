@@ -202,7 +202,7 @@ ALCHEMY_URLS = {
 }
 
 DISABLE_POOL_APR = {"true": True, "false": False}.get(
-    os.environ.get("DISABLE_POOL_APR", "true").lower(), False
+    os.environ.get("DISABLE_POOL_APR", "true").lower(), True
 )
 
 MONGO_DB_URL = os.environ.get("MONGO_DB_URL", "mongodb://localhost:27072")

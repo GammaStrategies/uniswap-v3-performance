@@ -27,8 +27,6 @@ from v3data.charts.benchmark import Benchmark
 from v3data.toplevel import TopLevelData
 from v3data.accounts import AccountInfo
 
-from database.collection_returns import db_returns_manager
-from database.collection_static import db_static_manager
 from v3data.common import hypervisor
 
 
@@ -71,6 +69,12 @@ def get_timepassed_string(start_time: dt.datetime) -> str:
     return "{:,.2f} {}".format(_passed, _timelapse_unit)
 
 
+async def test_temporal():
+    terst_var = await hypervisor.hypervisors_return(
+        protocol=PROTOCOL_UNISWAP_V3, chain="polygon"
+    )
+
+
 # TESTING
 if __name__ == "__main__":
     # start time log
@@ -82,7 +86,7 @@ if __name__ == "__main__":
     # )
 
     # recent fees
-    data = asyncio.run(account())
+    data = asyncio.run(test_temporal())
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))
