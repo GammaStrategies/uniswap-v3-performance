@@ -176,6 +176,19 @@ class db_returns_manager(db_collection_manager):
         except:
             return {}
 
+    async def get_hypervisors_returns_average(
+        self, chain: str, period: int = 0, protocol: str = ""
+    ) -> dict:
+        result = await self._get_data(
+            query=self.query_hypervisors_returns_average(
+                chain=chain, period=period, protocol=protocol
+            )
+        )
+        try:
+            return result
+        except:
+            return {}
+
     async def get_hypervisor_average(
         self, chain: str, hypervisor_address: str, period: int = 0, protocol: str = ""
     ) -> dict:
