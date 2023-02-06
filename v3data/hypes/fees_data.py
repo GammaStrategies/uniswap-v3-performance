@@ -1,6 +1,6 @@
 import asyncio
 from dataclasses import dataclass
-
+import logging
 from v3data import GammaClient, DexFeeGrowthClient
 from v3data.config import EXCLUDED_HYPERVISORS
 from v3data.utils import filter_addresses_byChain
