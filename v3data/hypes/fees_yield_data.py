@@ -3,8 +3,13 @@ import logging
 from datetime import timedelta, datetime
 
 from v3data import GammaClient, DexFeeGrowthClient, LlamaClient
-from v3data.utils import timestamp_ago, estimate_block_from_timestamp_diff
+from v3data.utils import (
+    timestamp_ago,
+    estimate_block_from_timestamp_diff,
+    filter_addresses_byChain,
+)
 from v3data.constants import BLOCK_TIME_SECONDS
+from v3data.config import EXCLUDED_HYPERVISORS
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +36,10 @@ class YieldData:
         self._hypervisor_data_by_blocks = {}
         self._pool_data = {}
         self.data = {}
+
+        self.excluded_hypervisors = filter_addresses_byChain(
+            EXCLUDED_HYPERVISORS, chain
+        )
 
     async def _get_hypervisor_data_at_block(self, block, hypervisors):
         query = """
@@ -83,9 +92,12 @@ class YieldData:
 
     async def _get_transition_data(self, period_days):
         transition_query = """
-        query transitions($timestamp_start: Int!, $timestamp_end: Int!){
+        query transitions($timestamp_start: Int!, $timestamp_end: Int!, $ids: [String!]!){
             uniswapV3Hypervisors(
-                first: 1000
+                first: 1000,
+                where: {
+                    id_not_in: $ids
+                }
             ){
                 id
                 withdraws(
@@ -132,15 +144,21 @@ class YieldData:
             "timestamp_end": timestamp_ago(
                 timedelta(seconds=self.delay_buffer_seconds)
             ),
+            "ids": self.excluded_hypervisors,
         }
+
         response = await self.gamma_client.query(transition_query, variables)
 
         self._transition_data = response["data"]
 
     async def _get_fee_update_data(self, period_days):
         query = """
-        query transitions($timestamp_start: Int!, $timestamp_end: Int!){
-            uniswapV3Hypervisors(first: 1000) {
+        query transitions($timestamp_start: Int!, $timestamp_end: Int!, $ids: [String!]!){
+            uniswapV3Hypervisors(
+                first: 1000,
+                where: {
+                    id_not_in: $ids
+                }) {
                 id
                 feeUpdates(
                     where: {
@@ -167,6 +185,7 @@ class YieldData:
             "timestamp_end": timestamp_ago(
                 timedelta(seconds=self.delay_buffer_seconds)
             ),
+            "ids": self.excluded_hypervisors,
         }
         response = await self.gamma_client.query(query, variables)
 
