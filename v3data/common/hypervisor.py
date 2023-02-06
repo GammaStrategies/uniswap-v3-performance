@@ -74,14 +74,14 @@ async def recent_fees(protocol: str, chain: str, hours: int = 24):
 
 
 # original result
-async def hypervisors_return_original(protocol: str, chain: str):
+async def hypervisors_return(protocol: str, chain: str):
     hypervisor_info = HypervisorInfo(protocol, chain)
 
     return await hypervisor_info.all_returns()
 
 
 # Temporal result
-async def hypervisors_return(protocol: str, chain: str):
+async def hypervisors_return_database(protocol: str, chain: str):
     average_returns_mngr = db_returns_manager(mongo_url=MONGO_DB_URL)
 
     av_result = await average_returns_mngr.get_hypervisors_returns_average(
