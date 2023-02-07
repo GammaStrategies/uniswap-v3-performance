@@ -1,7 +1,11 @@
+import logging
+
 from datetime import timedelta
 
 from v3data.hypes.fees_data import FeesData
 from v3data.utils import sub_in_256, timestamp_ago
+
+logger = logging.getLogger(__name__)
 
 
 class Fees(FeesData):
@@ -105,9 +109,13 @@ class Fees(FeesData):
                         hypervisor["baseFeeGrowthInside1LastX128"]
                     ),
                 )
-            except IndexError:
+            except (IndexError, TypeError):
                 base_fees_0 = 0
                 base_fees_1 = 0
+                logger.warning(
+                    f"Base fees set to 0, missing data for hype: {hypervisor['id']}, "
+                    f"ticks: ({int(hypervisor['baseLower'])}, {int(hypervisor['baseUpper'])})"
+                )
 
             base_tokens_owed_0 = float(hypervisor["baseTokensOwed0"])
             base_tokens_owed_1 = float(hypervisor["baseTokensOwed1"])
@@ -143,9 +151,13 @@ class Fees(FeesData):
                         hypervisor["limitFeeGrowthInside1LastX128"]
                     ),
                 )
-            except IndexError:
+            except (IndexError, TypeError):
                 limit_fees_0 = 0
                 limit_fees_1 = 0
+                logger.warning(
+                    f"Limit fees set to 0, missing data for hype: {hypervisor['id']}, "
+                    f"ticks: ({int(hypervisor['baseLower'])}, {int(hypervisor['baseUpper'])})"
+                )
 
             limit_tokens_owed_0 = float(hypervisor["limitTokensOwed0"])
             limit_tokens_owed_1 = float(hypervisor["limitTokensOwed1"])
