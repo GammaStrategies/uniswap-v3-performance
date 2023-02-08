@@ -91,61 +91,128 @@ class YieldData:
         return response
 
     async def _get_transition_data(self, period_days):
+        
         transition_query = """
-        query transitions($timestamp_start: Int!, $timestamp_end: Int!, $ids: [String!]!){
-            uniswapV3Hypervisors(
-                first: 1000,
-                where: {
-                    id_not_in: $ids
-                }
-            ){
-                id
-                withdraws(
-                    where: {
-                        timestamp_gt: $timestamp_start
-                        timestamp_lt: $timestamp_end
+            query transitions($timestamp_start: Int!, $timestamp_end: Int!){
+                uniswapV3Hypervisors(
+                    first: 1000
+                ){
+                    id
+                    withdraws(
+                        where: {
+                            timestamp_gt: $timestamp_start
+                            timestamp_lt: $timestamp_end
+                        }
+                    ) {
+                        block
+                        timestamp
                     }
-                ) {
-                    block
-                    timestamp
-                }
-                rebalances(
-                    where: {
-                        timestamp_gt: $timestamp_start
-                        timestamp_lt: $timestamp_end
+                    rebalances(
+                        where: {
+                            timestamp_gt: $timestamp_start
+                            timestamp_lt: $timestamp_end
+                        }
+                    ) {
+                        block
+                        timestamp
                     }
-                ) {
-                    block
-                    timestamp
-                }
-                deposits(
-                    where: {
-                        timestamp_gt: $timestamp_start
-                        timestamp_lt: $timestamp_end
+                    deposits(
+                        where: {
+                            timestamp_gt: $timestamp_start
+                            timestamp_lt: $timestamp_end
+                        }
+                    ) {
+                        block
+                        timestamp
                     }
-                ) {
-                    block
-                    timestamp
+                }
+                _meta {
+                    block {
+                        number
+                    }
                 }
             }
-            _meta {
-                block {
-                    number
+            """
+    
+        transition_all_but_query = """
+            query transitions($timestamp_start: Int!, $timestamp_end: Int!, $ids: [String!]!){
+                uniswapV3Hypervisors(
+                    first: 1000,
+                    where: {
+                        id_not_in: $ids
+                    }
+                ){
+                    id
+                    withdraws(
+                        where: {
+                            timestamp_gt: $timestamp_start
+                            timestamp_lt: $timestamp_end
+                        }
+                    ) {
+                        block
+                        timestamp
+                    }
+                    rebalances(
+                        where: {
+                            timestamp_gt: $timestamp_start
+                            timestamp_lt: $timestamp_end
+                        }
+                    ) {
+                        block
+                        timestamp
+                    }
+                    deposits(
+                        where: {
+                            timestamp_gt: $timestamp_start
+                            timestamp_lt: $timestamp_end
+                        }
+                    ) {
+                        block
+                        timestamp
+                    }
+                }
+                _meta {
+                    block {
+                        number
+                    }
                 }
             }
-        }
-        """
+            """
 
-        variables = {
-            "timestamp_start": timestamp_ago(
-                timedelta(days=period_days)
-                + timedelta(seconds=self.delay_buffer_seconds)
-            ),
-            "timestamp_end": timestamp_ago(
-                timedelta(seconds=self.delay_buffer_seconds)
-            ),
-            "ids": self.excluded_hypervisors,
-        }
+            variables = {
+                "timestamp_start": timestamp_ago(
+                    timedelta(days=period_days)
+                    + timedelta(seconds=self.delay_buffer_seconds)
+                ),
+                "timestamp_end": timestamp_ago(
+                    timedelta(seconds=self.delay_buffer_seconds)
+                ),
+                "ids": self.excluded_hypervisors,
+            }
+        
+
+        if len(self.excluded_hypervisors) > 0:
+            variables = {
+                "timestamp_start": timestamp_ago(
+                    timedelta(days=period_days)
+                    + timedelta(seconds=self.delay_buffer_seconds)
+                ),
+                "timestamp_end": timestamp_ago(
+                    timedelta(seconds=self.delay_buffer_seconds)
+                ),
+                "ids": self.excluded_hypervisors,
+            }
+        else:
+            
+            variables = {
+                "timestamp_start": timestamp_ago(
+                    timedelta(days=period_days)
+                    + timedelta(seconds=self.delay_buffer_seconds)
+                ),
+                "timestamp_end": timestamp_ago(
+                    timedelta(seconds=self.delay_buffer_seconds)
+                ),
+            }
 
         response = await self.gamma_client.query(transition_query, variables)
 
