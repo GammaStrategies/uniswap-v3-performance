@@ -127,7 +127,7 @@ async def hypervisors_return(request: Request):
     """
 
     return await v3data.common.hypervisor.hypervisors_return(
-        PROTOCOL_UNISWAP_V3, CHAIN_MAINNET
+        PROTOCOL_UNISWAP_V3, CHAIN_MAINNET, request=request
     )
 
 

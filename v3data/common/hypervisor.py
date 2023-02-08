@@ -92,9 +92,10 @@ async def hypervisors_return(protocol: str, chain: str, request: Request = None)
     )
     if len(av_result) > 0:
         # add request
-        new_header = MutableHeaders(request._headers)
-        new_header["X-database-item"] = " test "
-        request._headers = new_header
+        if request:
+            new_header = MutableHeaders(request._headers)
+            new_header["X-database-item"] = " test "
+            request._headers = new_header
 
         result = dict()
         # CONVERT result so is equal to original
