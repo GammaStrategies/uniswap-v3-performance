@@ -53,6 +53,9 @@ EXPR_FORMATS = {
     "aggregateStats": {
         "mins": "*/15 * * * *",
     },
+    "allRewards2": {
+        "mins": "*/20 * * * *",
+    },
 }
 EXPR_ARGS = {
     "average_returns": {
@@ -174,7 +177,7 @@ async def feed_database_inSecuence():
 
     await feed_database_static()
     await feed_database_allData()
-    await feed_database_allRewards2()
+    # await feed_database_allRewards2()
 
     _endtime = datetime.utcnow()
     if (_endtime - _startime).total_seconds() > (60 * 2):
