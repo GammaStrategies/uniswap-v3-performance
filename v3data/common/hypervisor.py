@@ -46,16 +46,23 @@ async def hypervisor_apy(
         return "Invalid hypervisor address or not enough data"
 
 
-async def aggregate_stats(protocol: str, chain: str):
+async def aggregate_stats(protocol: str, chain: str, response: Response = None):
 
     try:
         _mngr = db_aggregateStats_manager(mongo_url=MONGO_DB_URL)
         result = await _mngr.get_data(chain=chain, protocol=protocol)
+        if response:
+            response.headers["X-Database"] = "true"
+            response.headers["X-Database-itemUpdated"] = "{}".format(
+                result.pop("datetime", "")
+            )
         return result
     except:
         logger.warning(
             " Could not get database aggregateStats data for {protocol} in {chain}. Return calculated data."
         )
+        if response:
+            response.headers["X-Database"] = "false"
         top_level = TopLevelData(protocol, chain)
         top_level_data = await top_level.all_stats()
 
@@ -73,14 +80,6 @@ async def recent_fees(protocol: str, chain: str, hours: int = 24):
     return {"periodHours": hours, "fees": recent_fees}
 
 
-# original result
-async def hypervisors_return_original(protocol: str, chain: str):
-    hypervisor_info = HypervisorInfo(protocol, chain)
-
-    return await hypervisor_info.all_returns()
-
-
-# Temporal result
 async def hypervisors_return(protocol: str, chain: str, response: Response = None):
     average_returns_mngr = db_returns_manager(mongo_url=MONGO_DB_URL)
 
@@ -90,7 +89,7 @@ async def hypervisors_return(protocol: str, chain: str, response: Response = Non
     if len(av_result) > 0:
         # add request
         if response:
-            response.headers["X-Database-lastupdate"] = " test it "
+            response.headers["X-Database"] = "true"
 
         result = dict()
         # CONVERT result so is equal to original
@@ -161,35 +160,53 @@ async def hypervisors_return(protocol: str, chain: str, response: Response = Non
 
     else:
         # no database result
+        if response:
+            response.headers["X-Database"] = "false"
         logger.warning(" falling back to original returns result [using rebalances]")
         hypervisor_info = HypervisorInfo(protocol, chain)
         return await hypervisor_info.all_returns()
 
 
-async def hypervisors_average_return(protocol: str, chain: str):
+async def hypervisors_average_return(
+    protocol: str, chain: str, response: Response = None
+):
+    if response:
+        response.headers["X-Database"] = "true"
     average_returns_mngr = db_returns_manager(mongo_url=MONGO_DB_URL)
     return await average_returns_mngr.get_hypervisors_average(
         chain=chain, protocol=protocol
     )
 
 
-async def hypervisor_average_return(protocol: str, chain: str, hypervisor_address: str):
+async def hypervisor_average_return(
+    protocol: str, chain: str, hypervisor_address: str, response: Response = None
+):
+    if response:
+        response.headers["X-Database"] = "true"
     average_returns_mngr = db_returns_manager(mongo_url=MONGO_DB_URL)
     return await average_returns_mngr.get_hypervisor_average(
         chain=chain, hypervisor_address=hypervisor_address, protocol=protocol
     )
 
 
-async def hypervisors_all(protocol: str, chain: str):
+async def hypervisors_all(protocol: str, chain: str, response: Response = None):
     try:
+        # Database result
         _mngr = db_allData_manager(mongo_url=MONGO_DB_URL)
         result = await _mngr.get_data(chain=chain, protocol=protocol)
+        if response:
+            response.headers["X-Database"] = "true"
+            response.headers["X-Database-itemUpdated"] = "{}".format(
+                result.pop("datetime", "")
+            )
         return result
     except:
+        # Calculated result
         logger.warning(
             " Could not get database allData for {protocol} in {chain}. Return calculated data."
         )
-        # DB may not respond
+        if response:
+            response.headers["X-Database"] = "false"
         hypervisor_info = HypervisorInfo(protocol, chain)
         return await hypervisor_info.all_data()
 

@@ -79,6 +79,7 @@ async def hypervisor_average_apy(response: Response, hypervisor_address):
         protocol=PROTOCOL_UNISWAP_V3,
         chain=CHAIN_CELO,
         hypervisor_address=hypervisor_address,
+        response=response,
     )
 
 
@@ -90,33 +91,33 @@ async def hypervisor_uncollected_fees(hypervisor_address: str):
 
 
 @router.get("/hypervisors/aggregateStats")
-async def aggregate_stats():
+async def aggregate_stats(response: Response):
     return await v3data.common.hypervisor.aggregate_stats(
-        PROTOCOL_UNISWAP_V3, CHAIN_CELO
+        PROTOCOL_UNISWAP_V3, CHAIN_CELO, response=response
     )
 
 
 @router.get("/hypervisors/returns")
 @cache(expire=APY_CACHE_TIMEOUT)
-async def hypervisors_return():
+async def hypervisors_return(response: Response):
     return await v3data.common.hypervisor.hypervisors_return(
-        PROTOCOL_UNISWAP_V3, CHAIN_CELO
+        PROTOCOL_UNISWAP_V3, CHAIN_CELO, response=response
     )
 
 
 @router.get("/hypervisors/averageReturns")
 @cache(expire=DB_CACHE_TIMEOUT)
-async def hypervisors_average_return():
+async def hypervisors_average_return(response: Response):
     return await v3data.common.hypervisor.hypervisors_average_return(
-        PROTOCOL_UNISWAP_V3, CHAIN_CELO
+        PROTOCOL_UNISWAP_V3, CHAIN_CELO, response=response
     )
 
 
 @router.get("/hypervisors/allData")
 @cache(expire=ALLDATA_CACHE_TIMEOUT)
-async def hypervisors_all():
+async def hypervisors_all(response: Response):
     return await v3data.common.hypervisor.hypervisors_all(
-        PROTOCOL_UNISWAP_V3, CHAIN_CELO
+        PROTOCOL_UNISWAP_V3, CHAIN_CELO, response=response
     )
 
 
