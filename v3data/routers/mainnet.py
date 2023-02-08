@@ -117,7 +117,7 @@ async def recent_fees(hours: int = 24):
 
 @router.get("/hypervisors/returns")
 @cache(expire=APY_CACHE_TIMEOUT)
-async def hypervisors_return(request: Request):
+async def hypervisors_return(response: Response):
     """
     Return daily, weekly, monthly and allTime returns
 
@@ -127,7 +127,7 @@ async def hypervisors_return(request: Request):
     """
 
     return await v3data.common.hypervisor.hypervisors_return(
-        PROTOCOL_UNISWAP_V3, CHAIN_MAINNET, request=request
+        PROTOCOL_UNISWAP_V3, CHAIN_MAINNET, response=response
     )
 
 
