@@ -75,6 +75,26 @@ async def feed_database_average_returns(periods: list, process_quickswap=True):
     await asyncio.gather(*requests)
 
 
+async def feed_database_static():
+    name = "static"
+    logger.info(f" Starting database feeding process for {name} data")
+    logger.info(f"     chains prot.: {CHAINS_PROTOCOLS}")
+    logger.info(f"     excluded_hyp: {EXCLUDED_HYPERVISORS}")
+
+    # static requests
+    static_manager = db_static_manager(mongo_url=MONGO_DB_URL)
+    requests = [
+        static_manager.feed_db(chain=chain, protocol=protocol)
+        for chain, protocol in CHAINS_PROTOCOLS
+    ]
+
+    # execute feed
+    await asyncio.gather(*requests)
+
+    # end time log
+    logger.info(f" took {get_timepassed_string(_startime)} to complete the {name} feed")
+
+
 async def feed_database_allData():
     name = "allData"
     logger.info(f" Starting database feeding process for {name} data")
@@ -149,11 +169,12 @@ async def feed_database_inSecuence():
     # start time log
     _startime = datetime.utcnow()
 
+    await feed_database_static()
     await feed_database_allData()
     await feed_database_allRewards2()
 
     _endtime = datetime.utcnow()
-    if (_endtime - _startime).total_seconds() > (60 * 1):
+    if (_endtime - _startime).total_seconds() > (60 * 2):
         # end time log
         logger.warning(
             " Consider increasing cron schedule ->  took {} to complete database feeder loop.".format(
@@ -163,6 +184,7 @@ async def feed_database_inSecuence():
 
 
 async def feed_all():
+    await feed_database_static()
     await feed_database_allData()
     await feed_database_allRewards2()
     await feed_database_aggregateStats()
@@ -285,6 +307,7 @@ def get_timepassed_string(start_time: datetime, end_time: datetime = None) -> st
 # set functions here
 EXPR_FUNCS = {
     "average_returns": feed_database_average_returns,
+    "static": feed_database_static,
     "allData": feed_database_allData,
     "allRewards2": feed_database_allRewards2,
     "aggregateStats": feed_database_aggregateStats,
