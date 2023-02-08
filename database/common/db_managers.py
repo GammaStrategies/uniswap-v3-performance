@@ -149,7 +149,8 @@ class MongoDbManager:
                                                      }
                                        }
                                    batch_size=100
-                                   sort={<field_01>:1, <field_02>:-1 }
+                                   sort=[(<field_01>,1), (<field_02>,-1) ]
+                                   limit=10
 
                                    --AGGREGATE-------------------
                                    aggregate=[{  "$match": {
@@ -169,24 +170,55 @@ class MongoDbManager:
         if "find" in kwargs:
             if "batch_size" in kwargs:
                 if "sort" in kwargs:
-                    return (
-                        self.database[coll_name]
-                        .find(kwargs["find"], batch_size=kwargs["batch_size"])
-                        .sort(kwargs["sort"])
-                    )
+                    if "limit" in kwargs:
+                        return (
+                            self.database[coll_name]
+                            .find(kwargs["find"], batch_size=kwargs["batch_size"])
+                            .sort(kwargs["sort"])
+                            .limit(kwargs["limit"])
+                        )
+                    else:
+                        if "limit" in kwargs:
+                            return (
+                                self.database[coll_name]
+                                .find(kwargs["find"], batch_size=kwargs["batch_size"])
+                                .sort(kwargs["sort"])
+                                .limit(kwargs["limit"])
+                            )
+                        else:
+                            return (
+                                self.database[coll_name]
+                                .find(kwargs["find"], batch_size=kwargs["batch_size"])
+                                .sort(kwargs["sort"])
+                            )
                 else:
                     return self.database[coll_name].find(
                         kwargs["find"], batch_size=kwargs["batch_size"]
                     )
             else:
                 if "sort" in kwargs:
-                    return (
-                        self.database[coll_name]
-                        .find(kwargs["find"])
-                        .sort(kwargs["sort"])
-                    )
+                    if "limit" in kwargs:
+                        return (
+                            self.database[coll_name]
+                            .find(kwargs["find"])
+                            .sort(kwargs["sort"])
+                            .limit(kwargs["limit"])
+                        )
+                    else:
+                        return (
+                            self.database[coll_name]
+                            .find(kwargs["find"])
+                            .sort(kwargs["sort"])
+                        )
                 else:
-                    return self.database[coll_name].find(kwargs["find"])
+                    if "limit" in kwargs:
+                        return (
+                            self.database[coll_name]
+                            .find(kwargs["find"])
+                            .limit(kwargs["limit"])
+                        )
+                    else:
+                        return self.database[coll_name].find(kwargs["find"])
 
         # build AGGREGATE result
         elif "aggregate" in kwargs:
@@ -196,6 +228,19 @@ class MongoDbManager:
                 )
             else:
                 return self.database[coll_name].aggregate(kwargs["aggregate"])
+
+    def get_distinct(self, coll_name: str, field: str, condition: dict = {}):
+        """get distinct items of a database field
+
+        Args:
+            coll_name (str): collection name
+            field (str): field to get distinct values from
+            condition (dict): like {"dept" : "B"}
+        """
+        if len(condition.keys()) == 0:
+            return self.database[coll_name].distinct(field)
+        else:
+            return self.database[coll_name].distinct(field, condition)
 
     # TODO: push_item ( add_item without id involved )
     # TODO: push_items ( add/update multiple items )
