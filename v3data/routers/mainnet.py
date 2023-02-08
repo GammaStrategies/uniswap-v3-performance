@@ -3,8 +3,9 @@ import v3data.common.charts
 import v3data.common.hypervisor
 import v3data.common.users
 
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Response, status, Request
 from fastapi_cache.decorator import cache
+
 from v3data.config import (
     APY_CACHE_TIMEOUT,
     DASHBOARD_CACHE_TIMEOUT,
@@ -116,13 +117,15 @@ async def recent_fees(hours: int = 24):
 
 @router.get("/hypervisors/returns")
 @cache(expire=APY_CACHE_TIMEOUT)
-async def hypervisors_return():
+async def hypervisors_return(request: Request):
     """
-    Return daily, weekly, monthly and allTime returns using uncollected fees only
-    It will try to retrieve the last database saved return ( updated every 2 minutes )
-    and fall back to 'on-the-fly' calculation if any problem is found.
+    Return daily, weekly, monthly and allTime returns
+
+    - **1)** Retrieve the last database saved return ( updated every 2 minutes ) [ using uncollected fees ]
+    - **2)** Falls back to 'on-the-fly' calculation if any problem is found. [ using rebalances ]
 
     """
+
     return await v3data.common.hypervisor.hypervisors_return(
         PROTOCOL_UNISWAP_V3, CHAIN_MAINNET
     )

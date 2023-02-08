@@ -80,79 +80,94 @@ async def hypervisors_return_original(protocol: str, chain: str):
     return await hypervisor_info.all_returns()
 
 
+from starlette.datastructures import MutableHeaders
+from fastapi import Request
+
 # Temporal result
-async def hypervisors_return(protocol: str, chain: str):
+async def hypervisors_return(protocol: str, chain: str, request: Request = None):
     average_returns_mngr = db_returns_manager(mongo_url=MONGO_DB_URL)
 
     av_result = await average_returns_mngr.get_hypervisors_returns_average(
         chain=chain, protocol=protocol
     )
-    result = dict()
-    # reformat
-    for hypervisor in av_result:
+    if len(av_result) > 0:
+        # add request
+        new_header = MutableHeaders(request._headers)
+        new_header["X-database-item"] = " test "
+        request._headers = new_header
 
-        result[hypervisor["_id"]] = dict()
-        try:
-            result[hypervisor["_id"]]["daily"] = {
-                "totalPeriodSeconds": hypervisor["returns"]["1"]["max_timestamp"]
-                - hypervisor["returns"]["1"]["min_timestamp"],
-                "cumFeeReturn": 0,
-                "feeApr": hypervisor["returns"]["1"]["av_feeApr"],
-                "feeApy": hypervisor["returns"]["1"]["av_feeApy"],
-            }
-        except:
-            result[hypervisor["_id"]]["daily"] = {
-                "totalPeriodSeconds": 0,
-                "cumFeeReturn": 0,
-                "feeApr": 0,
-                "feeApy": 0,
-            }
-        try:
-            result[hypervisor["_id"]]["weekly"] = {
-                "totalPeriodSeconds": hypervisor["returns"]["7"]["max_timestamp"]
-                - hypervisor["returns"]["7"]["min_timestamp"],
-                "cumFeeReturn": 0,
-                "feeApr": hypervisor["returns"]["7"]["av_feeApr"],
-                "feeApy": hypervisor["returns"]["7"]["av_feeApy"],
-            }
-        except:
-            result[hypervisor["_id"]]["weekly"] = {
-                "totalPeriodSeconds": 0,
-                "cumFeeReturn": 0,
-                "feeApr": 0,
-                "feeApy": 0,
-            }
-        try:
-            result[hypervisor["_id"]]["monthly"] = {
-                "totalPeriodSeconds": hypervisor["returns"]["30"]["max_timestamp"]
-                - hypervisor["returns"]["30"]["min_timestamp"],
-                "cumFeeReturn": 0,
-                "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
-                "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
-            }
-        except:
-            result[hypervisor["_id"]]["monthly"] = {
-                "totalPeriodSeconds": 0,
-                "cumFeeReturn": 0,
-                "feeApr": 0,
-                "feeApy": 0,
-            }
-        try:
-            result[hypervisor["_id"]]["allTime"] = {
-                "totalPeriodSeconds": hypervisor["returns"]["30"]["max_timestamp"]
-                - hypervisor["returns"]["30"]["min_timestamp"],
-                "cumFeeReturn": 0,
-                "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
-                "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
-            }
-        except:
-            result[hypervisor["_id"]]["allTime"] = {
-                "totalPeriodSeconds": 0,
-                "cumFeeReturn": 0,
-                "feeApr": 0,
-                "feeApy": 0,
-            }
-    return result
+        result = dict()
+        # CONVERT result so is equal to original
+        for hypervisor in av_result:
+
+            result[hypervisor["_id"]] = dict()
+            try:
+                result[hypervisor["_id"]]["daily"] = {
+                    "totalPeriodSeconds": hypervisor["returns"]["1"]["max_timestamp"]
+                    - hypervisor["returns"]["1"]["min_timestamp"],
+                    "cumFeeReturn": 0,
+                    "feeApr": hypervisor["returns"]["1"]["av_feeApr"],
+                    "feeApy": hypervisor["returns"]["1"]["av_feeApy"],
+                }
+            except:
+                result[hypervisor["_id"]]["daily"] = {
+                    "totalPeriodSeconds": 0,
+                    "cumFeeReturn": 0,
+                    "feeApr": 0,
+                    "feeApy": 0,
+                }
+            try:
+                result[hypervisor["_id"]]["weekly"] = {
+                    "totalPeriodSeconds": hypervisor["returns"]["7"]["max_timestamp"]
+                    - hypervisor["returns"]["7"]["min_timestamp"],
+                    "cumFeeReturn": 0,
+                    "feeApr": hypervisor["returns"]["7"]["av_feeApr"],
+                    "feeApy": hypervisor["returns"]["7"]["av_feeApy"],
+                }
+            except:
+                result[hypervisor["_id"]]["weekly"] = {
+                    "totalPeriodSeconds": 0,
+                    "cumFeeReturn": 0,
+                    "feeApr": 0,
+                    "feeApy": 0,
+                }
+            try:
+                result[hypervisor["_id"]]["monthly"] = {
+                    "totalPeriodSeconds": hypervisor["returns"]["30"]["max_timestamp"]
+                    - hypervisor["returns"]["30"]["min_timestamp"],
+                    "cumFeeReturn": 0,
+                    "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
+                    "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
+                }
+            except:
+                result[hypervisor["_id"]]["monthly"] = {
+                    "totalPeriodSeconds": 0,
+                    "cumFeeReturn": 0,
+                    "feeApr": 0,
+                    "feeApy": 0,
+                }
+            try:
+                result[hypervisor["_id"]]["allTime"] = {
+                    "totalPeriodSeconds": hypervisor["returns"]["30"]["max_timestamp"]
+                    - hypervisor["returns"]["30"]["min_timestamp"],
+                    "cumFeeReturn": 0,
+                    "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
+                    "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
+                }
+            except:
+                result[hypervisor["_id"]]["allTime"] = {
+                    "totalPeriodSeconds": 0,
+                    "cumFeeReturn": 0,
+                    "feeApr": 0,
+                    "feeApy": 0,
+                }
+        return result
+
+    else:
+        # no database result
+        logger.warning(" falling back to original returns result [using rebalances]")
+        hypervisor_info = HypervisorInfo(protocol, chain)
+        return await hypervisor_info.all_returns()
 
 
 async def hypervisors_average_return(protocol: str, chain: str):
