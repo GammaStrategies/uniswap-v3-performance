@@ -7,6 +7,8 @@ async def info(protocol: str, chain: str):
     try:
         _mngr = db_allRewards2_manager(mongo_url=MONGO_DB_URL)
         result = await _mngr.get_last_data(chain=chain, protocol=protocol)
+        if result == {}:
+            raise ValueError(" no data in database ?")
         return result
     except:
         # DB may not respond
