@@ -1,3 +1,5 @@
+import logging
+
 from datetime import timedelta
 import logging
 from v3data.hypes.fees_data import FeesData
@@ -107,18 +109,13 @@ class Fees(FeesData):
                         hypervisor["baseFeeGrowthInside1LastX128"]
                     ),
                 )
-            except IndexError as err:
-                logger.error(
-                    f" Index error while calc. base fees. Forcing 0 fees  {err}"
-                )
+            except (IndexError, TypeError):
                 base_fees_0 = 0
                 base_fees_1 = 0
-            except TypeError as err:
-                logger.error(
-                    f" Index error while calc base fees. Forcing 0 fees  {err}"
+                logger.warning(
+                    f"Base fees set to 0, missing data for hype: {hypervisor['id']}, "
+                    f"ticks: ({int(hypervisor['baseLower'])}, {int(hypervisor['baseUpper'])})"
                 )
-                base_fees_0 = 0
-                base_fees_1 = 0
 
             base_tokens_owed_0 = float(hypervisor["baseTokensOwed0"])
             base_tokens_owed_1 = float(hypervisor["baseTokensOwed1"])
@@ -154,18 +151,13 @@ class Fees(FeesData):
                         hypervisor["limitFeeGrowthInside1LastX128"]
                     ),
                 )
-            except IndexError as err:
-                logger.error(
-                    f" Index error while calc. limit fees. Forcing 0 fees  {err}"
-                )
+            except (IndexError, TypeError):
                 limit_fees_0 = 0
                 limit_fees_1 = 0
-            except TypeError as err:
-                logger.error(
-                    f" Index error while calc. limit fees. Forcing 0 fees  {err}"
+                logger.warning(
+                    f"Limit fees set to 0, missing data for hype: {hypervisor['id']}, "
+                    f"ticks: ({int(hypervisor['baseLower'])}, {int(hypervisor['baseUpper'])})"
                 )
-                limit_fees_0 = 0
-                limit_fees_1 = 0
 
             limit_tokens_owed_0 = float(hypervisor["limitTokensOwed0"])
             limit_tokens_owed_1 = float(hypervisor["limitTokensOwed1"])
