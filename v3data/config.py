@@ -177,9 +177,9 @@ TOKEN_LIST_URL = "https://tokens.coingecko.com/uniswap/all.json"
 DEFAULT_BBAND_INTERVALS = 20
 DEFAULT_TIMEZONE = os.environ.get("TIMEZONE", "UTC-5")
 
-CHARTS_CACHE_TIMEOUT = os.environ.get("CHARTS_CACHE_TIMEOUT", 600)
-APY_CACHE_TIMEOUT = os.environ.get("APY_CACHE_TIMEOUT", 600)
-DASHBOARD_CACHE_TIMEOUT = os.environ.get("DASHBOARD_CACHE_TIMEOUT", 600)
+CHARTS_CACHE_TIMEOUT = int(os.environ.get("CHARTS_CACHE_TIMEOUT", 600))
+APY_CACHE_TIMEOUT = int(os.environ.get("APY_CACHE_TIMEOUT", 600))
+DASHBOARD_CACHE_TIMEOUT = int(os.environ.get("DASHBOARD_CACHE_TIMEOUT", 600))
 ALLDATA_CACHE_TIMEOUT = int(
     os.environ.get("ALLDATA_CACHE_TIMEOUT", 300)
 )  # database call
@@ -188,7 +188,7 @@ DB_CACHE_TIMEOUT = int(os.environ.get("DB_CACHE_TIMEOUT", 1))  # database calls 
 EXCLUDED_HYPERVISORS = list(
     filter(None, os.environ.get("EXCLUDED_HYPES", "").split(","))
 )
-FALLBACK_DAYS = os.environ.get("FALLBACK_DAYS", 90)
+FALLBACK_DAYS = int(os.environ.get("FALLBACK_DAYS", 90))
 
 legacy_stats = {
     "visr_distributed": 987998.1542393989,
@@ -208,7 +208,7 @@ DISABLE_POOL_APR = {"true": True, "false": False}.get(
 )
 
 MONGO_DB_URL = os.environ.get("MONGO_DB_URL", "mongodb://localhost:27072")
-MONGO_DB_TIMEOUTMS = os.environ.get("MONGO_DB_TIMEOUTMS", 2000)
+MONGO_DB_TIMEOUTMS = int(os.environ.get("MONGO_DB_TIMEOUTMS", 2000))
 MONGO_DB_COLLECTIONS = {
     "static": {"id": True},  #      no historic
     "returns": {"id": True},  #     historic
