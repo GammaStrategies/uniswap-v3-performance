@@ -96,6 +96,8 @@ async def hypervisors_return(protocol: str, chain: str, request: Request = None)
             new_header = MutableHeaders(request._headers)
             new_header["X-database-item"] = " test "
             request._headers = new_header
+            # update the scope attribute of the Request-object
+            request.scope.update(headers=request.headers.raw)
 
         result = dict()
         # CONVERT result so is equal to original
