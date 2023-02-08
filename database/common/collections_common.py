@@ -34,20 +34,10 @@ class db_collections_common:
             data (list): data list following tool_mongodb_general class to be saved to database in a dict format
             collection_name (str): collection name to save data to
         """
-
-        # create database manager/connector
-        with MongoDbManager(
-            url=self._db_mongo_url,
-            db_name=self._db_name,
-            collections=self._db_collections,
-        ) as _db_manager:
-
-            # add item by item to database
-            for key, item in data.items():
-                # add to mongodb
-                self.__add_item_to_database(
-                    db_manager=_db_manager, data=item, collection_name=collection_name
-                )
+        # add item by item to database
+        for key, item in data.items():
+            # add to mongodb
+            await self.save_item_to_database(data=item, collection_name=collection_name)
 
     async def save_item_to_database(
         self,
@@ -60,50 +50,46 @@ class db_collections_common:
             data (list): data list following tool_mongodb_general class to be saved to database in a dict format
             collection_name (str): collection name to save data to
         """
-
-        # create database manager/connector
-        with MongoDbManager(
-            url=self._db_mongo_url,
-            db_name=self._db_name,
-            collections=self._db_collections,
-        ) as _db_manager:
-            # add to mongodb
-            self.__add_item_to_database(
-                db_manager=_db_manager, data=data, collection_name=collection_name
-            )
-
-    def __add_item_to_database(
-        self,
-        db_manager: MongoDbManager,
-        data: dict,
-        collection_name: str,
-    ):
         try:
-            # add to mongodb
-            db_manager.add_item(
-                coll_name=collection_name, dbFilter={"id": data["id"]}, data=data
-            )
+            with MongoDbManager(
+                url=self._db_mongo_url,
+                db_name=self._db_name,
+                collections=self._db_collections,
+            ) as _db_manager:
+                # add to mongodb
+                _db_manager.add_item(
+                    coll_name=collection_name, dbFilter={"id": data["id"]}, data=data
+                )
         except Exception as e:
-            logger.exception(
+            logging.getLogger(__name__).exception(
                 " Unable to save data to mongo's {} collection.  error-> {}".format(
                     collection_name, e
                 )
             )
 
-    def create_db_manager(self) -> MongoDbManager:
-        # create database manager/connector
+    async def replace_item_to_database(
+        self,
+        data: dict,
+        collection_name: str,
+    ):
         try:
-            return MongoDbManager(
+            with MongoDbManager(
                 url=self._db_mongo_url,
                 db_name=self._db_name,
                 collections=self._db_collections,
-            )
+            ) as _db_manager:
+                # add to mongodb
+                _db_manager.replace_item(
+                    coll_name=collection_name, dbFilter={"id": data["id"]}, data=data
+                )
         except Exception as e:
-            logger.exception(e)
-            # do not continue
-        return None
+            logging.getLogger(__name__).exception(
+                " Unable to replace data in mongo's {} collection.  error-> {}".format(
+                    collection_name, e
+                )
+            )
 
-    def get_items_from_database(
+    def query_items_from_database(
         self,
         query: list[dict],
         collection_name: str,
@@ -119,6 +105,16 @@ class db_collections_common:
             )
         return result
 
+    def get_items_from_database(self, collection_name: str, **kwargs) -> list:
+        with MongoDbManager(
+            url=self._db_mongo_url,
+            db_name=self._db_name,
+            collections=self._db_collections,
+        ) as _db_manager:
+            result = _db_manager.get_items(coll_name=collection_name, **kwargs)
+            result = list(result)
+        return result
+
     # TOOLING
     @staticmethod
     def bytes_needed(n):
@@ -127,3 +123,53 @@ class db_collections_common:
         if n < 0:
             return int(log(abs(n), 256)) + 2
         return int(log(n, 256)) + 1
+
+    @staticmethod
+    def convert_decimal_to_d128(item: dict) -> dict:
+        """Converts a dictionary decimal values to BSON.decimal128, recursive...
+            The function iterates a dict looking for types of Decimal128 and converts them to Decimal.
+
+        Args:
+            item (dict):
+
+        Returns:
+            dict: converted values dict
+        """
+        if item is None:
+            return None
+
+        for k, v in list(item.items()):
+            if isinstance(v, dict):
+                MongoDbManager.convert_decimal_to_d128(v)
+            elif isinstance(v, list):
+                for l in v:
+                    MongoDbManager.convert_decimal_to_d128(l)
+            elif isinstance(v, Decimal):
+                item[k] = Decimal128(str(v))
+
+        return item
+
+    @staticmethod
+    def convert_d128_to_decimal(item: dict) -> dict:
+        """Converts a dictionary decimal128 values to decimal, recursive...
+            The function iterates a dict looking for types of Decimal and converts them to Decimal128.
+
+        Args:
+            item (dict):
+
+        Returns:
+            dict: converted values dict
+        """
+        if item is None:
+            return None
+
+        for k, v in list(item.items()):
+            if isinstance(v, dict):
+                MongoDbManager.convert_d128_to_decimal(v)
+            elif isinstance(v, list):
+                for l in v:
+                    MongoDbManager.convert_d128_to_decimal(l)
+            elif isinstance(v, Decimal128):
+                item[k] = v.to_decimal()
+
+        return item

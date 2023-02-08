@@ -22,7 +22,7 @@ class db_collection_manager(db_collections_common):
         )
 
     async def _get_data(self, query: list[dict]):
-        return self.get_items_from_database(
+        return self.query_items_from_database(
             query=query, collection_name=self.db_collection_name
         )
 
@@ -85,6 +85,13 @@ class db_static_manager(db_collection_manager):
 
 
 class db_returns_manager(db_collection_manager):
+    """This is managing database with fee Return and Impermanent divergence data
+
+    returns data is collected from <get_fees_yield> so it is using uncollected fees to return %
+    impermanent data is collected from <get_impermanent_data>
+
+    """
+
     db_collection_name = "returns"
 
     # format data to be used with mongo db
@@ -548,8 +555,14 @@ class db_allRewards2_manager(db_collection_manager):
             pass
 
         # add id and datetime to data
-        data["id"] = f"{chain}_{protocol}"
         data["datetime"] = datetime.utcnow()
+        # get timestamp without decimals
+        timestamp = int(datetime.timestamp(data["datetime"]))
+        # set id
+        data["id"] = f"{timestamp}_{chain}_{protocol}"
+        # identify data
+        data["chain"] = chain
+        data["protocol"] = protocol
 
         return data
 
@@ -565,6 +578,25 @@ class db_allRewards2_manager(db_collection_manager):
         result = await self._get_data(
             query=self.query_all(chain=chain, protocol=protocol)
         )
+        try:
+            return result[0]
+        except:
+            return {}
+
+    async def get_last_data(self, chain: str, protocol: str) -> dict:
+        """Retrieve last chain+protocol data available at database
+
+        Args:
+            chain (str):
+            protocol (str):
+
+        Returns:
+            dict:
+        """
+        result = await self._get_data(
+            query=self.query_last(chain=chain, protocol=protocol)
+        )
+
         try:
             return result[0]
         except:
@@ -586,6 +618,18 @@ class db_allRewards2_manager(db_collection_manager):
 
         # return query
         return [{"$match": _match}, {"$unset": ["_id", "id"]}]
+
+    @staticmethod
+    def query_last(chain: str, protocol: str) -> list[str]:
+        # set return match vars
+        _match = {"chain": chain, "protocol": protocol}
+
+        return [
+            {"$match": _match},
+            {"$sort": {"datetime": -1}},
+            {"$limit": 3},
+            {"$unset": ["_id", "id", "chain", "protocol"]},
+        ]
 
 
 class db_aggregateStats_manager(db_collection_manager):
