@@ -80,11 +80,8 @@ async def hypervisors_return_original(protocol: str, chain: str):
     return await hypervisor_info.all_returns()
 
 
-from starlette.datastructures import MutableHeaders
-from fastapi import Request
-
 # Temporal result
-async def hypervisors_return(protocol: str, chain: str, request: Request = None):
+async def hypervisors_return(protocol: str, chain: str, response: Response = None):
     average_returns_mngr = db_returns_manager(mongo_url=MONGO_DB_URL)
 
     av_result = await average_returns_mngr.get_hypervisors_returns_average(
@@ -92,12 +89,8 @@ async def hypervisors_return(protocol: str, chain: str, request: Request = None)
     )
     if len(av_result) > 0:
         # add request
-        if request:
-            new_header = MutableHeaders(request._headers)
-            new_header["X-database-item"] = " test "
-            request._headers = new_header
-            # update the scope attribute of the Request-object
-            request.scope.update(headers=request.headers.raw)
+        if response:
+            response.headers["X-Database-lastupdate"] = " test it "
 
         result = dict()
         # CONVERT result so is equal to original
