@@ -81,6 +81,9 @@ async def feed_database_static():
     logger.info(f"     chains prot.: {CHAINS_PROTOCOLS}")
     logger.info(f"     excluded_hyp: {EXCLUDED_HYPERVISORS}")
 
+    # start time log
+    _startime = datetime.utcnow()
+
     # static requests
     static_manager = db_static_manager(mongo_url=MONGO_DB_URL)
     requests = [
