@@ -117,6 +117,12 @@ async def recent_fees(hours: int = 24):
 @router.get("/hypervisors/returns")
 @cache(expire=APY_CACHE_TIMEOUT)
 async def hypervisors_return():
+    """
+    Return daily, weekly, monthly and allTime returns using uncollected fees only
+    It will try to retrieve the last database saved return ( updated every 2 minutes )
+    and fall back to 'on-the-fly' calculation if any problem is found.
+
+    """
     return await v3data.common.hypervisor.hypervisors_return(
         PROTOCOL_UNISWAP_V3, CHAIN_MAINNET
     )

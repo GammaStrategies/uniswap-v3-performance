@@ -139,7 +139,9 @@ async def test_get_data_from_Mongodb_v1():
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     for chain, protocol in chains_protocols:
         allData = await allData_manager.get_data(chain=chain, protocol=protocol)
-        Rewards2 = await allRewards2_manager.get_data(chain=chain, protocol=protocol)
+        Rewards2 = await allRewards2_manager.get_last_data(
+            chain=chain, protocol=protocol
+        )
         returns = await returns_manager.get_hypervisors_average(
             chain=chain, protocol=protocol
         )
