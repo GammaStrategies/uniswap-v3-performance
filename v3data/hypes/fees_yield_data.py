@@ -91,7 +91,7 @@ class YieldData:
         return response
 
     async def _get_transition_data(self, period_days):
-        
+
         transition_query = """
             query transitions($timestamp_start: Int!, $timestamp_end: Int!){
                 uniswapV3Hypervisors(
@@ -133,7 +133,7 @@ class YieldData:
                 }
             }
             """
-    
+
         transition_all_but_query = """
             query transitions($timestamp_start: Int!, $timestamp_end: Int!, $ids: [String!]!){
                 uniswapV3Hypervisors(
@@ -179,18 +179,6 @@ class YieldData:
             }
             """
 
-            variables = {
-                "timestamp_start": timestamp_ago(
-                    timedelta(days=period_days)
-                    + timedelta(seconds=self.delay_buffer_seconds)
-                ),
-                "timestamp_end": timestamp_ago(
-                    timedelta(seconds=self.delay_buffer_seconds)
-                ),
-                "ids": self.excluded_hypervisors,
-            }
-        
-
         if len(self.excluded_hypervisors) > 0:
             variables = {
                 "timestamp_start": timestamp_ago(
@@ -203,7 +191,7 @@ class YieldData:
                 "ids": self.excluded_hypervisors,
             }
         else:
-            
+
             variables = {
                 "timestamp_start": timestamp_ago(
                     timedelta(days=period_days)
