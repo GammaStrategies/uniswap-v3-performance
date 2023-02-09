@@ -138,8 +138,10 @@ async def test_get_data_from_Mongodb_v1():
     allRewards2_manager = db_allRewards2_manager(mongo_url=MONGO_DB_URL)
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     for chain, protocol in chains_protocols:
-        returns = await returns_manager.get_feeReturns(chain=chain, protocol=protocol)
-
+        feeReturns = await returns_manager.get_feeReturns(
+            chain=chain, protocol=protocol, period=7
+        )
+        returns = await returns_manager.get_returns(chain=chain, protocol=protocol)
         allData = await allData_manager.get_data(chain=chain, protocol=protocol)
         Rewards2 = await allRewards2_manager.get_last_data(
             chain=chain, protocol=protocol

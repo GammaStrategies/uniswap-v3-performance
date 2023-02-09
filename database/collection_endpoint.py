@@ -212,47 +212,68 @@ class db_returns_manager(db_collection_manager):
         except:
             return {}
 
-    async def get_feeReturns(self, chain: str, protocol: str, period: int = 0) -> dict:
+    async def get_feeReturns(
+        self, chain: str, protocol: str, period: int, hypervisor_address: str = ""
+    ) -> dict:
+
+        # query database
+        dbdata = await self._get_data(
+            query=self.query_last_returns(
+                chain=chain,
+                protocol=protocol,
+                period=period,
+                hypervisor_address=hypervisor_address,
+            )
+        )
+        # set database last update field
+        try:
+            db_lastUpdate = min([x["timestamp"] for x in dbdata])
+        except:
+            # TODO: log error
+            db_lastUpdate = datetime.utcnow().timestamp()
+
         # init result
         result = dict()
-        result["datetime"] = datetime.utcnow()
+        # convert result to dict
+        for item in dbdata:
+            address = item.pop("address")
+            result[address] = item
 
-        hypervisor_list = self.get_items_from_database(
-            collection_name="static", find={"chain": chain, "protocol": protocol}
+        # add database last update datetime
+        result["datetime"] = datetime.fromtimestamp(db_lastUpdate)
+
+        return result
+
+    async def get_returns(
+        self, chain: str, protocol: str, hypervisor_address: str = ""
+    ) -> dict:
+
+        # query database
+        result = await self._get_data(
+            query=self.query_last_returns(
+                chain=chain,
+                protocol=protocol,
+                hypervisor_address=hypervisor_address,
+            )
         )
+        # set database last update field
+        try:
+            db_lastUpdate = min([x["timestamp"] for x in result])
+        except:
+            # TODO: log error
+            db_lastUpdate = datetime.utcnow().timestamp()
 
-        requests = [
-            self._get_data(
-                query=self.query_feeReturns(
-                    chain=chain,
-                    hypervisor_address=hype["address"],
-                    period=period,
-                )
-            )
-            for hype in hypervisor_list
-        ]
-
-        responses = await asyncio.gather(*requests)
-
-        # Get a list of hypervisor addresses
-        for hype_address in self.get_items_from_database(
-            collection_name="static", find={"chain": chain, "protocol": protocol}
-        ):
-
-            result[hype_address] = await self._get_data(
-                query=self.query_feeReturns(
-                    chain=chain,
-                    hypervisor_address=hype_address,
-                    period=period,
-                )
-            )
-            try:
-                result["datetime"] = min(
-                    datetime.fromtimestamp(result[hype_address].pop("timestamp")),
-                    result["datetime"],
-                )
-            except:
-                pass
+        # convert result to dict
+        result = {
+            x["_id"]: {
+                "daily": x["daily"],
+                "weekly": x["weekly"],
+                "monthly": x["monthly"],
+                "allTime": x["allTime"],
+            }
+            for x in result
+        }
+        result["datetime"] = datetime.fromtimestamp(db_lastUpdate)
 
         return result
 
@@ -511,9 +532,58 @@ class db_returns_manager(db_collection_manager):
         ]
 
     @staticmethod
-    def query_feeReturns(
-        chain: str, period: int = 0, hypervisor_address: str = ""
+    def query_last_returns(
+        chain: str, period: int = 0, protocol: str = "", hypervisor_address: str = ""
     ) -> list[dict]:
+        """return the last items found not zero lower than 800% apy apr :
+                daily, weekly and monthly apr apy ( alltime is the monthly figure)
+
+        Args:
+            chain (str):
+            period (int, optional): . Defaults to 0.
+            protocol (str, optional): . Defaults to "".
+            hypervisor_address (str, optional): . Defaults to "".
+
+        Returns:
+            list[dict]:
+                        when period == default {
+                                                "_id" : "0xeb7d263db66aab4d5ee903a949a5a54c287bec87",
+                                                "daily" : {
+                                                    "feeApr" : 0.0173442096430378,
+                                                    "feeApy" : 0.017495074535651,
+                                                    "hasOutlier" : "False",
+                                                    "symbol" : "WMATIC-stMATIC-0"
+                                                },
+                                                "weekly" : {
+                                                    "feeApr" : 0.00174322708835021,
+                                                    "feeApy" : 0.00174474322190754,
+                                                    "hasOutlier" : "False",
+                                                    "symbol" : "WMATIC-stMATIC-0"
+                                                },
+                                                "monthly" : {
+                                                    "feeApr" : 0.00134238749591191,
+                                                    "feeApy" : 0.00134328642948756,
+                                                    "hasOutlier" : "False",
+                                                    "symbol" : "WMATIC-stMATIC-0"
+                                                },
+                                                "allTime" : {
+                                                    "feeApr" : 0.00134238749591191,
+                                                    "feeApy" : 0.00134328642948756,
+                                                    "hasOutlier" : "False",
+                                                    "symbol" : "WMATIC-stMATIC-0"
+                                                }
+                                            }
+
+                        when period != 0 {
+                                        "address" : "0xf874d4957861e193aec9937223062679c14f9aca",
+                                        "timestamp" : 1675329215,
+                                        "block" : 38817275,
+                                        "feeApr" : 0.0560324909858921,
+                                        "feeApy" : 0.0576274984164038,
+                                        "hasOutlier" : "False",
+                                        "symbol" : "WMATIC-WETH-500"
+                                        }
+        """
 
         # set return match vars
         _returns_match = {
@@ -527,21 +597,189 @@ class db_returns_manager(db_collection_manager):
         if hypervisor_address != "":
             _returns_match["address"] = hypervisor_address
 
-        # return query
-        return [
+        # set return match vars
+        _static_match = dict()
+        if protocol != "":
+            _static_match["hypervisor.protocol"] = protocol
+
+        # will return a list of:
+        # {
+        #     "_id" : "0xeb7d263db66aab4d5ee903a949a5a54c287bec87",
+        #     "daily" : {
+        #         "feeApr" : 0.0173442096430378,
+        #         "feeApy" : 0.017495074535651,
+        #         "hasOutlier" : "False",
+        #         "symbol" : "WMATIC-stMATIC-0"
+        #     },
+        #     "weekly" : {
+        #         "feeApr" : 0.00174322708835021,
+        #         "feeApy" : 0.00174474322190754,
+        #         "hasOutlier" : "False",
+        #         "symbol" : "WMATIC-stMATIC-0"
+        #     },
+        #     "monthly" : {
+        #         "feeApr" : 0.00134238749591191,
+        #         "feeApy" : 0.00134328642948756,
+        #         "hasOutlier" : "False",
+        #         "symbol" : "WMATIC-stMATIC-0"
+        #     },
+        #     "allTime" : {
+        #         "feeApr" : 0.00134238749591191,
+        #         "feeApy" : 0.00134328642948756,
+        #         "hasOutlier" : "False",
+        #         "symbol" : "WMATIC-stMATIC-0"
+        #     }
+        # }
+        returns_all_periods = [
             {"$match": _returns_match},
-            {"$sort": {"block": -1}},
-            {"$limit": 5},
             {
                 "$project": {
-                    "_id": "$address",
+                    "period": "$period",
+                    "address": "$address",
+                    "hypervisor_id": {"$concat": ["$chain", "_", "$address"]},
+                    "timestamp": "$timestamp",
+                    "block": "$block",
                     "feeApr": "$fees.feeApr",
                     "feeApy": "$fees.feeApy",
                     "hasOutlier": "$fees.hasOutlier",
-                    "timestamp": "$timestamp",
                 }
             },
+            {
+                "$lookup": {
+                    "from": "static",
+                    "localField": "hypervisor_id",
+                    "foreignField": "id",
+                    "as": "hypervisor",
+                }
+            },
+            {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
+            {"$match": _static_match},
+            {"$sort": {"block": 1}},
+            {
+                "$project": {
+                    "period": "$period",
+                    "address": "$address",
+                    "timestamp": "$timestamp",
+                    "block": "$block",
+                    "feeApr": "$feeApr",
+                    "feeApy": "$feeApy",
+                    "hasOutlier": "$hasOutlier",
+                    "symbol": "$hypervisor.symbol",
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"address": "$address", "period": "$period"},
+                    "items": {"$push": "$$ROOT"},
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$_id.address",
+                    "periods": {
+                        "$push": {
+                            "k": {"$toString": "$_id.period"},
+                            "v": {"$last": "$items"},
+                        },
+                    },
+                }
+            },
+            {
+                "$project": {
+                    "_id": "$_id",
+                    "returns": {"$arrayToObject": "$periods"},
+                }
+            },
+            {
+                "$addFields": {
+                    "daily": {
+                        "feeApr": "$returns.1.feeApr",
+                        "feeApy": "$returns.1.feeApy",
+                        "hasOutlier": "$returns.1.hasOutlier",
+                        "symbol": "$returns.1.symbol",
+                    },
+                    "weekly": {
+                        "feeApr": "$returns.7.feeApr",
+                        "feeApy": "$returns.7.feeApy",
+                        "hasOutlier": "$returns.7.hasOutlier",
+                        "symbol": "$returns.7.symbol",
+                    },
+                    "monthly": {
+                        "feeApr": "$returns.30.feeApr",
+                        "feeApy": "$returns.30.feeApy",
+                        "hasOutlier": "$returns.30.hasOutlier",
+                        "symbol": "$returns.30.symbol",
+                    },
+                    "allTime": {
+                        "feeApr": "$returns.30.feeApr",
+                        "feeApy": "$returns.30.feeApy",
+                        "hasOutlier": "$returns.30.hasOutlier",
+                        "symbol": "$returns.30.symbol",
+                    },
+                }
+            },
+            {"$unset": ["returns"]},
         ]
+
+        # will return a list of {
+        #     "address" : "0xf874d4957861e193aec9937223062679c14f9aca",
+        #     "timestamp" : 1675329215,
+        #     "block" : 38817275,
+        #     "feeApr" : 0.0560324909858921,
+        #     "feeApy" : 0.0576274984164038,
+        #     "hasOutlier" : "False",
+        #     "symbol" : "WMATIC-WETH-500"
+        # }
+        returns_by_period = [
+            {"$match": _returns_match},
+            {
+                "$project": {
+                    "address": "$address",
+                    "hypervisor_id": {"$concat": ["$chain", "_", "$address"]},
+                    "timestamp": "$timestamp",
+                    "block": "$block",
+                    "feeApr": "$fees.feeApr",
+                    "feeApy": "$fees.feeApy",
+                    "hasOutlier": "$fees.hasOutlier",
+                    "block": "$block",
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "static",
+                    "localField": "hypervisor_id",
+                    "foreignField": "id",
+                    "as": "hypervisor",
+                }
+            },
+            {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
+            {"$match": _static_match},
+            {"$sort": {"block": -1}},
+            {
+                "$project": {
+                    "address": "$address",
+                    "timestamp": "$timestamp",
+                    "block": "$block",
+                    "feeApr": "$feeApr",
+                    "feeApy": "$feeApy",
+                    "hasOutlier": "$hasOutlier",
+                    "symbol": "$hypervisor.symbol",
+                }
+            },
+            {
+                "$group": {
+                    "_id": "$address",
+                    "items": {"$first": "$$ROOT"},
+                }
+            },
+            {"$replaceRoot": {"newRoot": "$items"}},
+            {"$unset": ["_id"]},
+        ]
+
+        if period != 0:
+            return returns_by_period
+        else:
+            return returns_all_periods
 
 
 class db_allData_manager(db_collection_manager):

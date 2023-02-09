@@ -59,7 +59,7 @@ async def aggregate_stats(protocol: str, chain: str, response: Response = None):
         return result
     except:
         logger.warning(
-            " Could not get database aggregateStats data for {protocol} in {chain}. Return calculated data."
+            f" Could not get database aggregateStats data for {protocol} in {chain}. Return calculated data."
         )
         if response:
             response.headers["X-Database"] = "false"
@@ -203,12 +203,12 @@ async def hypervisors_all(protocol: str, chain: str, response: Response = None):
     except:
         # Calculated result
         logger.warning(
-            " Could not get database allData for {protocol} in {chain}. Return calculated data."
+            f" Could not get database allData for {protocol} in {chain}. Return calculated data."
         )
-        if response:
-            response.headers["X-Database"] = "false"
-        hypervisor_info = HypervisorInfo(protocol, chain)
-        return await hypervisor_info.all_data()
+    if response:
+        response.headers["X-Database"] = "false"
+    hypervisor_info = HypervisorInfo(protocol, chain)
+    return await hypervisor_info.all_data()
 
 
 async def uncollected_fees(protocol: str, chain: str, hypervisor_address: str):
@@ -221,7 +221,29 @@ async def uncollected_fees_all(protocol: str, chain: str):
     return await fees.output()
 
 
-async def fee_returns(protocol: str, chain: str, days: int):
+async def fee_returns(protocol: str, chain: str, days: int, response: Response = None):
+
+    try:
+
+        returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
+        result = await returns_manager.get_feeReturns(
+            chain=chain, protocol=protocol, period=7
+        )
+        if response:
+            response.headers["X-Database"] = "true"
+            response.headers["X-Database-itemUpdated"] = "{}".format(
+                result.pop("datetime", "")
+            )
+
+        return result
+    except:
+        # Calculated result
+        logger.warning(
+            f" Could not get database allData for {protocol} in {chain}. Return calculated data."
+        )
+    if response:
+        response.headers["X-Database"] = "false"
+
     fees_yield = FeesYield(days, protocol, chain)
     output = await fees_yield.get_fees_yield()
     return output
