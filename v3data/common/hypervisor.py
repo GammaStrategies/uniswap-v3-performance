@@ -227,7 +227,7 @@ async def fee_returns(protocol: str, chain: str, days: int, response: Response =
 
         returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
         result = await returns_manager.get_feeReturns(
-            chain=chain, protocol=protocol, period=7
+            chain=chain, protocol=protocol, period=days
         )
         if response:
             response.headers["X-Database"] = "true"
