@@ -207,6 +207,8 @@ async def feed_database_with_historic_data(
         process_quickswap (bool): should quickswap protocol be included ?
         periods (list): list of periods as ["daily", "weekly", "monthly"]
     """
+    # final log var
+    processed_datetime_strings = list()
 
     last_time = datetime.utcnow()
 
@@ -225,11 +227,12 @@ async def feed_database_with_historic_data(
         utils.STATIC_DATETIME_UTCNOW = datetime.utcfromtimestamp(current_timestamp)
         last_timestamp = last_time.timestamp()
         while last_timestamp > current_timestamp:
-            logger.info(
-                " Feeding {} database at  {:%Y-%m-%d  %H:%M:%S}  ".format(
-                    period, datetime.utcfromtimestamp(current_timestamp)
-                )
+
+            txt_timestamp = "{:%Y-%m-%d  %H:%M:%S}".format(
+                datetime.utcfromtimestamp(current_timestamp)
             )
+            processed_datetime_strings.append(txt_timestamp)
+            logger.info(" Feeding {} database at  {}".format(period, txt_timestamp))
 
             # database feed
             await feed_database_average_returns(
@@ -245,6 +248,8 @@ async def feed_database_with_historic_data(
 
     # reset utils now
     utils.STATIC_DATETIME_UTCNOW = None
+
+    logger.info(" Processed dates: {} ".format(processed_datetime_strings))
 
 
 def convert_commandline_arguments(argv) -> dict:
@@ -332,11 +337,13 @@ if __name__ == "__main__":
             "from_datetime", datetime(2022, 12, 1, 0, 0, tzinfo=timezone.utc)
         )
 
+        logger.info(" ")
         logger.info(
-            " Feeding database with historic data from {:%Y-%m-%d} to now \r ********************* \r ********************* ".format(
+            " Feeding database with historic data from {:%Y-%m-%d} to now *********************   ********************* ".format(
                 from_datetime
             )
         )
+        logger.info(" ")
 
         # start time log
         _startime = datetime.utcnow()
