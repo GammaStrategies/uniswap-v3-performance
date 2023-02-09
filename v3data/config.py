@@ -181,9 +181,9 @@ CHARTS_CACHE_TIMEOUT = int(os.environ.get("CHARTS_CACHE_TIMEOUT", 600))
 APY_CACHE_TIMEOUT = int(os.environ.get("APY_CACHE_TIMEOUT", 600))
 DASHBOARD_CACHE_TIMEOUT = int(os.environ.get("DASHBOARD_CACHE_TIMEOUT", 600))
 ALLDATA_CACHE_TIMEOUT = int(
-    os.environ.get("ALLDATA_CACHE_TIMEOUT", 300)
+    os.environ.get("ALLDATA_CACHE_TIMEOUT", 600)
 )  # database call
-DB_CACHE_TIMEOUT = int(os.environ.get("DB_CACHE_TIMEOUT", 1))  # database calls cache
+DB_CACHE_TIMEOUT = int(os.environ.get("DB_CACHE_TIMEOUT", 160))  # database calls cache
 
 EXCLUDED_HYPERVISORS = list(
     filter(None, os.environ.get("EXCLUDED_HYPES", "").split(","))
