@@ -47,8 +47,8 @@ EXPR_FORMATS = {
         "weekly": "2 0 * * mon",
         "monthly": "5 0 * * mon#1",
     },
-    "inSecuence": {
-        "mins": "*/2 * * * *",
+    "inSecuence": {  # allData + static hypervisor info
+        "mins": "*/30 * * * *",
     },
     "aggregateStats": {
         "mins": "*/15 * * * *",
