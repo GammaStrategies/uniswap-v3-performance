@@ -22,7 +22,7 @@ class db_collection_manager(db_collections_common):
         )
 
     async def _get_data(self, query: list[dict]):
-        return self.query_items_from_database(
+        return await self.query_items_from_database(
             query=query, collection_name=self.db_collection_name
         )
 
@@ -211,6 +211,50 @@ class db_returns_manager(db_collection_manager):
             return result
         except:
             return {}
+
+    async def get_feeReturns(self, chain: str, protocol: str, period: int = 0) -> dict:
+        # init result
+        result = dict()
+        result["datetime"] = datetime.utcnow()
+
+        hypervisor_list = self.get_items_from_database(
+            collection_name="static", find={"chain": chain, "protocol": protocol}
+        )
+
+        requests = [
+            self._get_data(
+                query=self.query_feeReturns(
+                    chain=chain,
+                    hypervisor_address=hype["address"],
+                    period=period,
+                )
+            )
+            for hype in hypervisor_list
+        ]
+
+        responses = await asyncio.gather(*requests)
+
+        # Get a list of hypervisor addresses
+        for hype_address in self.get_items_from_database(
+            collection_name="static", find={"chain": chain, "protocol": protocol}
+        ):
+
+            result[hype_address] = await self._get_data(
+                query=self.query_feeReturns(
+                    chain=chain,
+                    hypervisor_address=hype_address,
+                    period=period,
+                )
+            )
+            try:
+                result["datetime"] = min(
+                    datetime.fromtimestamp(result[hype_address].pop("timestamp")),
+                    result["datetime"],
+                )
+            except:
+                pass
+
+        return result
 
     # TODO: use a limited number of items back? ( $limit )
     # TODO: return dict item with hypervisor id's as keys and 1 item list only ... to match others
@@ -462,6 +506,39 @@ class db_returns_manager(db_collection_manager):
                         "protocol": "$hypervisor.protocol",
                     },
                     "returns": {"$arrayToObject": "$periods"},
+                }
+            },
+        ]
+
+    @staticmethod
+    def query_feeReturns(
+        chain: str, period: int = 0, hypervisor_address: str = ""
+    ) -> list[dict]:
+
+        # set return match vars
+        _returns_match = {
+            "chain": chain,
+            "$and": [{"fees.feeApr": {"$gt": 0}}, {"fees.feeApr": {"$lt": 8}}],
+            "$and": [{"fees.feeApy": {"$gt": 0}}, {"fees.feeApy": {"$lt": 8}}],
+        }
+
+        if period != 0:
+            _returns_match["period"] = period
+        if hypervisor_address != "":
+            _returns_match["address"] = hypervisor_address
+
+        # return query
+        return [
+            {"$match": _returns_match},
+            {"$sort": {"block": -1}},
+            {"$limit": 5},
+            {
+                "$project": {
+                    "_id": "$address",
+                    "feeApr": "$fees.feeApr",
+                    "feeApy": "$fees.feeApy",
+                    "hasOutlier": "$fees.hasOutlier",
+                    "timestamp": "$timestamp",
                 }
             },
         ]

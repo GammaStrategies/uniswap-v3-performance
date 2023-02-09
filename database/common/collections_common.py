@@ -89,7 +89,7 @@ class db_collections_common:
                 )
             )
 
-    def query_items_from_database(
+    async def query_items_from_database(
         self,
         query: list[dict],
         collection_name: str,
