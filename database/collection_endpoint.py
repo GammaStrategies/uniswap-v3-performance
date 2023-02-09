@@ -225,9 +225,9 @@ class db_returns_manager(db_collection_manager):
                 hypervisor_address=hypervisor_address,
             )
         )
-        # set database last update field
+        # set database last update field as the maximum date found within the items returned
         try:
-            db_lastUpdate = min([x["timestamp"] for x in dbdata])
+            db_lastUpdate = max([x["timestamp"] for x in dbdata])
         except:
             # TODO: log error
             db_lastUpdate = datetime.utcnow().timestamp()
@@ -256,9 +256,9 @@ class db_returns_manager(db_collection_manager):
                 hypervisor_address=hypervisor_address,
             )
         )
-        # set database last update field
+        # set database last update field as the maximum date found within the items returned
         try:
-            db_lastUpdate = min([x["timestamp"] for x in result])
+            db_lastUpdate = max([x["timestamp"] for x in result])
         except:
             # TODO: log error
             db_lastUpdate = datetime.utcnow().timestamp()
