@@ -233,7 +233,7 @@ async def feed_database_with_historic_data(
 
             # database feed
             await feed_database_average_returns(
-                periods=EXPR_PERIODS["average_returns"][period],
+                periods=EXPR_ARGS["average_returns"][period][0],
                 process_quickswap=process_quickswap,
             )
 
@@ -285,7 +285,7 @@ def convert_commandline_arguments(argv) -> dict:
     for opt, arg in opts:
         if opt in ("-s", "start="):
             # todo: check if it is a date
-            prmtrs["from_datetime"] = datetime.strptime(arg, "%Y-%m-%d")
+            prmtrs["from_datetime"] = datetime.strptime((arg).strip(), "%Y-%m-%d")
             prmtrs["historic"] = True
         elif opt in ("-h", "historic"):
             prmtrs["historic"] = True

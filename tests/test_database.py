@@ -146,7 +146,7 @@ async def test_get_data_from_Mongodb_v1():
         Rewards2 = await allRewards2_manager.get_last_data(
             chain=chain, protocol=protocol
         )
-        returns = await returns_manager.get_hypervisors_average(
+        returns_average = await returns_manager.get_hypervisors_average(
             chain=chain, protocol=protocol
         )
 
@@ -170,6 +170,23 @@ async def test_get_data_from_Mongodb_v2():
                 chain, protocol, get_timepassed_string(_startime)
             )
         )
+
+
+def check_returns(data: dict, **kwargs):
+    if not len(data) > 0:
+        print(" Returns has no content")
+
+    if not "datetime" in data.keys():
+        print(" Returns has no datetime")
+
+    for address, returns in data.items():
+        if not set(["daily", "weekly", "monthly", "allTime"]).issubset(
+            set(returns.keys())
+        ):
+            print(f" {address} return has is incomplete")
+        for k, v in returns.items():
+            if v == 0:
+                print(f" {address} return is zero")
 
 
 def get_timepassed_string(start_time: dt.datetime) -> str:
