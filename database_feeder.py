@@ -333,7 +333,7 @@ if __name__ == "__main__":
         )
 
         logger.info(
-            " Feeding database with historic data from {:%Y-%m-%d} to now".format(
+            " Feeding database with historic data from {:%Y-%m-%d} to now \r ********************* \r ********************* ".format(
                 from_datetime
             )
         )
