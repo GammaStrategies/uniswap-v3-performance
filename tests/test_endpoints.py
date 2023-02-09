@@ -69,10 +69,17 @@ def get_timepassed_string(start_time: dt.datetime) -> str:
     return "{:,.2f} {}".format(_passed, _timelapse_unit)
 
 
+from v3data.hypes.fees_yield import FeesYield
+
+
 async def test_temporal():
     terst_var = await hypervisor.hypervisors_return(
         protocol=PROTOCOL_UNISWAP_V3, chain="polygon"
     )
+
+    fees_yield = FeesYield(1, PROTOCOL_QUICKSWAP, "polygon")
+    output = await fees_yield.get_fees_yield()
+    return output
 
 
 # TESTING
