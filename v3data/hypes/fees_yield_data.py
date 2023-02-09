@@ -207,7 +207,8 @@ class YieldData:
         self._transition_data = response["data"]
 
     async def _get_fee_update_data(self, period_days):
-        query = """
+
+        all_but_query = """
         query transitions($timestamp_start: Int!, $timestamp_end: Int!, $ids: [String!]!){
             uniswapV3Hypervisors(
                 first: 1000,
@@ -232,16 +233,49 @@ class YieldData:
         }
         """
 
-        variables = {
-            "timestamp_start": timestamp_ago(
-                timedelta(days=period_days)
-                + timedelta(seconds=self.delay_buffer_seconds)
-            ),
-            "timestamp_end": timestamp_ago(
-                timedelta(seconds=self.delay_buffer_seconds)
-            ),
-            "ids": self.excluded_hypervisors,
+        query = """
+        query transitions($timestamp_start: Int!, $timestamp_end: Int!){
+            uniswapV3Hypervisors(
+                first: 1000) {
+                id
+                feeUpdates(
+                    where: {
+                        timestamp_gt: $timestamp_start
+                        timestamp_lt: $timestamp_end}
+                ) {
+                    block
+                    timestamp
+                }
+            }
+            _meta {
+                block {
+                    number
+                }
+            }
         }
+        """
+
+        if len(self.excluded_hypervisors) > 0:
+            variables = {
+                "timestamp_start": timestamp_ago(
+                    timedelta(days=period_days)
+                    + timedelta(seconds=self.delay_buffer_seconds)
+                ),
+                "timestamp_end": timestamp_ago(
+                    timedelta(seconds=self.delay_buffer_seconds)
+                ),
+            }
+        else:
+            variables = {
+                "timestamp_start": timestamp_ago(
+                    timedelta(days=period_days)
+                    + timedelta(seconds=self.delay_buffer_seconds)
+                ),
+                "timestamp_end": timestamp_ago(
+                    timedelta(seconds=self.delay_buffer_seconds)
+                ),
+                "ids": self.excluded_hypervisors,
+            }
         response = await self.gamma_client.query(query, variables)
 
         self._transition_data = response["data"]
