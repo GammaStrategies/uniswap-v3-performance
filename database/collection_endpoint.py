@@ -387,7 +387,7 @@ class db_returns_manager(db_collection_manager):
                                 "av_imp_vs_hodl_usd": "$av_imp_vs_hodl_usd",
                                 "av_imp_vs_hodl_deposited": "$av_imp_vs_hodl_deposited",
                                 "av_imp_vs_hodl_token0": "$av_imp_vs_hodl_token0",
-                                "av_imp_vs_hodl_token1": "$imp_vs_hodl_token1",
+                                "av_imp_vs_hodl_token1": "$av_imp_vs_hodl_token1",
                             },
                         },
                     },
