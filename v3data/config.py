@@ -43,7 +43,7 @@ quickswap_subgraphs = {
 }
 
 quickswap_feegrowth_subgraphs = {
-    "polygon": {"prod": "https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3"}
+    "polygon": {"prod": "https://api.thegraph.com/subgraphs/id/QmPiLG4HhUNNcJd8qefJfGH8byPyqPhqw3BEZ5xLYXNLgS"}
 }
 
 visor_subgraphs = {

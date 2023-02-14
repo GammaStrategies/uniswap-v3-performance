@@ -159,7 +159,7 @@ class IndexNodeClient(SubgraphClient):
 
     async def status(self):
         query = f"""
-        {{ 
+        {{
             indexingStatusForCurrentVersion(
                 subgraphName: "{self.subgraph_name}"
             ){{
@@ -210,11 +210,13 @@ class LlamaClient:
         mapping = {"mainnet": "ethereum"}
         return mapping.get(chain, chain)
 
-    async def block_from_timestamp(self, timestamp):
+    async def block_from_timestamp(self, timestamp, return_timestamp=False):
         endpoint = f"{self.base}/block/{self.chain}/{timestamp}"
 
         response = await async_client.get(endpoint)
         if response.status_code == 200:
+            if return_timestamp:
+                return response.json()
             return response.json()["height"]
 
         return None
@@ -244,4 +246,3 @@ class RewarderContract:
         return self.contract.functions.pendingToken(
             pool_id, Web3.toChecksumAddress(user_address)
         )
-
