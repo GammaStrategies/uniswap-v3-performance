@@ -42,7 +42,7 @@ CHAINS_PROTOCOLS = [
 
 # set cron vars
 EXPR_FORMATS = {
-    "average_returns": {
+    "returns": {
         "daily": "0 0 * * *",
         "weekly": "2 0 * * mon",
         "monthly": "5 0 * * mon#1",
@@ -58,7 +58,7 @@ EXPR_FORMATS = {
     },
 }
 EXPR_ARGS = {
-    "average_returns": {
+    "returns": {
         "daily": [[1], True],
         "weekly": [[7], True],
         "monthly": [[30], True],
@@ -66,14 +66,23 @@ EXPR_ARGS = {
 }
 
 # feed jobs
-async def feed_database_average_returns(periods: list, process_quickswap=True):
+async def feed_database_returns(periods: list, process_quickswap=True):
     logger.info(" Starting database feeding process for average results data")
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
-    requests = [
-        returns_manager.feed_db(chain=chain, protocol=protocol, periods=periods)
-        for chain, protocol in CHAINS_PROTOCOLS
-        if (not process_quickswap and not protocol == PROTOCOL_QUICKSWAP)
-    ]
+    if process_quickswap:
+        # all
+        requests = [
+            returns_manager.feed_db(chain=chain, protocol=protocol, periods=periods)
+            for chain, protocol in CHAINS_PROTOCOLS
+        ]
+    else:
+        # not processing quickswap
+        logger.info("   ... discarding quickswap hypervisors")
+        requests = [
+            returns_manager.feed_db(chain=chain, protocol=protocol, periods=periods)
+            for chain, protocol in CHAINS_PROTOCOLS
+            if protocol != PROTOCOL_QUICKSWAP
+        ]
 
     await asyncio.gather(*requests)
 
@@ -214,10 +223,10 @@ async def feed_database_with_historic_data(
 
     # define periods when empty
     if len(periods) == 0:
-        periods = EXPR_ARGS["average_returns"].keys()
+        periods = EXPR_ARGS["returns"].keys()
 
     for period in periods:
-        cron_ex_format = EXPR_FORMATS["average_returns"][period]
+        cron_ex_format = EXPR_FORMATS["returns"][period]
 
         # create croniter
         c_iter = croniter(expr_format=cron_ex_format, start_time=from_datetime)
@@ -235,8 +244,8 @@ async def feed_database_with_historic_data(
             logger.info(" Feeding {} database at  {}".format(period, txt_timestamp))
 
             # database feed
-            await feed_database_average_returns(
-                periods=EXPR_ARGS["average_returns"][period][0],
+            await feed_database_returns(
+                periods=EXPR_ARGS["returns"][period][0],
                 process_quickswap=process_quickswap,
             )
 
@@ -317,7 +326,7 @@ def get_timepassed_string(start_time: datetime, end_time: datetime = None) -> st
 
 # set functions here
 EXPR_FUNCS = {
-    "average_returns": feed_database_average_returns,
+    "returns": feed_database_returns,
     "static": feed_database_static,
     "allData": feed_database_allData,
     "allRewards2": feed_database_allRewards2,
