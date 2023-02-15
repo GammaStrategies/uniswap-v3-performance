@@ -180,9 +180,7 @@ DEFAULT_TIMEZONE = os.environ.get("TIMEZONE", "UTC-5")
 CHARTS_CACHE_TIMEOUT = int(os.environ.get("CHARTS_CACHE_TIMEOUT", 600))
 APY_CACHE_TIMEOUT = int(os.environ.get("APY_CACHE_TIMEOUT", 600))
 DASHBOARD_CACHE_TIMEOUT = int(os.environ.get("DASHBOARD_CACHE_TIMEOUT", 600))
-ALLDATA_CACHE_TIMEOUT = int(
-    os.environ.get("ALLDATA_CACHE_TIMEOUT", 600)
-)  # database call
+ALLDATA_CACHE_TIMEOUT = int(os.environ.get("ALLDATA_CACHE_TIMEOUT", 600))
 DB_CACHE_TIMEOUT = int(os.environ.get("DB_CACHE_TIMEOUT", 160))  # database calls cache
 
 EXCLUDED_HYPERVISORS = list(

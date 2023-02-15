@@ -121,9 +121,8 @@ async def recent_fees(hours: int = 24):
 async def hypervisors_return(response: Response):
     """
     Return daily, weekly, monthly and allTime returns
-
-    - **1)** Retrieve the average returns from database on multiple timeframes ( updated every 2 minutes ) [ using uncollected fees ]
-    - **-** Falls back to 'on-the-fly' calculation if any problem is found. [ using rebalances ]
+        By default, APR and APY are calculated using feeGrowth parameters between operations.
+        On error, result is calculated 'on-the-fly' using rebalances.
 
     """
 
@@ -135,6 +134,10 @@ async def hypervisors_return(response: Response):
 @router.get("/hypervisors/averageReturns")
 @cache(expire=DB_CACHE_TIMEOUT)
 async def hypervisors_average_return(response: Response):
+    """
+    Return average returns, using all available historic data.
+
+    """
     return await v3data.common.hypervisor.hypervisors_average_return(
         PROTOCOL_UNISWAP_V3, CHAIN_MAINNET, response=response
     )
