@@ -8,6 +8,7 @@ from v3data.config import (
     UNI_V2_SUBGRAPH_URL,
     DEX_SUBGRAPH_URLS,
     DEX_FEEGROWTH_SUBGRAPH_URLS,
+    DEX_HYPEPOOL_SUBGRAPH_URLS,
     ETH_BLOCKS_SUBGRAPH_URL,
     THEGRAPH_INDEX_NODE_URL,
     XGAMMA_SUBGRAPH_URL,
@@ -119,6 +120,11 @@ class DexFeeGrowthClient(SubgraphClient):
         super().__init__(DEX_FEEGROWTH_SUBGRAPH_URLS[protocol][chain], chain)
 
 
+class HypePoolClient(SubgraphClient):
+    def __init__(self, protocol: str, chain: str):
+        super().__init__(DEX_HYPEPOOL_SUBGRAPH_URLS[protocol][chain], chain)
+
+
 class EthBlocksClient(SubgraphClient):
     def __init__(self):
         super().__init__(ETH_BLOCKS_SUBGRAPH_URL)
@@ -159,7 +165,7 @@ class IndexNodeClient(SubgraphClient):
 
     async def status(self):
         query = f"""
-        {{ 
+        {{
             indexingStatusForCurrentVersion(
                 subgraphName: "{self.subgraph_name}"
             ){{
@@ -210,11 +216,13 @@ class LlamaClient:
         mapping = {"mainnet": "ethereum"}
         return mapping.get(chain, chain)
 
-    async def block_from_timestamp(self, timestamp):
+    async def block_from_timestamp(self, timestamp, return_timestamp=False):
         endpoint = f"{self.base}/block/{self.chain}/{timestamp}"
 
         response = await async_client.get(endpoint)
         if response.status_code == 200:
+            if return_timestamp:
+                return response.json()
             return response.json()["height"]
 
         return None
@@ -244,4 +252,3 @@ class RewarderContract:
         return self.contract.functions.pendingToken(
             pool_id, Web3.toChecksumAddress(user_address)
         )
-

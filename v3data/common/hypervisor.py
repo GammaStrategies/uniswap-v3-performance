@@ -4,6 +4,7 @@ from v3data.hypervisor import HypervisorInfo
 from v3data.toplevel import TopLevelData
 from v3data.hypes.fees import Fees
 from v3data.hypes.fees_yield import FeesYield
+from v3data.hype_fees.fees_yield import fee_returns_all
 
 
 async def hypervisor_basic_stats(
@@ -75,3 +76,7 @@ async def fee_returns(protocol: str, chain: str, days: int):
     fees_yield = FeesYield(days, protocol, chain)
     output = await fees_yield.get_fees_yield()
     return output
+
+
+async def fee_returns_fg(protocol: str, chain: str, days: int):
+    return await fee_returns_all(protocol, chain, days)
