@@ -9,6 +9,7 @@ from fastapi_cache.decorator import cache
 from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT
 from v3data.constants import PROTOCOL_UNISWAP_V3
 
+
 CHAIN_CELO = "celo"
 
 router = APIRouter(prefix="/celo")
@@ -115,7 +116,7 @@ async def uncollected_fees_all():
 @router.get("/hypervisors/feeReturns/daily")
 @cache(expire=APY_CACHE_TIMEOUT)
 async def fee_returns_daily():
-    return await v3data.common.hypervisor.fee_returns(
+    return await v3data.common.hypervisor.fee_returns_fg(
         PROTOCOL_UNISWAP_V3, CHAIN_CELO, 1
     )
 
@@ -123,7 +124,7 @@ async def fee_returns_daily():
 @router.get("/hypervisors/feeReturns/weekly")
 @cache(expire=APY_CACHE_TIMEOUT)
 async def fee_returns_weekly():
-    return await v3data.common.hypervisor.fee_returns(
+    return await v3data.common.hypervisor.fee_returns_fg(
         PROTOCOL_UNISWAP_V3, CHAIN_CELO, 7
     )
 
@@ -131,7 +132,7 @@ async def fee_returns_weekly():
 @router.get("/hypervisors/feeReturns/monthly")
 @cache(expire=APY_CACHE_TIMEOUT)
 async def fee_returns_monthly():
-    return await v3data.common.hypervisor.fee_returns(
+    return await v3data.common.hypervisor.fee_returns_fg(
         PROTOCOL_UNISWAP_V3, CHAIN_CELO, 30
     )
 

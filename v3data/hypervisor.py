@@ -9,6 +9,8 @@ from v3data.utils import timestamp_ago, timestamp_to_date
 from v3data.constants import DAYS_IN_PERIOD, SECONDS_IN_DAYS
 from v3data.config import EXCLUDED_HYPERVISORS, FALLBACK_DAYS
 from v3data.hypes.fees_yield import FeesYield
+from v3data.hype_fees.fees_yield import fee_returns_all
+
 
 DAY_SECONDS = 24 * 60 * 60
 YEAR_SECONDS = 365 * DAY_SECONDS
@@ -406,8 +408,11 @@ class HypervisorInfo(HypervisorData):
         basics = self.basics_data
         pools = self.pools_data
 
-        fees_yield = FeesYield(1, self.protocol, self.chain)
-        fee_yield_output = await fees_yield.get_fees_yield(get_data=True)
+        if self.chain in ["celo", "optimism", "mainnet"]:
+            fee_yield_output = await fee_returns_all(self.protocol, self.chain, 1)
+        else:
+            fees_yield = FeesYield(1, self.protocol, self.chain)
+            fee_yield_output = await fees_yield.get_fees_yield(get_data=True)
 
         returns = {
             hypervisor: {
@@ -427,7 +432,9 @@ class HypervisorInfo(HypervisorData):
                     "feeApr": hypervisor_returns["feeApr"],
                     "feeApy": hypervisor_returns["feeApy"],
                 },
-                "hasOutlier": hypervisor_returns["hasOutlier"]
+                "status": hypervisor_returns.get("hasOutlier")
+                if hypervisor_returns.get("hasOutlier")
+                else hypervisor_returns["status"],
             }
             for hypervisor, hypervisor_returns in fee_yield_output.items()
         }
