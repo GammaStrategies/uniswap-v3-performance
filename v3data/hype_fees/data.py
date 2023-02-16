@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 
-from v3data import DexFeeGrowthClient, LlamaClient
+from v3data import HypePoolClient, LlamaClient
 from v3data.constants import BLOCK_TIME_SECONDS, DAY_SECONDS
 from v3data.hype_fees.schema import (
     FeesData,
+    HypervisorStaticInfo,
     Time,
-    TokenInfo,
     _PositionData,
     _TickData,
     _TokenPair,
@@ -18,9 +18,9 @@ class FeeGrowthDataABC(ABC):
     def __init__(self, protocol: str, chain: str) -> None:
         self.protocol = protocol
         self.chain = chain
-        self.fee_growth_client = DexFeeGrowthClient(protocol, chain)
+        self.fee_growth_client = HypePoolClient(protocol, chain)
         self.data = {}
-        self._token_data = {}
+        self._static_data = {}
 
     @abstractmethod
     def get_data(self) -> None:
@@ -40,13 +40,14 @@ class FeeGrowthDataABC(ABC):
     ) -> FeesData:
         return FeesData(
             hypervisor=hypervisor_id,
+            symbol=self._static_data[hypervisor_id].symbol,
             block=block,  # set to block
             timestamp=timestamp,  # set to timestamp
             currentTick=current_tick,
             price=_TokenPairDecimals(price_0, price_1),
             decimals=_TokenPair(
-                self._token_data[hypervisor_id].decimals.value0,
-                self._token_data[hypervisor_id].decimals.value1,
+                self._static_data[hypervisor_id].decimals.value0,
+                self._static_data[hypervisor_id].decimals.value1,
             ),
             tvl=_TokenPair(hypervisor["tvl0"], hypervisor["tvl1"]),
             tvl_usd=hypervisor["tvlUSD"],
@@ -83,15 +84,16 @@ class FeeGrowthDataABC(ABC):
             ),
         )
 
-    def _extract_token_data(self, hypervisor_token_data: dict) -> None:
-        self._token_data = {
-            hypervisor["id"]: TokenInfo(
+    def _extract_static_data(self, hypervisor_static_data: dict) -> None:
+        self._static_data = {
+            hypervisor["id"]: HypervisorStaticInfo(
+                symbol=hypervisor["symbol"],
                 decimals=_TokenPair(
                     hypervisor["pool"]["token0"]["decimals"],
                     hypervisor["pool"]["token1"]["decimals"],
                 ),
             )
-            for hypervisor in hypervisor_token_data
+            for hypervisor in hypervisor_static_data
         }
 
 
@@ -102,8 +104,9 @@ class FeeGrowthData(FeeGrowthDataABC):
     async def _query_data(self) -> dict:
         query = """
         query feeGrowth {
-            hypervisor_tokens: hypervisors {
+            static: hypervisors {
                 id
+                symbol
                 pool {
                     token0 {
                         decimals
@@ -177,7 +180,7 @@ class FeeGrowthData(FeeGrowthDataABC):
         return response["data"]
 
     def _transform_data(self, query_data) -> dict[str, FeesData]:
-        self._extract_token_data(query_data["hypervisor_tokens"])
+        self._extract_static_data(query_data["static"])
         return {
             hypervisor["id"]: self._init_fees_data(
                 hypervisor=hypervisor,
@@ -268,8 +271,9 @@ class FeeGrowthSnapshotData(FeeGrowthDataABC):
             $blockEnd: Int!
             $timestampEnd: Int!
         ) {
-            hypervisor_tokens: hypervisors(block: {number: $blockEnd}) {
+            static: hypervisors(block: {number: $blockEnd}) {
                 id
+                symbol
                 pool {
                     token0 {
                         priceUSD
@@ -500,12 +504,11 @@ class FeeGrowthSnapshotData(FeeGrowthDataABC):
         }
 
         response = await self.fee_growth_client.query(query, variables)
-        print(variables)
         return response["data"]
 
     def _transform_data(self, query_data: dict) -> dict[str, list[FeesData]]:
         transformed_data = {}
-        self._extract_token_data(query_data["hypervisor_tokens"])
+        self._extract_static_data(query_data["static"])
         # Add latest row
         for hypervisor_latest in query_data["latest"]:
             transformed_data[hypervisor_latest["id"]] = [
@@ -525,8 +528,6 @@ class FeeGrowthSnapshotData(FeeGrowthDataABC):
                     ],
                 )
             ]
-
-        print(transformed_data["0x056e8299b082d5f1016c846d93e71eadf4137851"])
 
         # Add initial row
         for hypervisor_initial in query_data["initial"]:

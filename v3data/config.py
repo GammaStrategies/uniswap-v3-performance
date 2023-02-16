@@ -38,12 +38,33 @@ uniswap_feegrowth_subgraphs = {
     "celo": {"prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"},
 }
 
+uniswap_hype_pool_subgraphs = {
+    "mainnet": {
+        "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-mainnet",
+    },
+    "polygon": {
+        "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-polygon"
+    },
+    "arbitrum": {
+        "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-arbitrum"
+    },
+    "optimism": {
+        "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-optimism"
+    },
+    "celo": {"prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-celo"},
+}
+
+
 quickswap_subgraphs = {
     "polygon": {"prod": "https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3"}
 }
 
 quickswap_feegrowth_subgraphs = {
-    "polygon": {"prod": "https://api.thegraph.com/subgraphs/id/QmPiLG4HhUNNcJd8qefJfGH8byPyqPhqw3BEZ5xLYXNLgS"}
+    "polygon": {"prod": "https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3"}
+}
+
+quickswap_hype_pool_subgraphs = {
+    "polygon": {"prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-quickswap-polygon"}
 }
 
 visor_subgraphs = {
@@ -136,6 +157,31 @@ DEX_FEEGROWTH_SUBGRAPH_URLS = {
     "quickswap": {
         "polygon": quickswap_feegrowth_subgraphs["polygon"][
             os.environ.get("QUICKSWAP_FG_SUBGRAPH_POLYGON", "prod")
+        ],
+    },
+}
+
+DEX_HYPEPOOL_SUBGRAPH_URLS = {
+    "uniswap_v3": {
+        "mainnet": uniswap_hype_pool_subgraphs["mainnet"][
+            os.environ.get("UNISWAP_HP_SUBGRAPH_MAINNET", "prod")
+        ],
+        "polygon": uniswap_hype_pool_subgraphs["polygon"][
+            os.environ.get("UNISWAP_HP_SUBGRAPH_POLYGON", "prod")
+        ],
+        "arbitrum": uniswap_hype_pool_subgraphs["arbitrum"][
+            os.environ.get("UNISWAP_HP_SUBGRAPH_ARBITRUM", "prod")
+        ],
+        "optimism": uniswap_hype_pool_subgraphs["optimism"][
+            os.environ.get("UNISWAP_HP_SUBGRAPH_OPTIMISM", "prod")
+        ],
+        "celo": uniswap_hype_pool_subgraphs["celo"][
+            os.environ.get("UNISWAP_HP_SUBGRAPH_CELO", "prod")
+        ],
+    },
+    "quickswap": {
+        "polygon": quickswap_hype_pool_subgraphs["polygon"][
+            os.environ.get("QUICKSWAP_HP_SUBGRAPH_POLYGON", "prod")
         ],
     },
 }

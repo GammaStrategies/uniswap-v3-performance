@@ -28,7 +28,8 @@ class _TokenPairDecimals:
 
 
 @dataclass
-class TokenInfo:
+class HypervisorStaticInfo:
+    symbol: str
     decimals: _TokenPair
 
 
@@ -58,6 +59,7 @@ class FeesData:
     block: int
     timestamp: int
     hypervisor: str
+    symbol: str
     currentTick: int
     price: _TokenPairDecimals
     decimals: _TokenPair
@@ -104,3 +106,14 @@ class FeesSnapshot:
         self.total_fees_1 = float(self.total_fees_1)
         self.price_0 = float(self.price_0)
         self.price_1 = float(self.price_1)
+
+
+@dataclass
+class FeeYield:
+    apr: float
+    apy: float
+    status: str
+
+    def __post_init__(self):
+        self.apr = float(self.apr)
+        self.apy = float(self.apy)

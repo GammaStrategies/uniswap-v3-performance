@@ -10,17 +10,6 @@ from fastapi_cache.decorator import cache
 from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT
 from v3data.constants import PROTOCOL_QUICKSWAP
 
-from v3data.hype_fees.data import FeeGrowthData, FeeGrowthSnapshotData
-from v3data.hype_fees.fees import Fees
-from v3data.hype_fees.fees_yield import FeesYield
-
-from v3data.hype_fees.schema import (
-    FeesData,
-    _PositionData,
-    _TickData,
-    _TokenPair,
-    _TokenPairDecimals,
-)
 
 CHAIN_POLYGON = "polygon"
 
@@ -182,32 +171,3 @@ async def account_data(address: str):
     return await v3data.common.users.account_data(
         PROTOCOL_QUICKSWAP, CHAIN_POLYGON, address
     )
-
-
-# @router.get("/test")
-# async def test():
-#     fees_data = FeeGrowthSnapshotData(1, "quickswap", CHAIN_POLYGON)
-#     await fees_data.get_data()
-
-#     results = {}
-#     for hypervisor_id, fees_data in fees_data.data.items():
-#         fees_yield = FeesYield(fees_data, "quickswap", CHAIN_POLYGON)
-#         results[hypervisor_id] = fees_yield._calculate_returns()
-#     return results
-
-
-# @router.get("/test2")
-# async def test2():
-#     fees_data = FeeGrowthData("quickswap", CHAIN_POLYGON)
-#     await fees_data.get_data()
-
-#     hype_id = list(fees_data.data.keys())[0]
-
-#     fees = Fees(fees_data.data[hype_id], "quickswap", CHAIN_POLYGON)
-
-#     results = {}
-#     for hype_id, fd in fees_data.data.items():
-#         fees = Fees(fd, "quickswap", CHAIN_POLYGON)
-#         results[hype_id] = fees.fee_usd()
-
-#     return results
