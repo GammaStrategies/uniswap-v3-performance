@@ -408,11 +408,7 @@ class HypervisorInfo(HypervisorData):
         basics = self.basics_data
         pools = self.pools_data
 
-        if self.chain in ["celo", "optimism", "mainnet"]:
-            fee_yield_output = await fee_returns_all(self.protocol, self.chain, 1)
-        else:
-            fees_yield = FeesYield(1, self.protocol, self.chain)
-            fee_yield_output = await fees_yield.get_fees_yield(get_data=True)
+        fee_yield_output = await fee_returns_all(self.protocol, self.chain, 1)
 
         returns = {
             hypervisor: {

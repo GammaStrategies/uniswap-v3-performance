@@ -4,6 +4,7 @@ from v3data.hypervisor import HypervisorInfo
 from v3data.toplevel import TopLevelData
 from v3data.hypes.fees import Fees
 from v3data.hypes.fees_yield import FeesYield
+from v3data.hype_fees.fees import fees_usd_all
 from v3data.hype_fees.fees_yield import fee_returns_all
 
 
@@ -70,6 +71,10 @@ async def uncollected_fees(protocol: str, chain: str, hypervisor_address: str):
 async def uncollected_fees_all(protocol: str, chain: str):
     fees = Fees(protocol, chain)
     return await fees.output()
+
+
+async def uncollected_fees_all_fg(protocol: str, chain: str):
+    return await fees_usd_all(protocol, chain)
 
 
 async def fee_returns(protocol: str, chain: str, days: int):
