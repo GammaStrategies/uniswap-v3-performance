@@ -105,7 +105,7 @@ async def hypervisors_all():
 
 @router.get("/hypervisors/uncollectedFees")
 async def uncollected_fees_all():
-    return await v3data.common.hypervisor.uncollected_fees_all(
+    return await v3data.common.hypervisor.uncollected_fees_all_fg(
         PROTOCOL_QUICKSWAP, CHAIN_POLYGON
     )
 
@@ -113,7 +113,7 @@ async def uncollected_fees_all():
 @router.get("/hypervisors/feeReturns/daily")
 @cache(expire=APY_CACHE_TIMEOUT)
 async def fee_returns_daily():
-    return await v3data.common.hypervisor.fee_returns(
+    return await v3data.common.hypervisor.fee_returns_fg(
         PROTOCOL_QUICKSWAP, CHAIN_POLYGON, 1
     )
 
@@ -121,7 +121,7 @@ async def fee_returns_daily():
 @router.get("/hypervisors/feeReturns/weekly")
 @cache(expire=APY_CACHE_TIMEOUT)
 async def fee_returns_weekly():
-    return await v3data.common.hypervisor.fee_returns(
+    return await v3data.common.hypervisor.fee_returns_fg(
         PROTOCOL_QUICKSWAP, CHAIN_POLYGON, 7
     )
 
@@ -129,7 +129,7 @@ async def fee_returns_weekly():
 @router.get("/hypervisors/feeReturns/monthly")
 @cache(expire=APY_CACHE_TIMEOUT)
 async def fee_returns_monthly():
-    return await v3data.common.hypervisor.fee_returns(
+    return await v3data.common.hypervisor.fee_returns_fg(
         PROTOCOL_QUICKSWAP, CHAIN_POLYGON, 30
     )
 

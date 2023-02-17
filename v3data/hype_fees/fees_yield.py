@@ -47,8 +47,7 @@ class FeesYield:
         df_snapshots["yield_per_day"] = (
             df_snapshots.period_yield * YEAR_SECONDS / df_snapshots.elapsed_time
         )
-        if self.data[0].hypervisor == "0x82927c36ab62e504e24ab160afa5821b6c4a9265":
-            print(df_snapshots)
+
         has_outlier = (df_snapshots.yield_per_day > YIELD_PER_DAY_MAX).any()
         df_snapshots = df_snapshots[df_snapshots.yield_per_day < YIELD_PER_DAY_MAX]
 

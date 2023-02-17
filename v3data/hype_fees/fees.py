@@ -7,6 +7,7 @@ from v3data.hype_fees.schema import (
     _TokenPair,
     _TokenPairDecimals,
 )
+from v3data.hype_fees.data import FeeGrowthData
 from v3data.constants import X128
 
 from enum import Enum
@@ -125,3 +126,15 @@ class Fees:
         )
 
         return _TokenPair(value0=uncollected_fees_0, value1=uncollected_fees_1)
+
+
+async def fees_usd_all(protocol: str, chain: str):
+    fees_data = FeeGrowthData(protocol, chain)
+    await fees_data.get_data()
+
+    results = {}
+    for hypervisor_id, fees_data in fees_data.data.items():
+        fees = Fees(fees_data, protocol, chain)
+        results[hypervisor_id] = fees.fee_usd()
+
+    return results
