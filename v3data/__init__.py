@@ -1,5 +1,6 @@
 import httpx
 from web3 import Web3
+import logging
 
 from v3data.config import (
     ALCHEMY_URLS,
@@ -15,7 +16,13 @@ from v3data.config import (
 
 from v3data import abi
 
-async_client = httpx.AsyncClient(timeout=180)
+logger = logging.getLogger(__name__)
+async_client = httpx.AsyncClient(
+    transport=httpx.AsyncHTTPTransport(
+        retries=1,
+    ),
+    timeout=180,
+)
 
 
 class SubgraphClient:
@@ -29,8 +36,31 @@ class SubgraphClient:
             params = {"query": query, "variables": variables}
         else:
             params = {"query": query}
+        # TODO: error handling -> connection, result and others   httpcore.RemoteProtocolError
+        #                                                         ssl.SSLError:   [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure
+        #
         response = await async_client.post(self._url, json=params)
-        return response.json()
+
+        if response.status_code == 200:
+            try:
+                return response.json()
+            except:
+                logger.error(
+                    " Unexpected error while converting response to json. resp.text: {}  ".format(
+                        response.text
+                    )
+                )
+        else:
+            # handle bad status code
+            # Can expand this to handle specific codes once we have specific examples
+            logger.error(
+                " Unexpected response code {} received  resp.text: {} ".format(
+                    response.status_code,
+                    response.text,
+                )
+            )
+        # error return
+        return {}
 
     async def paginate_query(self, query, paginate_variable, variables={}):
 
@@ -244,4 +274,3 @@ class RewarderContract:
         return self.contract.functions.pendingToken(
             pool_id, Web3.toChecksumAddress(user_address)
         )
-

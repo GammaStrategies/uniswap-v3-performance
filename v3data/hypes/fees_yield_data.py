@@ -1,9 +1,17 @@
 import asyncio
-from datetime import timedelta
+import logging
+from datetime import timedelta, datetime
 
 from v3data import GammaClient, DexFeeGrowthClient, LlamaClient
-from v3data.utils import timestamp_ago, estimate_block_from_timestamp_diff
+from v3data.utils import (
+    timestamp_ago,
+    estimate_block_from_timestamp_diff,
+    filter_addresses_byChain,
+)
 from v3data.constants import BLOCK_TIME_SECONDS
+from v3data.config import EXCLUDED_HYPERVISORS
+
+logger = logging.getLogger(__name__)
 
 
 class YieldData:
@@ -28,6 +36,10 @@ class YieldData:
         self._hypervisor_data_by_blocks = {}
         self._pool_data = {}
         self.data = {}
+
+        self.excluded_hypervisors = filter_addresses_byChain(
+            EXCLUDED_HYPERVISORS, chain
+        )
 
     async def _get_hypervisor_data_at_block(self, block, hypervisors):
         query = """
@@ -75,68 +87,134 @@ class YieldData:
 
         response = await self.gamma_client.query(query, variables)
 
+        # TODO: return the source of the query here, so response["data"]["uniswapV3Hypervisors"]
         return response
 
     async def _get_transition_data(self, period_days):
-        transition_query = """
-        query transitions($timestamp_start: Int!, $timestamp_end: Int!){
-            uniswapV3Hypervisors(
-                first: 1000
-            ){
-                id
-                withdraws(
-                    where: {
-                        timestamp_gt: $timestamp_start
-                        timestamp_lt: $timestamp_end
-                    }
-                ) {
-                    block
-                    timestamp
-                }
-                rebalances(
-                    where: {
-                        timestamp_gt: $timestamp_start
-                        timestamp_lt: $timestamp_end
-                    }
-                ) {
-                    block
-                    timestamp
-                }
-                deposits(
-                    where: {
-                        timestamp_gt: $timestamp_start
-                        timestamp_lt: $timestamp_end
-                    }
-                ) {
-                    block
-                    timestamp
-                }
-            }
-            _meta {
-                block {
-                    number
-                }
-            }
-        }
-        """
 
-        variables = {
-            "timestamp_start": timestamp_ago(
-                timedelta(days=period_days)
-                + timedelta(seconds=self.delay_buffer_seconds)
-            ),
-            "timestamp_end": timestamp_ago(
-                timedelta(seconds=self.delay_buffer_seconds)
-            ),
-        }
+        transition_query = """
+            query transitions($timestamp_start: Int!, $timestamp_end: Int!){
+                uniswapV3Hypervisors(
+                    first: 1000
+                ){
+                    id
+                    withdraws(
+                        where: {
+                            timestamp_gt: $timestamp_start
+                            timestamp_lt: $timestamp_end
+                        }
+                    ) {
+                        block
+                        timestamp
+                    }
+                    rebalances(
+                        where: {
+                            timestamp_gt: $timestamp_start
+                            timestamp_lt: $timestamp_end
+                        }
+                    ) {
+                        block
+                        timestamp
+                    }
+                    deposits(
+                        where: {
+                            timestamp_gt: $timestamp_start
+                            timestamp_lt: $timestamp_end
+                        }
+                    ) {
+                        block
+                        timestamp
+                    }
+                }
+                _meta {
+                    block {
+                        number
+                    }
+                }
+            }
+            """
+
+        transition_all_but_query = """
+            query transitions($timestamp_start: Int!, $timestamp_end: Int!, $ids: [String!]!){
+                uniswapV3Hypervisors(
+                    first: 1000,
+                    where: {
+                        id_not_in: $ids
+                    }
+                ){
+                    id
+                    withdraws(
+                        where: {
+                            timestamp_gt: $timestamp_start
+                            timestamp_lt: $timestamp_end
+                        }
+                    ) {
+                        block
+                        timestamp
+                    }
+                    rebalances(
+                        where: {
+                            timestamp_gt: $timestamp_start
+                            timestamp_lt: $timestamp_end
+                        }
+                    ) {
+                        block
+                        timestamp
+                    }
+                    deposits(
+                        where: {
+                            timestamp_gt: $timestamp_start
+                            timestamp_lt: $timestamp_end
+                        }
+                    ) {
+                        block
+                        timestamp
+                    }
+                }
+                _meta {
+                    block {
+                        number
+                    }
+                }
+            }
+            """
+
+        if len(self.excluded_hypervisors) > 0:
+            variables = {
+                "timestamp_start": timestamp_ago(
+                    timedelta(days=period_days)
+                    + timedelta(seconds=self.delay_buffer_seconds)
+                ),
+                "timestamp_end": timestamp_ago(
+                    timedelta(seconds=self.delay_buffer_seconds)
+                ),
+                "ids": self.excluded_hypervisors,
+            }
+        else:
+
+            variables = {
+                "timestamp_start": timestamp_ago(
+                    timedelta(days=period_days)
+                    + timedelta(seconds=self.delay_buffer_seconds)
+                ),
+                "timestamp_end": timestamp_ago(
+                    timedelta(seconds=self.delay_buffer_seconds)
+                ),
+            }
+
         response = await self.gamma_client.query(transition_query, variables)
 
         self._transition_data = response["data"]
 
     async def _get_fee_update_data(self, period_days):
-        query = """
-        query transitions($timestamp_start: Int!, $timestamp_end: Int!){
-            uniswapV3Hypervisors(first: 1000) {
+
+        all_but_query = """
+        query transitions($timestamp_start: Int!, $timestamp_end: Int!, $ids: [String!]!){
+            uniswapV3Hypervisors(
+                first: 1000,
+                where: {
+                    id_not_in: $ids
+                }) {
                 id
                 feeUpdates(
                     where: {
@@ -155,15 +233,49 @@ class YieldData:
         }
         """
 
-        variables = {
-            "timestamp_start": timestamp_ago(
-                timedelta(days=period_days)
-                + timedelta(seconds=self.delay_buffer_seconds)
-            ),
-            "timestamp_end": timestamp_ago(
-                timedelta(seconds=self.delay_buffer_seconds)
-            ),
+        query = """
+        query transitions($timestamp_start: Int!, $timestamp_end: Int!){
+            uniswapV3Hypervisors(
+                first: 1000) {
+                id
+                feeUpdates(
+                    where: {
+                        timestamp_gt: $timestamp_start
+                        timestamp_lt: $timestamp_end}
+                ) {
+                    block
+                    timestamp
+                }
+            }
+            _meta {
+                block {
+                    number
+                }
+            }
         }
+        """
+
+        if len(self.excluded_hypervisors) > 0:
+            variables = {
+                "timestamp_start": timestamp_ago(
+                    timedelta(days=period_days)
+                    + timedelta(seconds=self.delay_buffer_seconds)
+                ),
+                "timestamp_end": timestamp_ago(
+                    timedelta(seconds=self.delay_buffer_seconds)
+                ),
+            }
+        else:
+            variables = {
+                "timestamp_start": timestamp_ago(
+                    timedelta(days=period_days)
+                    + timedelta(seconds=self.delay_buffer_seconds)
+                ),
+                "timestamp_end": timestamp_ago(
+                    timedelta(seconds=self.delay_buffer_seconds)
+                ),
+                "ids": self.excluded_hypervisors,
+            }
         response = await self.gamma_client.query(query, variables)
 
         self._transition_data = response["data"]
@@ -247,7 +359,22 @@ class YieldData:
 
         response = await self.uniswap_client.query(pool_query, variables)
 
-        return response["data"]
+        # log errors
+        if "errors" in response:
+            for error in response["errors"]:
+                logger.error(
+                    "[{}-{}] Error while getting {} pool data at block {}. Thegraph response:{}".format(
+                        self.chain, self.protocol, pool_address, block, error["message"]
+                    )
+                )
+        elif not "data" in response:
+            logger.warning(
+                "[{}-{}] No pool data found for {} at block {}.".format(
+                    self.chain, self.protocol, pool_address, block
+                )
+            )
+
+        return response.get("data", {})
 
     async def _get_block_timestamps(self):
         initial_timestamp = timestamp_ago(timedelta(days=self.period_days))
@@ -260,9 +387,17 @@ class YieldData:
         )
 
         if not current_block:
+            # could not get block number from Llama. Calculate it.
+            blocks_passed = (
+                datetime.utcnow().timestamp() - current_timestamp
+            ) // BLOCK_TIME_SECONDS[self.chain]
             current_block = (
-                int(self._transition_data["_meta"]["block"]["number"])
-                - self.delay_buffer_seconds // BLOCK_TIME_SECONDS[self.chain]
+                int(self._transition_data["_meta"]["block"]["number"]) - blocks_passed
+            )
+            logger.debug(
+                " Converted {} timestamp to {} block using block time seconds defined for {}".format(
+                    current_timestamp, current_block, self.chain
+                )
             )
 
         if not initial_block:
@@ -288,7 +423,7 @@ class YieldData:
             initial_block: initial_timestamp,
             current_block: current_timestamp,
         }
-        for hypervisor in self._transition_data["uniswapV3Hypervisors"]:
+        for hypervisor in self._transition_data.get("uniswapV3Hypervisors", []):
             block_hypervisor_map[initial_block].append(hypervisor["id"])
             block_hypervisor_map[current_block].append(hypervisor["id"])
 
@@ -337,6 +472,7 @@ class YieldData:
                 "uniswapV3Hypervisors"
             ]
             for index, response in enumerate(hypervisor_responses)
+            if "data" in response
         }
 
     async def _get_pool_data_for_all_blocks(self):
@@ -346,33 +482,129 @@ class YieldData:
             for hypervisor in hypervisors
         ]
 
-        pool_requests = [
-            self._get_pool_data_at_block(
-                int(params["block"]),
-                params["hypervisor"]["pool"]["id"],
-                params["hypervisor"]["baseLower"],
-                params["hypervisor"]["baseUpper"],
-                params["hypervisor"]["limitLower"],
-                params["hypervisor"]["limitUpper"],
-            )
-            for params in pool_query_params
-            if params["hypervisor"].get("pool", {}).get("id")
-        ]
+        # init and fill pool data requests
+        pool_requests = list()
+        for params in pool_query_params:
+            if not "pool" in params["hypervisor"]:
+                logger.error(
+                    "[{}-{}] No pool data found for hypervisor {} ({}) while building requests.".format(
+                        self.chain,
+                        self.protocol,
+                        params["hypervisor"]["symbol"],
+                        params["hypervisor"]["id"],
+                    )
+                )
+            elif not "id" in params["hypervisor"]["pool"]:
+                logger.error(
+                    "[{}-{}] No pool id found for hypervisor {} ({}) while building requests.".format(
+                        self.chain,
+                        self.protocol,
+                        params["hypervisor"]["symbol"],
+                        params["hypervisor"]["id"],
+                    )
+                )
+            else:
+                # add request
+                pool_requests.append(
+                    self._get_pool_data_at_block(
+                        int(params["block"]),
+                        params["hypervisor"]["pool"]["id"],
+                        params["hypervisor"]["baseLower"],
+                        params["hypervisor"]["baseUpper"],
+                        params["hypervisor"]["limitLower"],
+                        params["hypervisor"]["limitUpper"],
+                    )
+                )
 
+        # retrieve responses
         pool_responses = await asyncio.gather(*pool_requests)
 
-        self._pool_data = {
-            self.tick_id(
-                pool_query_params[index]["block"],
-                response["pool"]["id"],
-                response["baseLower"][0]["tickIdx"] if response["baseLower"] else 0,
-                response["baseUpper"][0]["tickIdx"] if response["baseUpper"] else 0,
-                response["limitLower"][0]["tickIdx"] if response["limitLower"] else 0,
-                response["limitUpper"][0]["tickIdx"] if response["limitUpper"] else 0,
-            ): response
-            for index, response in enumerate(pool_responses)
-            if response.get("pool", {}).get("id")
-        }
+        # init and fill pool data
+        self._pool_data = dict()
+        for index, response in enumerate(pool_responses):
+
+            if "errors" in response:
+                for error in response["errors"]:
+                    try:
+                        err_hypervisor_id = pool_query_params[index]["hypervisor"]["id"]
+                        err_hypervisor_name = pool_query_params[index]["hypervisor"][
+                            "symbol"
+                        ]
+                        logger.error(
+                            "[{}-{}] Error while getting pool data for hypervisor {} ({}). Thegraph response:{}".format(
+                                self.chain,
+                                self.protocol,
+                                err_hypervisor_name,
+                                err_hypervisor_id,
+                                error["message"],
+                            )
+                        )
+                    except:
+                        logger.error(
+                            "[{}-{}] Error while getting pool data. Thegraph response:{}".format(
+                                self.chain, self.protocol, error["message"]
+                            )
+                        )
+            elif not "pool" in response:
+                try:
+                    err_hypervisor_id = pool_query_params[index]["hypervisor"]["id"]
+                    err_hypervisor_name = pool_query_params[index]["hypervisor"][
+                        "symbol"
+                    ]
+                    logger.error(
+                        "[{}-{}] No pool data found for hypervisor {} ({}).".format(
+                            self.chain,
+                            self.protocol,
+                            err_hypervisor_name,
+                            err_hypervisor_id,
+                        )
+                    )
+                except:
+                    logger.error(
+                        "[{}-{}] No pool data found for hypervisor's query parameters index num. {}".format(
+                            self.chain, self.protocol, index
+                        )
+                    )
+            elif response["pool"] == None or not "id" in response["pool"]:
+                try:
+                    err_hypervisor_id = pool_query_params[index]["hypervisor"]["id"]
+                    err_hypervisor_name = pool_query_params[index]["hypervisor"][
+                        "symbol"
+                    ]
+                    logger.error(
+                        "[{}-{}] No pool id found for hypervisor {} ({}).".format(
+                            self.chain,
+                            self.protocol,
+                            err_hypervisor_name,
+                            err_hypervisor_id,
+                        )
+                    )
+                except:
+                    logger.error(
+                        "[{}-{}] No pool id found for hypervisor's query parameters index num. {}".format(
+                            self.chain, self.protocol, index
+                        )
+                    )
+            else:
+                # add to pool
+                self._pool_data[
+                    self.tick_id(
+                        pool_query_params[index]["block"],
+                        response["pool"]["id"],
+                        response["baseLower"][0]["tickIdx"]
+                        if response["baseLower"]
+                        else 0,
+                        response["baseUpper"][0]["tickIdx"]
+                        if response["baseUpper"]
+                        else 0,
+                        response["limitLower"][0]["tickIdx"]
+                        if response["limitLower"]
+                        else 0,
+                        response["limitUpper"][0]["tickIdx"]
+                        if response["limitUpper"]
+                        else 0,
+                    )
+                ] = response
 
     async def get_data(self):
         # Get transition data to identify blocks for making time-travel query

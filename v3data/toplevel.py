@@ -6,7 +6,7 @@ from pandas import DataFrame
 from v3data import GammaClient
 from v3data.hypervisor import HypervisorData, HypervisorInfo
 from v3data.pricing import token_price
-from v3data.utils import timestamp_ago
+from v3data.utils import timestamp_ago, filter_addresses_byChain
 from v3data.config import EXCLUDED_HYPERVISORS
 
 
@@ -18,6 +18,10 @@ class TopLevelData:
         self.gamma_client = GammaClient(protocol, chain)
         self.all_stats_data = {}
         self.all_returns_data = {}
+
+        self.excluded_hypervisors = filter_addresses_byChain(
+            EXCLUDED_HYPERVISORS, chain
+        )
 
     async def get_hypervisor_data(self):
         """Get hypervisor IDs"""
@@ -138,14 +142,14 @@ class TopLevelData:
                 [
                     float(hypervisor["tvlUSD"])
                     for hypervisor in data["uniswapV3Hypervisors"]
-                    if hypervisor["id"] not in EXCLUDED_HYPERVISORS
+                    if hypervisor["id"] not in self.excluded_hypervisors
                 ]
             ),
             "fees_claimed": sum(
                 [
                     float(hypervisor["grossFeesClaimedUSD"])
                     for hypervisor in data["uniswapV3Hypervisors"]
-                    if hypervisor["id"] not in EXCLUDED_HYPERVISORS
+                    if hypervisor["id"] not in self.excluded_hypervisors
                 ]
             ),
         }
@@ -158,7 +162,7 @@ class TopLevelData:
         data, gamma_prices = await asyncio.gather(
             self.get_recent_rebalance_data(hours), token_price("GAMMA")
         )
-        gamma_price_usd = gamma_prices["gamma_in_usdc"]
+        gamma_price_usd = gamma_prices["token_in_usdc"]
         df_fees = DataFrame(data, dtype=np.float64)
 
         df_fees["grossFeesGAMMA"] = df_fees.grossFeesUSD / gamma_price_usd
@@ -174,7 +178,7 @@ class TopLevelData:
             [
                 float(hypervisor["tvlUSD"])
                 for hypervisor in hypervisors
-                if hypervisor["id"] not in EXCLUDED_HYPERVISORS
+                if hypervisor["id"] not in self.excluded_hypervisors
             ]
         )
 
@@ -189,7 +193,7 @@ class TopLevelData:
             "allTime": {"feeApr": 0, "feeApy": 0},
         }
         for hypervisor in hypervisors:
-            if hypervisor["id"] in EXCLUDED_HYPERVISORS:
+            if hypervisor["id"] in self.excluded_hypervisors:
                 continue
             if tvl > 0:
                 tvl_share = float(hypervisor["tvlUSD"]) / tvl

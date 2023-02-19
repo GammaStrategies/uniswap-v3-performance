@@ -5,7 +5,7 @@ from datetime import timedelta
 from pandas import DataFrame
 
 from v3data import GammaClient, UniswapV3Client
-from v3data.utils import timestamp_ago, timestamp_to_date
+from v3data.utils import timestamp_ago, timestamp_to_date, filter_addresses_byChain
 from v3data.constants import DAYS_IN_PERIOD, SECONDS_IN_DAYS
 from v3data.config import EXCLUDED_HYPERVISORS, FALLBACK_DAYS
 from v3data.hypes.fees_yield import FeesYield
@@ -26,6 +26,10 @@ class HypervisorData:
         self.basics_data = {}
         self.pools_data = {}
         self.fees_data = {}
+
+        self.excluded_hypervisors = filter_addresses_byChain(
+            EXCLUDED_HYPERVISORS, chain
+        )
 
     async def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
         query = """
@@ -55,6 +59,7 @@ class HypervisorData:
         }
         response = await self.gamma_client.query(query, variables)
 
+        # TODO: specify chain on hardcoded overrides
         if hypervisor_address == "0x0ec4a47065bf52e1874d2491d4deeed3c638c75f":
             for rebalance in response["data"]["uniswapV3Rebalances"]:
                 if (
@@ -101,6 +106,8 @@ class HypervisorData:
         variables = {"timestamp_start": timestamp_ago(time_delta)}
         response = await self.gamma_client.query(query, variables)
 
+        # TODO: hardcoded hypervisor address matches more than one --> MAINNET(xPSDN-ETH1) and OPTIMISM(xUSDC-DAI05)
+        # TODO: specify chain on hardcoded overrides
         for hypervisor in response["data"]["uniswapV3Hypervisors"]:
             if hypervisor["id"] == "0x0ec4a47065bf52e1874d2491d4deeed3c638c75f":
                 for rebalance in hypervisor["rebalances"]:
@@ -164,6 +171,8 @@ class HypervisorData:
         variables = {"id": hypervisor_address.lower()}
         response = await self.gamma_client.query(query, variables)
 
+        # TODO: hardcoded hypervisor address matches more than one --> MAINNET(xPSDN-ETH1) and OPTIMISM(xUSDC-DAI05)
+        # TODO: specify chain on hardcoded overrides
         if hypervisor_address == "0x0ec4a47065bf52e1874d2491d4deeed3c638c75f":
             response["data"]["uniswapV3Hypervisor"]["grossFeesClaimedUSD"] = str(
                 float(response["data"]["uniswapV3Hypervisor"]["grossFeesClaimedUSD"])
@@ -219,6 +228,8 @@ class HypervisorData:
 
         basics_response = await self.gamma_client.query(query_basics)
 
+        # TODO: hardcoded hypervisor address matches more than one --> MAINNET(xPSDN-ETH1) and OPTIMISM(xUSDC-DAI05)
+        # TODO: specify chain on hardcoded overrides
         for hypervisor in basics_response["data"]["uniswapV3Hypervisors"]:
             if hypervisor["id"] == "0x0ec4a47065bf52e1874d2491d4deeed3c638c75f":
                 hypervisor["grossFeesClaimedUSD"] = str(
@@ -384,7 +395,7 @@ class HypervisorInfo(HypervisorData):
 
         results = {}
         for hypervisor in self.all_rebalance_data:
-            if hypervisor["id"] not in EXCLUDED_HYPERVISORS:
+            if hypervisor["id"] not in self.excluded_hypervisors:
                 # uncollected_fees_data = await UncollectedFees(
                 #     self.chain
                 # ).output_for_returns_calc(hypervisor["id"])
@@ -427,7 +438,7 @@ class HypervisorInfo(HypervisorData):
                     "feeApr": hypervisor_returns["feeApr"],
                     "feeApy": hypervisor_returns["feeApy"],
                 },
-                "hasOutlier": hypervisor_returns["hasOutlier"]
+                "hasOutlier": hypervisor_returns["hasOutlier"],
             }
             for hypervisor, hypervisor_returns in fee_yield_output.items()
         }
@@ -495,6 +506,7 @@ class HypervisorInfo(HypervisorData):
 
         return results
 
+    # TODO: specify chain on hardcoded overrides
     def apply_returns_overrides(self, hypervisor_address, returns):
         if hypervisor_address == "0x717a3276bd6f9e2f0ae447e0ffb45d0fa1c2dc57":
             returns["daily"] = {

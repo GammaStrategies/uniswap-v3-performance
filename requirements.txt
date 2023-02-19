@@ -68,3 +68,5 @@ watchgod==0.8.2
 web3==5.29.2
 websockets==9.1
 yarl==1.7.2
+pymongo
+aiocron==1.8

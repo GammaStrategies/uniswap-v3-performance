@@ -1,12 +1,8 @@
-import asyncio
-from datetime import timedelta
-
-from v3data import GammaClient, LlamaClient, UniswapV3Client
+import logging
 from v3data.hypes.fees import Fees
-
-from v3data.utils import timestamp_ago
-from v3data.constants import BLOCK_TIME_SECONDS
 from v3data.hypes.fees_yield import FeesYield
+
+logger = logging.getLogger(__name__)
 
 
 class ImpermanentDivergence(FeesYield):
@@ -112,88 +108,15 @@ class ImpermanentDivergence(FeesYield):
 
         response = await self.gamma_client.query(query, variables)
 
+        if "errors" in response:
+            for error in response["errors"]:
+                logger.error(
+                    "[{}-{}] Error while getting hypervisors data at block {}. Thegraph response:{}".format(
+                        self.chain, self.protocol, block, error["message"]
+                    )
+                )
+
         return response
-
-    async def _get_pool_data_at_block(
-        self, block, pool_address, base_lower, base_upper, limit_lower, limit_upper
-    ):
-        pool_query = """
-        query pool(
-            $block: Int!
-            $poolAddress: String!
-            $baseLower: Int!
-            $baseUpper: Int!
-            $limitLower: Int!
-            $limitUpper: Int!
-        ){
-            pool(
-                id: $poolAddress
-                block: {number: $block}
-            ){
-                id
-                tick
-                feeGrowthGlobal0X128
-                feeGrowthGlobal1X128
-            }
-            baseLower: ticks(
-                block: {number: $block}
-                where: {
-                poolAddress: $poolAddress
-                tickIdx: $baseLower
-                }
-            ){
-                tickIdx
-                feeGrowthOutside0X128
-                feeGrowthOutside1X128
-            },
-            baseUpper: ticks(
-                block: {number: $block}
-                where: {
-                poolAddress: $poolAddress
-                tickIdx: $baseUpper
-                }
-            ){
-                tickIdx
-                feeGrowthOutside0X128
-                feeGrowthOutside1X128
-            },
-            limitLower: ticks(
-                block: {number: $block}
-                where: {
-                poolAddress: $poolAddress
-                tickIdx: $limitLower
-                }
-            ){
-                tickIdx
-                feeGrowthOutside0X128
-                feeGrowthOutside1X128
-            },
-            limitUpper: ticks(
-                block: {number: $block}
-                where: {
-                poolAddress: $poolAddress
-                tickIdx: $limitUpper
-                }
-            ){
-                tickIdx
-                feeGrowthOutside0X128
-                feeGrowthOutside1X128
-            }
-        }
-        """
-
-        variables = {
-            "block": int(block),
-            "poolAddress": pool_address,
-            "baseLower": base_lower,
-            "baseUpper": base_upper,
-            "limitLower": limit_lower,
-            "limitUpper": limit_upper,
-        }
-
-        response = await self.uniswap_client.query(pool_query, variables)
-
-        return response["data"]
 
     async def get_impermanent_data(self, get_data=True):
 
@@ -215,7 +138,7 @@ class ImpermanentDivergence(FeesYield):
         for idx, block in enumerate(
             [self.data["initial_block"], self.data["current_block"]]
         ):
-            for hypervisor in hypervisor_dta[block]:
+            for hypervisor in hypervisor_dta.get(block, []):
 
                 pool = None
                 try:
@@ -350,6 +273,27 @@ class ImpermanentDivergence(FeesYield):
                 # hypervisor didnt exist at start block
                 # zero sum content
                 struct[0] = struct[1]
+                logger.warning(
+                    " [{}-{}] Data not available for hypervisor {} at initial block {} (Hypervisor exists at block?). Forcing 0 impermanent divergence".format(
+                        self.chain,
+                        self.protocol,
+                        hypervisor_id,
+                        self.data["initial_block"],
+                    )
+                )
+
+            elif len(struct[1].keys()) == 0:
+                # hypervisor has errors
+                # zero sum content
+                struct[1] = struct[0]
+                logger.warning(
+                    " [{}-{}] Data not available for hypervisor {} at end block {} . Forcing 0 impermanent divergence".format(
+                        self.chain,
+                        self.protocol,
+                        hypervisor_id,
+                        self.data["current_block"],
+                    )
+                )
 
             # time passed
             blocks_passed = int(struct[1]["block"]) - int(struct[0]["block"])
@@ -382,7 +326,7 @@ class ImpermanentDivergence(FeesYield):
                 ini_hodl_deposited = (
                     initial_tvl0 * struct[1]["token0_usd_price"]
                     + initial_tvl1 * struct[1]["token1_usd_price"]
-                ) / struct[1]["totalSupply"]
+                ) / struct[0]["totalSupply"]
                 cur_hodl_deposited = cur_hodl_usd
                 vs_hodl_deposited = (
                     ((cur_hodl_deposited - ini_hodl_deposited) / ini_hodl_deposited)
@@ -399,6 +343,8 @@ class ImpermanentDivergence(FeesYield):
                             struct[0]["token1_usd_price"]
                             / struct[0]["token0_usd_price"]
                         )
+                        if struct[0]["token0_usd_price"] > 0
+                        else 0
                     )
                 ) / struct[0]["totalSupply"]
                 cur_hodl_token0 = (
@@ -409,6 +355,8 @@ class ImpermanentDivergence(FeesYield):
                             struct[1]["token1_usd_price"]
                             / struct[1]["token0_usd_price"]
                         )
+                        if struct[1]["token0_usd_price"] > 0
+                        else 0
                     )
                 ) / struct[1]["totalSupply"]
                 vs_hodl_token0 = (
@@ -426,6 +374,8 @@ class ImpermanentDivergence(FeesYield):
                             struct[0]["token0_usd_price"]
                             / struct[0]["token1_usd_price"]
                         )
+                        if struct[0]["token1_usd_price"] > 0
+                        else 0
                     )
                 ) / struct[0]["totalSupply"]
                 cur_hodl_token1 = (
@@ -436,6 +386,8 @@ class ImpermanentDivergence(FeesYield):
                             struct[1]["token0_usd_price"]
                             / struct[1]["token1_usd_price"]
                         )
+                        if struct[1]["token1_usd_price"] > 0
+                        else 0
                     )
                 ) / struct[1]["totalSupply"]
                 vs_hodl_token1 = (
@@ -512,15 +464,15 @@ class ImpermanentDivergence(FeesYield):
     def _calc_USD_prices(self, hypervisor: dict) -> tuple:
         """use conversion subgraph field to retrieve USD token prices
 
-         Args:
-           conversion (dict):  {   baseTokenIndex
-                                   priceTokenInBase
-                                   priceBaseInUSD
-                               }
+        Args:
+          conversion (dict):  {   baseTokenIndex
+                                  priceTokenInBase
+                                  priceBaseInUSD
+                              }
 
-         Returns:
-           tuple: token0 usd price ,token1 usd price
-         """
+        Returns:
+          tuple: token0 usd price ,token1 usd price
+        """
 
         decimals_0 = int(hypervisor["pool"]["token0"]["decimals"])
         decimals_1 = int(hypervisor["pool"]["token1"]["decimals"])

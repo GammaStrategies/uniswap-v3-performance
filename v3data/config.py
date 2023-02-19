@@ -1,5 +1,6 @@
 import os
 
+
 V3_FACTORY_ADDRESS = "0x1F98431c8aD98523631AE4a59f267346ea31F984"
 
 uniswap_subgraphs = {
@@ -176,15 +177,16 @@ TOKEN_LIST_URL = "https://tokens.coingecko.com/uniswap/all.json"
 DEFAULT_BBAND_INTERVALS = 20
 DEFAULT_TIMEZONE = os.environ.get("TIMEZONE", "UTC-5")
 
-CHARTS_CACHE_TIMEOUT = os.environ.get("CHARTS_CACHE_TIMEOUT", 600)
-APY_CACHE_TIMEOUT = os.environ.get("APY_CACHE_TIMEOUT", 600)
-DASHBOARD_CACHE_TIMEOUT = os.environ.get("DASHBOARD_CACHE_TIMEOUT", 600)
-ALLDATA_CACHE_TIMEOUT = os.environ.get("ALLDATA_CACHE_TIMEOUT", 120)
+CHARTS_CACHE_TIMEOUT = int(os.environ.get("CHARTS_CACHE_TIMEOUT", 600))
+APY_CACHE_TIMEOUT = int(os.environ.get("APY_CACHE_TIMEOUT", 600))
+DASHBOARD_CACHE_TIMEOUT = int(os.environ.get("DASHBOARD_CACHE_TIMEOUT", 600))
+ALLDATA_CACHE_TIMEOUT = int(os.environ.get("ALLDATA_CACHE_TIMEOUT", 600))
+DB_CACHE_TIMEOUT = int(os.environ.get("DB_CACHE_TIMEOUT", 160))  # database calls cache
 
 EXCLUDED_HYPERVISORS = list(
     filter(None, os.environ.get("EXCLUDED_HYPES", "").split(","))
 )
-FALLBACK_DAYS = os.environ.get("FALLBACK_DAYS", 90)
+FALLBACK_DAYS = int(os.environ.get("FALLBACK_DAYS", 90))
 
 legacy_stats = {
     "visr_distributed": 987998.1542393989,
@@ -202,3 +204,22 @@ ALCHEMY_URLS = {
 DISABLE_POOL_APR = {"true": True, "false": False}.get(
     os.environ.get("DISABLE_POOL_APR", "true").lower(), True
 )
+
+MONGO_DB_URL = os.environ.get("MONGO_DB_URL", "mongodb://localhost:27072")
+MONGO_DB_TIMEOUTMS = int(os.environ.get("MONGO_DB_TIMEOUTMS", 2000))
+MONGO_DB_COLLECTIONS = {
+    "static": {"id": True},  #      no historic
+    "returns": {"id": True},  #     historic
+    "allData": {"id": True},  # id = <chain_protocol>       no historic
+    "allRewards2": {"id": True},  # id = <chain_protocol>   no historic
+    "agregateStats": {"id": True},  # id = <chain_protocol_timestamp>    historic
+}
+
+# local chain name <-> standard chain short name convention as in https://chainid.network/chains.json  or https://chainid.network/chains_mini.json
+CHAIN_NAME_CONVERSION = {
+    "eth": "mainnet",
+    "matic": "polygon",
+    "oeth": "optimism",
+    "arb1": "arbitrum",
+    "celo": "celo",
+}
