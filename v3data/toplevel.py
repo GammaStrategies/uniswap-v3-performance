@@ -1,10 +1,11 @@
+import asyncio
 import numpy as np
 from datetime import timedelta
 from pandas import DataFrame
 
-from v3data import VisorClient
-from v3data.visr import VisrData
-from v3data.hypervisor import HypervisorData
+from v3data import GammaClient
+from v3data.hypervisor import HypervisorData, HypervisorInfo
+from v3data.pricing import token_price
 from v3data.utils import timestamp_ago
 from v3data.config import EXCLUDED_HYPERVISORS
 
@@ -12,12 +13,13 @@ from v3data.config import EXCLUDED_HYPERVISORS
 class TopLevelData:
     """Top level stats"""
 
-    def __init__(self):
-        self.visor_client = VisorClient()
+    def __init__(self, protocol: str, chain: str = "mainnet"):
+        self.protocol = protocol
+        self.gamma_client = GammaClient(protocol, chain)
         self.all_stats_data = {}
         self.all_returns_data = {}
 
-    def get_hypervisor_data(self):
+    async def get_hypervisor_data(self):
         """Get hypervisor IDs"""
         query = """
         {
@@ -30,9 +32,10 @@ class TopLevelData:
             }
         }
         """
-        return self.visor_client.query(query)['data']['uniswapV3Hypervisors']
+        response = await self.gamma_client.query(query)
+        return response["data"]["uniswapV3Hypervisors"]
 
-    def get_pool_data(self):
+    async def get_pool_data(self):
         query = """
         {
             uniswapV3Pools(
@@ -42,9 +45,10 @@ class TopLevelData:
             }
         }
         """
-        return self.visor_client.query(query)['data']['uniswapV3Pools']
+        response = await self.gamma_client.query(query)
+        return response["data"]["uniswapV3Pools"]
 
-    def _get_all_returns_data(self, time_delta):
+    async def _get_all_returns_data(self, time_delta):
         query = """
         query allRebalances($timestampStart: Int!){
             uniswapV3Hypervisors(
@@ -70,9 +74,10 @@ class TopLevelData:
         }
         """
         variables = {"timestampStart": timestamp_ago(time_delta)}
-        self.all_returns_data = self.visor_client.query(query, variables)['data']['uniswapV3Hypervisors']
+        response = await self.gamma_client.query(query, variables)
+        self.all_returns_data = response["data"]["uniswapV3Hypervisors"]
 
-    def _get_all_stats_data(self):
+    async def _get_all_stats_data(self):
         query = """
         {
             uniswapV3Hypervisors(
@@ -90,9 +95,10 @@ class TopLevelData:
         }
         """
 
-        self.all_stats_data = self.visor_client.query(query)['data']
+        response = await self.gamma_client.query(query)
+        self.all_stats_data = response["data"]
 
-    def get_recent_rebalance_data(self, hours=24):
+    async def get_recent_rebalance_data(self, hours=24):
         query = """
         query rebalances($timestamp_start: Int!){
             uniswapV3Rebalances(
@@ -109,7 +115,8 @@ class TopLevelData:
         """
         timestamp_start = timestamp_ago(timedelta(hours=hours))
         variables = {"timestamp_start": timestamp_start}
-        return self.visor_client.query(query, variables)['data']['uniswapV3Rebalances']
+        response = await self.gamma_client.query(query, variables)
+        return response["data"]["uniswapV3Rebalances"]
 
     def _all_stats(self):
         """
@@ -117,66 +124,85 @@ class TopLevelData:
         Should add entity to subgraph to track top level stats
         """
         data = self.all_stats_data
+        for hypervisor in data["uniswapV3Hypervisors"]:
+            if hypervisor["id"] == "0x8cd73cb1e1fa35628e36b8c543c5f825cd4e77f1":
+                # Correcting incorrect USD value for TCR
+                hypervisor["grossFeesClaimedUSD"] = str(
+                    max(float(hypervisor["grossFeesClaimedUSD"]) - 770480494, 0)
+                )
+                break
+
         return {
-            "pool_count": len(data['uniswapV3Pools']),
-            "tvl": sum([float(hypervisor['tvlUSD']) for hypervisor in data['uniswapV3Hypervisors'] if hypervisor['id'] not in EXCLUDED_HYPERVISORS]),
-            "fees_claimed": sum([float(factory['grossFeesClaimedUSD']) for factory in data['uniswapV3Hypervisors']])
+            "pool_count": len(data["uniswapV3Pools"]),
+            "tvl": sum(
+                [
+                    float(hypervisor["tvlUSD"])
+                    for hypervisor in data["uniswapV3Hypervisors"]
+                    if hypervisor["id"] not in EXCLUDED_HYPERVISORS
+                ]
+            ),
+            "fees_claimed": sum(
+                [
+                    float(hypervisor["grossFeesClaimedUSD"])
+                    for hypervisor in data["uniswapV3Hypervisors"]
+                    if hypervisor["id"] not in EXCLUDED_HYPERVISORS
+                ]
+            ),
         }
 
-    def all_stats(self):
-        self._get_all_stats_data()
+    async def all_stats(self):
+        await self._get_all_stats_data()
         return self._all_stats()
 
-    def recent_fees(self, hours=24):
-        visr = VisrData()
-        visr_price = visr.price_usd()
-        data = self.get_recent_rebalance_data(hours)
+    async def recent_fees(self, hours=24):
+        data, gamma_prices = await asyncio.gather(
+            self.get_recent_rebalance_data(hours), token_price("GAMMA")
+        )
+        gamma_price_usd = gamma_prices["gamma_in_usdc"]
         df_fees = DataFrame(data, dtype=np.float64)
 
-        df_fees['grossFeesVISR'] = df_fees.grossFeesUSD / visr_price
-        df_fees['protocolFeesVISR'] = df_fees.protocolFeesUSD / visr_price
-        df_fees['netFeesVISR'] = df_fees.netFeesUSD / visr_price
+        df_fees["grossFeesGAMMA"] = df_fees.grossFeesUSD / gamma_price_usd
+        df_fees["protocolFeesGAMMA"] = df_fees.protocolFeesUSD / gamma_price_usd
+        df_fees["netFeesGAMMA"] = df_fees.netFeesUSD / gamma_price_usd
 
         return df_fees.sum().to_dict()
 
-    def _calculate_returns(self):
+    async def _calculate_returns(self):
         hypervisors = self.all_returns_data
 
-        tvl = sum([float(hypervisor['tvlUSD']) for hypervisor in hypervisors if hypervisor['id'] not in EXCLUDED_HYPERVISORS])
+        tvl = sum(
+            [
+                float(hypervisor["tvlUSD"])
+                for hypervisor in hypervisors
+                if hypervisor["id"] not in EXCLUDED_HYPERVISORS
+            ]
+        )
 
-        hypervisor_data = HypervisorData()
-        hypervisor_data.all_rebalance_data = hypervisors
-        all_returns = hypervisor_data._all_returns()
+        hypervisor_info = HypervisorInfo(self.protocol)
+        hypervisor_info.all_rebalance_data = hypervisors
+        all_returns = await hypervisor_info.all_returns()
 
         returns = {
-            "daily": {
-                "feeApr": 0,
-                "feeApy": 0
-            },
-            "weekly": {
-                "feeApr": 0,
-                "feeApy": 0
-            },
-            "monthly": {
-                "feeApr": 0,
-                "feeApy": 0
-            }
+            "daily": {"feeApr": 0, "feeApy": 0},
+            "weekly": {"feeApr": 0, "feeApy": 0},
+            "monthly": {"feeApr": 0, "feeApy": 0},
+            "allTime": {"feeApr": 0, "feeApy": 0},
         }
         for hypervisor in hypervisors:
-            if hypervisor['id']  in EXCLUDED_HYPERVISORS:
+            if hypervisor["id"] in EXCLUDED_HYPERVISORS:
                 continue
             if tvl > 0:
-                tvl_share = float(hypervisor['tvlUSD']) / tvl
+                tvl_share = float(hypervisor["tvlUSD"]) / tvl
             else:
                 tvl_share = 0
-            hypervisor_returns = all_returns.get(hypervisor['id'])
+            hypervisor_returns = all_returns.get(hypervisor["id"])
             if hypervisor_returns:
                 for period, values in hypervisor_returns.items():
-                    returns[period]['feeApr'] += values['feeApr'] * tvl_share
-                    returns[period]['feeApy'] += values['feeApy'] * tvl_share
+                    returns[period]["feeApr"] += values["feeApr"] * tvl_share
+                    returns[period]["feeApy"] += values["feeApy"] * tvl_share
 
         return returns
 
-    def calculate_returns(self):
-        self._get_all_returns_data(timedelta(days=30))
-        return self._calculate_returns()
+    async def calculate_returns(self):
+        await self._get_all_returns_data(timedelta(days=30))
+        return await self._calculate_returns()

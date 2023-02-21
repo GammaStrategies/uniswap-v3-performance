@@ -1,29 +1,28 @@
-from v3data import VisorClient
-from v3data.visor import VisorVaultInfo
-from v3data.constants import RHYPERVISOR_ADDRESS
+import asyncio
+from v3data import GammaClient
+from v3data.accounts import AccountInfo
+from v3data.constants import XGAMMA_ADDRESS
 
 
 class UserData:
-    def __init__(self, user_address):
-        self.visor_client = VisorClient()
+    def __init__(self, protocol: str, chain: str, user_address: str):
+        self.protocol = protocol
+        self.chain = chain
+        self.gamma_client = GammaClient(protocol, chain)
+        self.gamma_client_mainnet = GammaClient("uniswap_v3", "mainnet")
         self.address = user_address.lower()
-        self.decimal_factor = 10 ** 18
+        self.decimal_factor = 10**18
         self.data = {}
 
-    def _get_data(self):
+    async def _get_data(self):
         query = """
-        query userData($userAddress: String!, $rewardHypervisorAddress: String!) {
-            visrToken(id: "0xf938424f7210f31df2aee3011291b658f872e91e"){
-                totalStaked
-            }
+        query userHypervisor($userAddress: String!) {
             user(
                 id: $userAddress
             ){
-                visorsOwned {
+                accountsOwned {
                     id
-                    owner{ id }
-                    visrDeposited
-                    visrEarnedRealized
+                    parent { id }
                     hypervisorShares {
                         hypervisor {
                             id
@@ -46,6 +45,22 @@ class UserData:
                         initialToken1
                         initialUSD
                     }
+                }
+            }
+        }
+        """
+        variables = {"userAddress": self.address}
+
+        query_xgamma = """
+        query userXgamma($userAddress: String!, $rewardHypervisorAddress: String!) {
+            user(
+                id: $userAddress
+            ){
+                accountsOwned {
+                    id
+                    parent { id }
+                    gammaDeposited
+                    gammaEarnedRealized
                     rewardHypervisorShares{
                         rewardHypervisor { id }
                         shares
@@ -55,36 +70,73 @@ class UserData:
             rewardHypervisor(
                 id: $rewardHypervisorAddress
             ){
-                totalVisr
+                totalGamma
                 totalSupply
             }
         }
         """
-        variables = {
+        variables_xgamma = {
             "userAddress": self.address,
-            "rewardHypervisorAddress": RHYPERVISOR_ADDRESS
+            "rewardHypervisorAddress": XGAMMA_ADDRESS,
         }
-        self.data = self.visor_client.query(query, variables)['data']
+
+        hypervisor_response, xgamma_response = await asyncio.gather(
+            self.gamma_client.query(query, variables),
+            self.gamma_client_mainnet.query(query_xgamma, variables_xgamma),
+        )
+
+        self.data = {
+            "hypervisor": hypervisor_response["data"],
+            "xgamma": xgamma_response["data"],
+        }
 
 
 class UserInfo(UserData):
-    def output(self, get_data=True):
+    async def output(self, get_data=True):
 
         if get_data:
-            self._get_data()
+            await self._get_data()
 
-        if not self.data.get('user'):
+        hypervisor_data = self.data["hypervisor"]
+        xgamma_data = self.data["xgamma"]
+
+        has_hypervisor_data = hypervisor_data.get("user")
+        has_xgamma_data = xgamma_data.get("user")
+
+        if not (has_hypervisor_data or has_xgamma_data):
             return {}
 
-        visors = {}
-        for visor in self.data['user']['visorsOwned']:
-            visor_address = visor['id']
-            visor_vault_info = VisorVaultInfo(visor_address)
-            visor_vault_info.data = {
-                'visrToken': self.data['visrToken'],
-                'visor': visor,
-                'rewardHypervisor': self.data['rewardHypervisor']
+        if has_hypervisor_data:
+            hypervisor_lookup = {
+                account.pop("id"): account
+                for account in hypervisor_data["user"]["accountsOwned"]
             }
-            visors[visor_address] = visor_vault_info.output(get_data=False)
+        else:
+            hypervisor_lookup = {}
 
-        return visors
+        if has_xgamma_data:
+            xgamma_lookup = {
+                account.pop("id"): account
+                for account in xgamma_data["user"]["accountsOwned"]
+            }
+        else:
+            xgamma_lookup = {}
+
+        # combine accounts owned for both hype and xgamma
+        all_accounts = set(list(hypervisor_lookup.keys()) + list(xgamma_lookup.keys()))
+
+        accounts = {}
+        # for accountHypervisor in hypervisor_data["user"]["accountsOwned"]:
+        for account_address in all_accounts:
+            # account_address = accountHypervisor["id"]
+            account_info = AccountInfo(self.protocol, self.chain, account_address)
+            account_info.data = {
+                "hypervisor": {"account": hypervisor_lookup.get(account_address)},
+                "xgamma": {
+                    "account": xgamma_lookup.get(account_address),
+                    "rewardHypervisor": xgamma_data["rewardHypervisor"],
+                },
+            }
+            accounts[account_address] = await account_info.output(get_data=False)
+
+        return accounts

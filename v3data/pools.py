@@ -1,36 +1,36 @@
 import datetime
+from urllib import response
 from v3data import UniswapV3Client
 from v3data.data import UniV3Data
 from v3data.utils import sqrtPriceX96_to_priceDecimal
 
-USDC_WETH_03_POOL = '0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8'
 
-
-def pools_from_symbol(symbol):
+async def pools_from_symbol(symbol):
     client = UniV3Data()
     token_list = client.get_token_list()
     token_addresses = token_list.get(symbol.upper())
-    pool_list = client.get_pools_by_tokens(token_addresses)
+    pool_list = await client.get_pools_by_tokens(token_addresses)
 
     pools = [
         {
-            "token0Address": pool['token0']['id'],
-            "token1Address": pool['token1']['id'],
-            "poolAddress": pool['id'],
-            'symbol': f"{pool['token0']['symbol']}-{pool['token1']['symbol']}",
-            'feeTier': pool['feeTier'],
-            'volumeUSD': pool['volumeUSD']
-        } for pool in pool_list
+            "token0Address": pool["token0"]["id"],
+            "token1Address": pool["token1"]["id"],
+            "poolAddress": pool["id"],
+            "symbol": f"{pool['token0']['symbol']}-{pool['token1']['symbol']}",
+            "feeTier": pool["feeTier"],
+            "volumeUSD": pool["volumeUSD"],
+        }
+        for pool in pool_list
     ]
 
     return pools
 
 
 class Pool:
-    def __init__(self):
-        self.client = UniswapV3Client()
+    def __init__(self, protocol: str, chain: str = "mainnet"):
+        self.client = UniswapV3Client(protocol, chain)
 
-    def swap_prices(self, pool_address, time_delta=None):
+    async def swap_prices(self, pool_address, time_delta=None):
         query = """
         query poolPrices($pool: String!, $timestampStart: Int!, $paginate: String!){
             swaps(
@@ -50,20 +50,23 @@ class Pool:
         }
         """
         if time_delta:
-            timestamp_start = int((datetime.datetime.utcnow() - time_delta).replace(
-                tzinfo=datetime.timezone.utc).timestamp())
+            timestamp_start = int(
+                (datetime.datetime.utcnow() - time_delta)
+                .replace(tzinfo=datetime.timezone.utc)
+                .timestamp()
+            )
         else:
             timestamp_start = 0
 
         variables = {
             "pool": pool_address,
             "timestampStart": timestamp_start,
-            "paginate": ""
+            "paginate": "",
         }
-        data = self.client.paginate_query(query, "id", variables)
+        data = await self.client.paginate_query(query, "id", variables)
         return data
 
-    def hourly_prices(self, pools, hours):
+    async def hourly_prices(self, pools, hours):
 
         query = """
         query poolPrices($pools: [String!]!, $hours: Int!){
@@ -94,19 +97,20 @@ class Pool:
             }
         """
         variables = {"pools": [pool.lower() for pool in pools], "hours": hours}
-        data = self.client.query(query, variables)['data']['pools']
+        response = await self.client.query(query, variables)
+        data = response["data"]["pools"]
 
         pool_prices = {
-            pool['id']: [
+            pool["id"]: [
                 {
-                    "timestamp": hour_data['periodStartUnix'],
+                    "timestamp": hour_data["periodStartUnix"],
                     "price": sqrtPriceX96_to_priceDecimal(
-                        float(hour_data['sqrtPrice']),
-                        int(pool['token0']['decimals']),
-                        int(pool['token1']['decimals'])
-                    )
+                        float(hour_data["sqrtPrice"]),
+                        int(pool["token0"]["decimals"]),
+                        int(pool["token1"]["decimals"]),
+                    ),
                 }
-                for hour_data in pool['poolHourData']
+                for hour_data in pool["poolHourData"]
             ]
             for pool in data
         }

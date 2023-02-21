@@ -1,17 +1,20 @@
+import asyncio
 from datetime import timedelta
 
-from v3data import VisorClient
-from v3data.visr import VisrCalculations, VisrPrice, ProtocolFeesCalculations
-from v3data.eth import EthCalculations
+from v3data import GammaClient
+from v3data.gamma import GammaCalculations, ProtocolFeesCalculations
+from v3data.pricing import token_price
 from v3data.toplevel import TopLevelData
 from v3data.rewardshypervisor import RewardsHypervisorInfo
 from v3data.utils import timestamp_ago
-from v3data.constants import DAYS_IN_PERIOD
+from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
+from v3data.config import legacy_stats
 
 
 class Dashboard:
-    def __init__(self, period):
-        self.visor_client = VisorClient()
+    def __init__(self, period: str):
+        self.chain = "mainnet"
+        self.gamma_client = GammaClient("uniswap_v3", self.chain)
         self.period = period
         self.days = 30
         self.visr_data = {}
@@ -20,43 +23,29 @@ class Dashboard:
         self.top_level_returns_data = {}
         self.rewards_hypervisor_data = {}
 
-    def _get_data(self, timezone):
+    async def _get_data(self, timezone):
         query = """
-        query($days: Int!, $timezone: String!, $timestampStart: Int!, $rebalancesStart: Int!){
-            visrToken(
-                id: "0xf938424f7210f31df2aee3011291b658f872e91e"
-            ){
+        query(
+            $gammaAddress: String!,
+            $xgammaAddress: String!,
+            $days: Int!,
+            $timezone: String!,
+            $timestampStart: Int!,
+            $rebalancesStart: Int!
+        ){
+            token(id: $gammaAddress){
                 totalSupply
-                totalDistributed
-                totalDistributedUSD
-                totalStaked
             }
-            visrTokenDayDatas(
-                first: $days
-                where: {
-                    distributed_gt: 0
-                    totalStaked_gt: 0
-                    timezone: $timezone
-                }
-                orderBy: date
-                orderDirection: desc
-            ){
-                date
+            protocolDistribution(id: $gammaAddress){
                 distributed
                 distributedUSD
-                totalStaked
             }
-            ethToken(
-                id: "0"
-            ){
-                totalDistributed
-                totalDistributedUSD
-            }
-            ethDayDatas(
+            distributionDayDatas(
                 orderBy: date
                 orderDirection: desc
                 first: $days
                 where: {
+                    token: $gammaAddress
                     distributed_gt: 0
                     timezone: $timezone
                 }
@@ -64,6 +53,18 @@ class Dashboard:
                 date
                 distributed
                 distributedUSD
+            }
+            rewardHypervisorDayDatas(
+                orderBy: date
+                orderDirection: desc
+                first: $days
+                where: {
+                    totalGamma_gt: 0
+                    timezone: $timezone
+                }
+            ){
+                date
+                totalGamma
             }
             uniswapV3Pools(
                 first: 1000
@@ -99,98 +100,120 @@ class Dashboard:
                 protocolFeesUSD
             }
             rewardHypervisor(
-                id:"0xc9f27a50f82571c1c8423a42970613b8dbda14ef"
+                id: $xgammaAddress
             ) {
-                totalVisr
+                totalGamma
                 totalSupply
             }
         }
         """
         variables = {
+            "gammaAddress": GAMMA_ADDRESS,
+            "xgammaAddress": XGAMMA_ADDRESS,
             "days": self.days,
             "timezone": timezone,
             "timestampStart": timestamp_ago(timedelta(self.days)),
-            "rebalancesStart": timestamp_ago(timedelta(7))
+            "rebalancesStart": timestamp_ago(timedelta(7)),
         }
 
-        data = self.visor_client.query(query, variables)['data']
-        self.visr_data = {
-            'visrToken': data['visrToken'],
-            'visrTokenDayDatas': data['visrTokenDayDatas'],
-            'rewardHypervisor': data['rewardHypervisor']
-        }
-        self.eth_data = {
-            'ethToken': data['ethToken'],
-            'ethDayDatas': data['ethDayDatas']
+        response = await self.gamma_client.query(query, variables)
+        data = response["data"]
+
+        self.gamma_data = {
+            "token": data["token"],
+            "protocolDistribution": data["protocolDistribution"],
+            "distributionDayDatas": data["distributionDayDatas"],
+            "rewardHypervisor": data["rewardHypervisor"],
+            "rewardHypervisorDayDatas": data["rewardHypervisorDayDatas"],
         }
         self.top_level_data = {
-            "uniswapV3Hypervisors": data['uniswapV3Hypervisors'],
-            "uniswapV3Pools": data['uniswapV3Pools']
+            "uniswapV3Hypervisors": data["uniswapV3Hypervisors"],
+            "uniswapV3Pools": data["uniswapV3Pools"],
         }
-        self.top_level_returns_data = data['uniswapV3Hypervisors']
+        self.top_level_returns_data = data["uniswapV3Hypervisors"]
 
         self.protocol_fees_data = {
-            'uniswapV3Rebalances': data['uniswapV3Rebalances'],
-            'visrToken': data['visrToken'],
+            "uniswapV3Rebalances": data["uniswapV3Rebalances"],
+            "rewardHypervisor": data["rewardHypervisor"],
         }
-        self.rewards_hypervisor_data = {
-            'rewardHypervisor': data['rewardHypervisor']
-        }
+        self.rewards_hypervisor_data = {"rewardHypervisor": data["rewardHypervisor"]}
 
-    def info(self, timezone):
-        self._get_data(timezone)
-        visr_calcs = VisrCalculations(days=30)
-        visr_calcs.data = self.visr_data
-        visr_info = visr_calcs.basic_info(get_data=False)
-        visr_yield = visr_calcs.visr_yield(get_data=False)
-        distributions = visr_calcs.distributions(get_data=False)
-        last_day_distribution = float(distributions[0]['distributed'])
-        visr_price = VisrPrice()
-        visr_price_usd = visr_price.output()["visr_in_usdc"]
+    async def info(self, timezone):
+
+        _, gamma_prices = await asyncio.gather(
+            self._get_data(timezone), token_price("GAMMA")
+        )
+
+        gamma_price_usd = gamma_prices["token_in_usdc"]
+        gamma_in_eth = gamma_prices["token_in_native"]
+
+        gamma_calcs = GammaCalculations(self.chain, days=30)
+        gamma_calcs.data = self.gamma_data
+        gamma_info = await gamma_calcs.basic_info(get_data=False)
+        gamma_yield = await gamma_calcs.gamma_yield(get_data=False)
 
         protocol_fees_calcs = ProtocolFeesCalculations(days=7)
         protocol_fees_calcs.data = self.protocol_fees_data
-        collected_fees = protocol_fees_calcs.collected_fees(get_data=False)
+        collected_fees = await protocol_fees_calcs.collected_fees(get_data=False)
 
-        eth_calcs = EthCalculations(days=30)
-        eth_calcs.data = self.eth_data
-        eth_distributions = eth_calcs.distributions(get_data=False)
-        eth_last_distribution = float(eth_distributions[0]['distributed'])
-        # eth_average_daily_distribution = eth_last_distribution / 7
-        visr_in_eth = visr_price.output()["visr_in_eth"]
-
-        top_level = TopLevelData()
+        top_level = TopLevelData("uniswap_v3", self.chain)
         top_level.all_stats_data = self.top_level_data
         top_level.all_returns_data = self.top_level_returns_data
         top_level_data = top_level._all_stats()
-        top_level_returns = top_level._calculate_returns()
+        top_level_returns = await top_level._calculate_returns()
 
-        daily_yield = visr_yield[self.period]['yield'] / DAYS_IN_PERIOD[self.period]
+        daily_yield = gamma_yield[self.period]["yield"] / DAYS_IN_PERIOD[self.period]
 
         rewards = RewardsHypervisorInfo()
         rewards.data = self.rewards_hypervisor_data
-        rewards_info = rewards.output(get_data=False)
+        rewards_info = await rewards.output(get_data=False)
+
+        gamma_staked_usd = rewards_info["gamma_staked"] * gamma_price_usd
+
+
+        # Use fees for gamma yield
+        fees_per_day = collected_fees['weekly']["collected_usd"]
+        gamma_fees_apr = 365 * fees_per_day / gamma_staked_usd
+        gamma_fees_apy = (1 + fees_per_day / gamma_staked_usd) ** 365 - 1
 
         dashboard_stats = {
-            "visrInEth": visr_in_eth,
-            "stakedUsdAmount": visr_info['totalStaked'] * visr_price_usd,
-            "stakedAmount": visr_info['totalStaked'],
-            "feeStatsFeeAccural": collected_fees['daily']['collected_usd'], # (eth_average_daily_distribution / visr_in_eth) * visr_price_usd, # last_day_distribution * visr_price_usd,
-            "feeStatsAmountVisr": collected_fees['daily']['collected_visr'], # (eth_average_daily_distribution / visr_in_eth), # last_day_distribution,
-            "feeStatsStakingApr":  visr_yield[self.period]['apr'],  # collected_fees[self.period]['apr'],
-            "feeStatsStakingApy":  visr_yield[self.period]['apy'],  # collected_fees[self.period]['apy'],
-            "feeStatsStakingDailyYield": daily_yield,  # collected_fees[self.period]['yield'],
-            "feeCumulativeFeeUsd": visr_info['totalDistributedUSD'],
-            "feeCumulativeFeeUsdAnnual": visr_yield[self.period]['estimatedAnnualDistributionUSD'],
-            "feeCumulativeFeeDistributed": visr_info['totalDistributed'],
-            "feeCumulativeFeeDistributedAnnual": visr_yield[self.period]['estimatedAnnualDistribution'],
-            "uniswapPairTotalValueLocked": top_level_data['tvl'],
-            "uniswapPairAmountPairs": top_level_data['pool_count'],
-            "uniswapFeesGenerated": top_level_data['fees_claimed'],
+            "stakedUsdAmount": gamma_staked_usd,
+            "stakedAmount": rewards_info["gamma_staked"],
+            "feeStatsFeeAccural": collected_fees["daily"]["collected_usd"],
+            "feeStatsAmountGamma": collected_fees["daily"]["collected_gamma"],
+            "feeStatsStakingApr": gamma_fees_apr,  # gamma_yield[self.period]["apr"],
+            "feeStatsStakingApy": gamma_fees_apy,  # gamma_yield[self.period]["apy"],
+            "stakingDistributionApr": gamma_yield[self.period]["apr"],
+            "stakingDistributionApy": gamma_yield[self.period]["apy"],
+            "feeStatsStakingDailyYield": daily_yield,
+            "feeCumulativeFeeUsd": legacy_stats["visr_distributed_usd"]
+            + gamma_info["totalDistributedUSD"],
+            "feeCumulativeFeeUsdAnnual": legacy_stats[
+                "estimated_visr_annual_distribution_usd"
+            ],  # gamma_yield[self.period]['estimatedAnnualDistributionUSD'],
+            "feeCumulativeFeeDistributed": legacy_stats["visr_distributed"]
+            + gamma_info["totalDistributed"],
+            "feeCumulativeFeeDistributedAnnual": legacy_stats[
+                "estimated_visr_annual_distribution"
+            ],  # gamma_yield[self.period]['estimatedAnnualDistribution'],
+            "uniswapPairTotalValueLocked": top_level_data["tvl"],
+            "uniswapPairAmountPairs": top_level_data["pool_count"],
+            "uniswapFeesGenerated": top_level_data["fees_claimed"],
             "uniswapFeesBasedApr": f"{top_level_returns[self.period]['feeApr']:.0%}",
-            "visrPrice": visr_price_usd,  # End point for price
-            "visrPerVvisr": rewards_info['visr_per_vvisr'],
-            "id": 2
+            "gammaPrice": gamma_price_usd,
+            "gammaInEth": gamma_in_eth,
+            "gammaPerXgamma": rewards_info["gamma_per_xgamma"],
+            "id": 2,
         }
+
+        # For compatability, to be deprecated
+        dashboard_stats.update(
+            {
+                "feeStatsAmountVisr": dashboard_stats["feeStatsAmountGamma"],
+                "visrPrice": dashboard_stats["gammaPrice"],
+                "visrInEth": dashboard_stats["gammaInEth"],
+                "visrPerVvisr": dashboard_stats["gammaPerXgamma"],
+            }
+        )
 
         return dashboard_stats

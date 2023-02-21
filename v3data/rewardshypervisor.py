@@ -1,46 +1,45 @@
-from v3data import VisorClient
+from v3data import GammaClient
+from v3data.constants import XGAMMA_ADDRESS
+
 
 class RewardsHypervisorData:
     def __init__(self):
-        self.visor_client = VisorClient()
-        self.address = "0xc9f27a50f82571c1c8423a42970613b8dbda14ef"
-        self.decimal_factor = 10 ** 18
+        self.client = GammaClient("uniswap_v3", "mainnet")
+        self.decimal_factor = 10**18
         self.data = {}
 
-    def _get_data(self):
+    async def _get_data(self):
 
         query = """
-        {
-            rewardHypervisor(
-                id:"0xc9f27a50f82571c1c8423a42970613b8dbda14ef"
-            ) {
-                totalVisr
+        xgammaQuery($xgammaAddres: String!){
+            rewardHypervisor(id: $xgammaAddress) {
+                totalGamma
                 totalSupply
             }
         }
         """
-        variables = {
-            "id": self.address
-        }
-        self.data = self.visor_client.query(query, variables)['data']
+        variables = {"xgammaAddress": XGAMMA_ADDRESS}
+        response = await self.client.query(query, variables)
+        self.data = response["data"]
+
 
 class RewardsHypervisorCalculations(RewardsHypervisorData):
-    def basic_info(self, get_data=True):
+    async def basic_info(self, get_data=True):
         if get_data:
-            self._get_data()
-        data = self.data['rewardHypervisor']
-        print(data['totalVisr'])
-        visr_staked = int(data['totalVisr']) / self.decimal_factor
-        vvisr_total = int(data['totalSupply']) / self.decimal_factor
-        visr_per_vvisr = visr_staked / vvisr_total
+            await self._get_data()
+        data = self.data["rewardHypervisor"]
+
+        gamma_staked = int(data["totalGamma"]) / self.decimal_factor
+        xgamma_total = int(data["totalSupply"]) / self.decimal_factor
+        gamma_per_xgamma = gamma_staked / xgamma_total
 
         return {
-            "visr_staked": visr_staked,
-            "vvisr_total": vvisr_total,
-            "visr_per_vvisr": visr_per_vvisr
+            "gamma_staked": gamma_staked,
+            "xgamma_total": xgamma_total,
+            "gamma_per_xgamma": gamma_per_xgamma,
         }
 
+
 class RewardsHypervisorInfo(RewardsHypervisorCalculations):
-    def output(self, get_data=True):
-        return self.basic_info(get_data=get_data)
-        
+    async def output(self, get_data=True):
+        return await self.basic_info(get_data=get_data)
