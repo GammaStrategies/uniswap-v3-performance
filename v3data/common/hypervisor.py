@@ -5,6 +5,8 @@ from v3data.toplevel import TopLevelData
 from v3data.hypes.fees import Fees
 from v3data.hypes.fees_yield import FeesYield
 from v3data.hypes.impermanent_data import ImpermanentDivergence
+from v3data.hype_fees.fees import fees_usd_all
+from v3data.hype_fees.fees_yield import fee_returns_all
 
 from database.collection_endpoint import (
     db_returns_manager,
@@ -47,7 +49,6 @@ async def hypervisor_apy(
 
 
 async def aggregate_stats(protocol: str, chain: str, response: Response = None):
-
     try:
         _mngr = db_aggregateStats_manager(mongo_url=MONGO_DB_URL)
         result = await _mngr.get_data(chain=chain, protocol=protocol)
@@ -94,7 +95,6 @@ async def hypervisors_return(protocol: str, chain: str, response: Response = Non
         result = dict()
         # CONVERT result so is equal to original
         for hypervisor in av_result:
-
             result[hypervisor["_id"]] = dict()
             try:
                 result[hypervisor["_id"]]["daily"] = {
@@ -222,9 +222,7 @@ async def uncollected_fees_all(protocol: str, chain: str):
 
 
 async def fee_returns(protocol: str, chain: str, days: int, response: Response = None):
-
     try:
-
         returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
         result = await returns_manager.get_feeReturns(
             chain=chain, protocol=protocol, period=days
@@ -244,9 +242,11 @@ async def fee_returns(protocol: str, chain: str, days: int, response: Response =
     if response:
         response.headers["X-Database"] = "false"
 
-    fees_yield = FeesYield(days, protocol, chain)
-    output = await fees_yield.get_fees_yield()
-    return output
+    return await fee_returns_all(protocol, chain, days)
+
+
+async def uncollected_fees_all_fg(protocol: str, chain: str):
+    return await fees_usd_all(protocol, chain)
 
 
 async def impermanent_divergence(protocol: str, chain: str, days: int):

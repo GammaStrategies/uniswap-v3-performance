@@ -9,6 +9,7 @@ from fastapi_cache.decorator import cache
 from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT, DB_CACHE_TIMEOUT
 from v3data.constants import PROTOCOL_UNISWAP_V3
 
+
 CHAIN_CELO = "celo"
 
 router = APIRouter(prefix="/celo")
@@ -123,7 +124,7 @@ async def hypervisors_all(response: Response):
 
 @router.get("/hypervisors/uncollectedFees")
 async def uncollected_fees_all():
-    return await v3data.common.hypervisor.uncollected_fees_all(
+    return await v3data.common.hypervisor.uncollected_fees_all_fg(
         PROTOCOL_UNISWAP_V3, CHAIN_CELO
     )
 
