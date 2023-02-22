@@ -9,6 +9,7 @@ from v3data.hypervisor import HypervisorInfo, HypervisorData
 from v3data.masterchef_v2 import MasterchefV2Info, UserRewardsV2
 from v3data.hypes.impermanent_data import ImpermanentDivergence
 from v3data.toplevel import TopLevelData
+from v3data.hype_fees.fees_yield import fee_returns_all
 
 from database.common.collections_common import db_collections_common
 
@@ -122,7 +123,9 @@ class db_returns_manager(db_collection_manager):
             period_days=period_days, protocol=protocol, chain=chain
         )
         # calculate return
-        returns_data = await all_data.get_fees_yield(get_data=True)
+        returns_data = await fee_returns_all(
+            protocol=protocol, chain=chain, days=period_days
+        )
         # calculate impermanent divergence
         imperm_data = await all_data.get_impermanent_data(get_data=False)
 
@@ -147,7 +150,7 @@ class db_returns_manager(db_collection_manager):
                     "fees": {
                         "feeApr": v["feeApr"],
                         "feeApy": v["feeApy"],
-                        "hasOutlier": v["hasOutlier"],
+                        "status": v["status"],
                     },
                 }
 
@@ -654,7 +657,7 @@ class db_returns_manager(db_collection_manager):
                     "block": "$block",
                     "feeApr": "$fees.feeApr",
                     "feeApy": "$fees.feeApy",
-                    "hasOutlier": "$fees.hasOutlier",
+                    "status": "$fees.status",
                 }
             },
             {
@@ -676,7 +679,7 @@ class db_returns_manager(db_collection_manager):
                     "block": "$block",
                     "feeApr": "$feeApr",
                     "feeApy": "$feeApy",
-                    "hasOutlier": "$hasOutlier",
+                    "status": "$status",
                     "symbol": "$hypervisor.symbol",
                 }
             },
@@ -708,25 +711,25 @@ class db_returns_manager(db_collection_manager):
                     "daily": {
                         "feeApr": "$returns.1.feeApr",
                         "feeApy": "$returns.1.feeApy",
-                        "hasOutlier": "$returns.1.hasOutlier",
+                        "status": "$returns.1.status",
                         "symbol": "$returns.1.symbol",
                     },
                     "weekly": {
                         "feeApr": "$returns.7.feeApr",
                         "feeApy": "$returns.7.feeApy",
-                        "hasOutlier": "$returns.7.hasOutlier",
+                        "status": "$returns.7.status",
                         "symbol": "$returns.7.symbol",
                     },
                     "monthly": {
                         "feeApr": "$returns.30.feeApr",
                         "feeApy": "$returns.30.feeApy",
-                        "hasOutlier": "$returns.30.hasOutlier",
+                        "status": "$returns.30.status",
                         "symbol": "$returns.30.symbol",
                     },
                     "allTime": {
                         "feeApr": "$returns.30.feeApr",
                         "feeApy": "$returns.30.feeApy",
-                        "hasOutlier": "$returns.30.hasOutlier",
+                        "status": "$returns.30.status",
                         "symbol": "$returns.30.symbol",
                     },
                 }
@@ -753,7 +756,7 @@ class db_returns_manager(db_collection_manager):
                     "block": "$block",
                     "feeApr": "$fees.feeApr",
                     "feeApy": "$fees.feeApy",
-                    "hasOutlier": "$fees.hasOutlier",
+                    "status": "$fees.status",
                     "block": "$block",
                 }
             },
@@ -775,7 +778,7 @@ class db_returns_manager(db_collection_manager):
                     "block": "$block",
                     "feeApr": "$feeApr",
                     "feeApy": "$feeApy",
-                    "hasOutlier": "$hasOutlier",
+                    "status": "$status",
                     "symbol": "$hypervisor.symbol",
                 }
             },
