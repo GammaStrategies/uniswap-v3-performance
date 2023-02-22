@@ -3,7 +3,7 @@ import v3data.common.charts
 import v3data.common.hypervisor
 import v3data.common.users
 
-from fastapi import APIRouter, Response, status, Request
+from fastapi import APIRouter, Response, status
 from fastapi_cache.decorator import cache
 
 from v3data.config import (
@@ -153,7 +153,7 @@ async def hypervisors_all(response: Response):
 
 @router.get("/hypervisors/uncollectedFees")
 async def uncollected_fees_all():
-    return await v3data.common.hypervisor.uncollected_fees_all_fg(
+    return await v3data.common.hypervisor.uncollected_fees_all(
         PROTOCOL_UNISWAP_V3, CHAIN_MAINNET
     )
 
