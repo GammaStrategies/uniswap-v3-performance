@@ -4,7 +4,7 @@ from datetime import timedelta
 from pandas import DataFrame
 
 from v3data import GammaClient
-from v3data.hypervisor import HypervisorData, HypervisorInfo
+from v3data.hypervisor import HypervisorInfo
 from v3data.pricing import token_price
 from v3data.utils import timestamp_ago, filter_addresses_byChain
 from v3data.config import EXCLUDED_HYPERVISORS

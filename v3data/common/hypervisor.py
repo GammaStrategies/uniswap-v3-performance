@@ -2,17 +2,14 @@ from fastapi import Response, status
 
 from v3data.hypervisor import HypervisorInfo
 from v3data.toplevel import TopLevelData
-from v3data.hypes.fees import Fees
-from v3data.hypes.fees_yield import FeesYield
 from v3data.hypes.impermanent_data import ImpermanentDivergence
-from v3data.hype_fees.fees import fees_usd_all
+from v3data.hype_fees.fees import fees_all
 from v3data.hype_fees.fees_yield import fee_returns_all
+
 
 from database.collection_endpoint import (
     db_returns_manager,
     db_allData_manager,
-    db_allRewards2_manager,
-    db_static_manager,
     db_aggregateStats_manager,
 )
 from v3data.config import MONGO_DB_URL
@@ -191,6 +188,7 @@ async def hypervisor_average_return(
 
 async def hypervisors_all(protocol: str, chain: str, response: Response = None):
     try:
+        skip_db(protocol, chain)
         # Database result
         _mngr = db_allData_manager(mongo_url=MONGO_DB_URL)
         result = await _mngr.get_data(chain=chain, protocol=protocol)
@@ -212,17 +210,16 @@ async def hypervisors_all(protocol: str, chain: str, response: Response = None):
 
 
 async def uncollected_fees(protocol: str, chain: str, hypervisor_address: str):
-    fees = Fees(protocol, chain)
-    return await fees.output([hypervisor_address])
+    return (await fees_all(protocol, chain))[hypervisor_address]
 
 
 async def uncollected_fees_all(protocol: str, chain: str):
-    fees = Fees(protocol, chain)
-    return await fees.output()
+    return await fees_all(protocol, chain)
 
 
 async def fee_returns(protocol: str, chain: str, days: int, response: Response = None):
     try:
+        skip_db(protocol, chain)
         returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
         result = await returns_manager.get_feeReturns(
             chain=chain, protocol=protocol, period=days
@@ -245,13 +242,15 @@ async def fee_returns(protocol: str, chain: str, days: int, response: Response =
     return await fee_returns_all(protocol, chain, days)
 
 
-async def uncollected_fees_all_fg(protocol: str, chain: str):
-    return await fees_usd_all(protocol, chain)
-
-
 async def impermanent_divergence(protocol: str, chain: str, days: int):
     impermanent_manager = ImpermanentDivergence(
         period_days=days, protocol=protocol, chain=chain
     )
     output = await impermanent_manager.get_impermanent_data()
     return output
+
+
+def skip_db(protocol: str, chain: str):
+    if protocol == "uniswap_v3" and chain == "polygon":
+        return
+    raise Exception("Force skip DB")
