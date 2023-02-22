@@ -122,7 +122,7 @@ async def hypervisors_all(response: Response):
 
 @router.get("/hypervisors/uncollectedFees")
 async def uncollected_fees_all():
-    return await v3data.common.hypervisor.uncollected_fees_all_fg(
+    return await v3data.common.hypervisor.uncollected_fees_all(
         PROTOCOL_UNISWAP_V3, CHAIN_OPTIMISM
     )
 
