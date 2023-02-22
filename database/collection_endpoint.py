@@ -26,7 +26,7 @@ class db_collection_manager(db_collections_common):
             )
         except:
             logger.warning(
-                f" Unexpected error feeding database  err:{sys.exc_info()[0]}"
+                f" Unexpected error feeding {chain}'s {protocol} database  err:{sys.exc_info()[0]}"
             )
 
     async def _get_data(self, query: list[dict]):
@@ -166,17 +166,22 @@ class db_returns_manager(db_collection_manager):
 
     async def feed_db(self, chain: str, protocol: str, periods: list[int] = [1, 7, 30]):
 
-        requests = [
-            self.save_items_to_database(
-                data=await self.create_data(
-                    chain=chain, protocol=protocol, period_days=days
-                ),
-                collection_name=self.db_collection_name,
-            )
-            for days in periods
-        ]
+        try:
+            requests = [
+                self.save_items_to_database(
+                    data=await self.create_data(
+                        chain=chain, protocol=protocol, period_days=days
+                    ),
+                    collection_name=self.db_collection_name,
+                )
+                for days in periods
+            ]
 
-        await asyncio.gather(*requests)
+            await asyncio.gather(*requests)
+        except:
+            logger.warning(
+                f" Unexpected error feeding {chain}'s {protocol} returns to db   err:{sys.exc_info()[0]}"
+            )
 
     async def get_hypervisors_average(
         self, chain: str, period: int = 0, protocol: str = ""
@@ -829,7 +834,7 @@ class db_allData_manager(db_collection_manager):
             )
         except:
             logger.warning(
-                f" Unexpected error feeding allData to db   err:{sys.exc_info()[0]}"
+                f" Unexpected error feeding  {chain}'s {protocol} allData to db   err:{sys.exc_info()[0]}"
             )
 
     async def get_data(self, chain: str, protocol: str) -> dict:
@@ -903,7 +908,7 @@ class db_allRewards2_manager(db_collection_manager):
             )
         except:
             logger.warning(
-                f" Unexpected error feeding allRewards2 to db   err:{sys.exc_info()[0]}"
+                f" Unexpected error feeding  {chain}'s {protocol} allRewards2 to db   err:{sys.exc_info()[0]}"
             )
 
     async def get_data(self, chain: str, protocol: str) -> dict:
@@ -1001,7 +1006,7 @@ class db_aggregateStats_manager(db_collection_manager):
             )
         except:
             logger.warning(
-                f" Unexpected error feeding aggregateStats to db   err:{sys.exc_info()[0]}"
+                f" Unexpected error feeding  {chain}'s {protocol} aggregateStats to db   err:{sys.exc_info()[0]}"
             )
 
     async def get_data(self, chain: str, protocol: str) -> dict:
