@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import sys
 from datetime import datetime
 
 from dataclasses import dataclass, field, asdict, InitVar
@@ -11,15 +12,22 @@ from v3data.toplevel import TopLevelData
 
 from database.common.collections_common import db_collections_common
 
+logger = logging.getLogger(__name__)
+
 
 class db_collection_manager(db_collections_common):
     db_collection_name = ""
 
     async def feed_db(self, chain: str, protocol: str):
-        await self.save_items_to_database(
-            data=await self.create_data(chain=chain, protocol=protocol),
-            collection_name=self.db_collection_name,
-        )
+        try:
+            await self.save_items_to_database(
+                data=await self.create_data(chain=chain, protocol=protocol),
+                collection_name=self.db_collection_name,
+            )
+        except:
+            logger.warning(
+                f" Unexpected error feeding database  err:{sys.exc_info()[0]}"
+            )
 
     async def _get_data(self, query: list[dict]):
         return await self.query_items_from_database(
@@ -813,12 +821,16 @@ class db_allData_manager(db_collection_manager):
         return allData
 
     async def feed_db(self, chain: str, protocol: str):
-
-        # save as 1 item ( not separated)
-        await self.save_item_to_database(
-            data=await self.create_data(chain=chain, protocol=protocol),
-            collection_name=self.db_collection_name,
-        )
+        try:
+            # save as 1 item ( not separated)
+            await self.save_item_to_database(
+                data=await self.create_data(chain=chain, protocol=protocol),
+                collection_name=self.db_collection_name,
+            )
+        except:
+            logger.warning(
+                f" Unexpected error feeding allData to db   err:{sys.exc_info()[0]}"
+            )
 
     async def get_data(self, chain: str, protocol: str) -> dict:
         result = await self._get_data(
@@ -882,12 +894,17 @@ class db_allRewards2_manager(db_collection_manager):
         return data
 
     async def feed_db(self, chain: str, protocol: str):
+        try:
 
-        # save as 1 item ( not separated)
-        await self.save_item_to_database(
-            data=await self.create_data(chain=chain, protocol=protocol),
-            collection_name=self.db_collection_name,
-        )
+            # save as 1 item ( not separated)
+            await self.save_item_to_database(
+                data=await self.create_data(chain=chain, protocol=protocol),
+                collection_name=self.db_collection_name,
+            )
+        except:
+            logger.warning(
+                f" Unexpected error feeding allRewards2 to db   err:{sys.exc_info()[0]}"
+            )
 
     async def get_data(self, chain: str, protocol: str) -> dict:
         result = await self._get_data(
@@ -976,12 +993,16 @@ class db_aggregateStats_manager(db_collection_manager):
         }
 
     async def feed_db(self, chain: str, protocol: str):
-
-        # save as 1 item ( not separated)
-        await self.save_item_to_database(
-            data=await self.create_data(chain=chain, protocol=protocol),
-            collection_name=self.db_collection_name,
-        )
+        try:
+            # save as 1 item ( not separated)
+            await self.save_item_to_database(
+                data=await self.create_data(chain=chain, protocol=protocol),
+                collection_name=self.db_collection_name,
+            )
+        except:
+            logger.warning(
+                f" Unexpected error feeding aggregateStats to db   err:{sys.exc_info()[0]}"
+            )
 
     async def get_data(self, chain: str, protocol: str) -> dict:
         result = await self._get_data(
