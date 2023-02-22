@@ -105,7 +105,7 @@ class FeesYield:
         )
 
 
-async def fee_returns_all(protocol: str, chain: str, days: int):
+async def fee_returns_all(protocol: str, chain: str, days: int) -> dict[str, dict]:
     fees_data = FeeGrowthSnapshotData(days, protocol, chain)
     await fees_data.get_data()
 
