@@ -79,6 +79,12 @@ class FeesData:
 
 
 @dataclass
+class FeesDataRange:
+    initial: FeesData
+    latest: FeesData
+
+
+@dataclass
 class _FeeAmounts:
     amount: _TokenPairDecimals = field(init=False)
     amount_x128: _TokenPair = field(init=False)

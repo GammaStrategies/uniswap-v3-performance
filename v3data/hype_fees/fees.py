@@ -23,10 +23,10 @@ class Fees:
         self.protocol = protocol
         self.chain = chain
 
-    def fee_amounts(self):
+    def fee_amounts(self) -> UncollectedFees:
         return self._calc_all_fees()
 
-    def _calc_all_fees(self) -> tuple[_TokenPair, _TokenPair]:
+    def _calc_all_fees(self) -> UncollectedFees:
         try:
             base_fees_x128 = self._calc_position_fees(PositionType.BASE)
         except (IndexError, TypeError):
