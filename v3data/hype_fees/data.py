@@ -4,6 +4,7 @@ from v3data import HypePoolClient, LlamaClient
 from v3data.constants import BLOCK_TIME_SECONDS, DAY_SECONDS
 from v3data.hype_fees.schema import (
     FeesData,
+    FeesDataRange,
     HypervisorStaticInfo,
     Time,
     _PositionData,
@@ -95,6 +96,67 @@ class FeeGrowthDataABC(ABC):
             )
             for hypervisor in hypervisor_static_data
         }
+
+
+class FeeGrowthTemporalData(FeeGrowthDataABC):
+    """Additional methods to manage time ranges"""
+
+    def __init__(
+        self,
+        period_days,
+        protocol: str,
+        chain: str,
+    ) -> None:
+        self.period_days = period_days
+        self.llama_client = LlamaClient(chain)
+        super().__init__(protocol, chain)
+
+    async def _init_start_time(self) -> None:
+        self.end_time = await self._query_current_time()
+        timestamp_start = self.end_time.timestamp - (self.period_days * DAY_SECONDS)
+        response = await self.llama_client.block_from_timestamp(timestamp_start, True)
+
+        if response:
+            self.initial_time = Time(
+                block=response["height"], timestamp=response["timestamp"]
+            )
+        else:
+            # Estimate start time if not found
+            self.initial_time = Time(
+                block=estimate_block_from_timestamp_diff(
+                    self.chain,
+                    self.end_time.block,
+                    self.end_time.timestamp,
+                    timestamp_start,
+                ),
+                timestamp=timestamp_start,
+            )
+
+            self.initial_block = estimate_block_from_timestamp_diff(
+                self.chain,
+                self.end_time.block,
+                self.end_time.timestamp,
+                timestamp_start,
+            )
+
+    async def _query_current_time(self) -> Time:
+        query = """
+        {
+            _meta {
+                block {
+                number
+                timestamp
+                }
+            }
+        }
+        """
+
+        response = await self.fee_growth_client.query(query)
+
+        return Time(
+            block=response["data"]["_meta"]["block"]["number"],
+            timestamp=response["data"]["_meta"]["block"]["timestamp"],
+        )
 
 
 class FeeGrowthData(FeeGrowthDataABC):
@@ -197,71 +259,13 @@ class FeeGrowthData(FeeGrowthDataABC):
         }
 
 
-class FeeGrowthSnapshotData(FeeGrowthDataABC):
+class FeeGrowthSnapshotData(FeeGrowthTemporalData):
     """Get fee growth data from fee growth subgraph"""
-
-    def __init__(
-        self,
-        period_days,
-        protocol: str,
-        chain: str,
-    ) -> None:
-        self.period_days = period_days
-        self.llama_client = LlamaClient(chain)
-        super().__init__(protocol, chain)
 
     async def get_data(self) -> None:
         """Query data and tranfrom to FeesData Class"""
         await self._init_start_time()
         self.data = self._transform_data(await self._query_data())
-
-    async def _init_start_time(self) -> None:
-        self.end_time = await self._query_current_time()
-
-        timestamp_start = self.end_time.timestamp - (self.period_days * DAY_SECONDS)
-        response = await self.llama_client.block_from_timestamp(timestamp_start, True)
-
-        if response:
-            self.initial_time = Time(
-                block=response["height"], timestamp=response["timestamp"]
-            )
-        else:
-            # Estimate start time if not found
-            self.initial_time = Time(
-                block=estimate_block_from_timestamp_diff(
-                    self.chain,
-                    self.end_time.block,
-                    self.end_time.timestamp,
-                    timestamp_start,
-                ),
-                timestamp=timestamp_start,
-            )
-
-            self.initial_block = estimate_block_from_timestamp_diff(
-                self.chain,
-                self.end_time.block,
-                self.end_time.timestamp,
-                timestamp_start,
-            )
-
-    async def _query_current_time(self) -> Time:
-        query = """
-        {
-            _meta {
-                block {
-                number
-                timestamp
-                }
-            }
-        }
-        """
-
-        response = await self.fee_growth_client.query(query)
-
-        return Time(
-            block=response["data"]["_meta"]["block"]["number"],
-            timestamp=response["data"]["_meta"]["block"]["timestamp"],
-        )
 
     async def _query_data(self) -> dict:
         query = """
@@ -589,4 +593,204 @@ class FeeGrowthSnapshotData(FeeGrowthDataABC):
                         fee_growth_global_1=previous_block["feeGrowthGlobal1X128"],
                     )
                 )
+        return transformed_data
+
+
+class ImpermanentDivergenceData(FeeGrowthTemporalData):
+    async def get_data(self) -> None:
+        await self._init_start_time()
+        self.data = self._transform_data(await self._query_data())
+
+    async def _query_data(self) -> dict:
+        query = """
+        query Snapshots(
+            $blockStart: Int!
+            $timestampStart: Int!
+            $blockEnd: Int!
+            $timestampEnd: Int!
+        ) {
+            static: hypervisors(block: {number: $blockEnd}) {
+                id
+                symbol
+                pool {
+                    token0 {
+                        priceUSD
+                        decimals
+                    }
+                    token1 {
+                        priceUSD
+                        decimals
+                    }
+                }
+            }
+            latest: hypervisors(block: {number: $blockEnd}) {
+                id
+                tvl0
+                tvl1
+                tvlUSD
+                pool {
+                    currentTick
+                    feeGrowthGlobal0X128
+                    feeGrowthGlobal1X128
+                    token0 {
+                        priceUSD
+                    }
+                    token1 {
+                        priceUSD
+                    }
+                }
+                basePosition {
+                    liquidity
+                    tokensOwed0
+                    tokensOwed1
+                    feeGrowthInside0X128
+                    feeGrowthInside1X128
+                    tickLower {
+                        tickIdx
+                        feeGrowthOutside0X128
+                        feeGrowthOutside1X128
+                    }
+                    tickUpper {
+                        tickIdx
+                        feeGrowthOutside0X128
+                        feeGrowthOutside1X128
+                    }
+                }
+                limitPosition {
+                    liquidity
+                    tokensOwed0
+                    tokensOwed1
+                    feeGrowthInside0X128
+                    feeGrowthInside1X128
+                    tickLower {
+                        tickIdx
+                        feeGrowthOutside0X128
+                        feeGrowthOutside1X128
+                    }
+                    tickUpper {
+                        tickIdx
+                        feeGrowthOutside0X128
+                        feeGrowthOutside1X128
+                    }
+                }
+            }
+            initial: hypervisors(block: {number: $blockStart}) {
+                id
+                tvl0
+                tvl1
+                tvlUSD
+                pool {
+                    currentTick
+                    feeGrowthGlobal0X128
+                    feeGrowthGlobal1X128
+                    token0 {
+                        priceUSD
+                    }
+                    token1 {
+                        priceUSD
+                    }
+                }
+                basePosition{
+                    liquidity
+                    tokensOwed0
+                    tokensOwed1
+                    feeGrowthInside0X128
+                    feeGrowthInside1X128
+                    tickLower {
+                        tickIdx
+                        feeGrowthOutside0X128
+                        feeGrowthOutside1X128
+                    }
+                    tickUpper {
+                        tickIdx
+                        feeGrowthOutside0X128
+                        feeGrowthOutside1X128
+                    }
+                }
+                limitPosition {
+                    liquidity
+                    tokensOwed0
+                    tokensOwed1
+                    feeGrowthInside0X128
+                    feeGrowthInside1X128
+                    tickLower {
+                        tickIdx
+                        feeGrowthOutside0X128
+                        feeGrowthOutside1X128
+                    }
+                    tickUpper {
+                        tickIdx
+                        feeGrowthOutside0X128
+                        feeGrowthOutside1X128
+                    }
+                }
+            }
+            _meta {
+                block {
+                number
+                timestamp
+                }
+            }
+        }
+        """
+
+        variables = {
+            "blockStart": self.initial_time.block,
+            "timestampStart": self.initial_time.timestamp,
+            "blockEnd": self.end_time.block,
+            "timestampEnd": self.end_time.timestamp,
+        }
+
+        response = await self.fee_growth_client.query(query, variables)
+        return response["data"]
+
+    def _transform_data(self, query_data: dict) -> dict[str, FeesDataRange]:
+        self._extract_static_data(query_data["static"])
+
+        # Transform list to dict for easier lookup in the next step
+        initial_data = {hype["id"]: hype for hype in query_data["initial"]}
+
+        transformed_data = {
+            hypervisor_latest["id"]: FeesDataRange(
+                initial=self._init_fees_data(
+                    hypervisor=initial_data[hypervisor_latest["id"]],
+                    hypervisor_id=initial_data[hypervisor_latest["id"]]["id"],
+                    block=self.initial_time.block,
+                    timestamp=self.initial_time.timestamp,
+                    current_tick=initial_data[hypervisor_latest["id"]]["pool"][
+                        "currentTick"
+                    ],
+                    price_0=initial_data[hypervisor_latest["id"]]["pool"]["token0"][
+                        "priceUSD"
+                    ],
+                    price_1=initial_data[hypervisor_latest["id"]]["pool"]["token1"][
+                        "priceUSD"
+                    ],
+                    fee_growth_global_0=initial_data[hypervisor_latest["id"]]["pool"][
+                        "feeGrowthGlobal0X128"
+                    ],
+                    fee_growth_global_1=initial_data[hypervisor_latest["id"]]["pool"][
+                        "feeGrowthGlobal1X128"
+                    ],
+                ),
+                latest=self._init_fees_data(
+                    hypervisor=hypervisor_latest,
+                    hypervisor_id=hypervisor_latest["id"],
+                    block=query_data["_meta"]["block"]["number"],
+                    timestamp=query_data["_meta"]["block"]["timestamp"],
+                    current_tick=hypervisor_latest["pool"]["currentTick"],
+                    price_0=hypervisor_latest["pool"]["token0"]["priceUSD"],
+                    price_1=hypervisor_latest["pool"]["token1"]["priceUSD"],
+                    fee_growth_global_0=hypervisor_latest["pool"][
+                        "feeGrowthGlobal0X128"
+                    ],
+                    fee_growth_global_1=hypervisor_latest["pool"][
+                        "feeGrowthGlobal1X128"
+                    ],
+                ),
+            )
+            for hypervisor_latest in query_data["latest"]
+            if initial_data.get(hypervisor_latest["id"])
+        }
+
         return transformed_data
