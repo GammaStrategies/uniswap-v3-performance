@@ -128,12 +128,23 @@ class TopLevelData:
         Should add entity to subgraph to track top level stats
         """
         data = self.all_stats_data
+
+        corrected = 0
         for hypervisor in data["uniswapV3Hypervisors"]:
             if hypervisor["id"] == "0x8cd73cb1e1fa35628e36b8c543c5f825cd4e77f1":
                 # Correcting incorrect USD value for TCR
                 hypervisor["grossFeesClaimedUSD"] = str(
                     max(float(hypervisor["grossFeesClaimedUSD"]) - 770480494, 0)
                 )
+                corrected += 1
+
+            if hypervisor["id"] == "0xf0a9f5c64f80fa390a46b298791dab9e2bb29bca":
+                hypervisor["grossFeesClaimedUSD"] = str(
+                    max(float(hypervisor["grossFeesClaimedUSD"]) - 1330101045380587097883525899734185000000000000, 0)
+                )
+                corrected += 1
+            
+            if corrected == 2:
                 break
 
         return {

@@ -7,8 +7,7 @@ from pandas import DataFrame
 from v3data import GammaClient, UniswapV3Client
 from v3data.utils import timestamp_ago, timestamp_to_date, filter_addresses_byChain
 from v3data.constants import DAYS_IN_PERIOD, SECONDS_IN_DAYS
-from v3data.config import EXCLUDED_HYPERVISORS, FALLBACK_DAYS
-from v3data.hypes.fees_yield import FeesYield
+from v3data.config import EXCLUDED_HYPERVISORS, FALLBACK_DAYS, GROSS_FEES_MAX
 from v3data.hype_fees.fees_yield import fee_returns_all
 
 
@@ -83,14 +82,17 @@ class HypervisorData:
 
     async def _get_all_rebalance_data(self, time_delta):
         query = """
-        query allRebalances($timestamp_start: Int!){
+        query allRebalances($timestamp_start: Int!, $grossFeesMax: Int!){
             uniswapV3Hypervisors(
                 first: 1000
             ){
                 id
                 rebalances(
                     first: 1000
-                    where: { timestamp_gte: $timestamp_start }
+                    where: {
+                        timestamp_gte: $timestamp_start
+                        grossFeesUSD_lt: $grossFeesMax
+                    }
                     orderBy: timestamp
                     orderDirection: desc
                 ) {
@@ -105,7 +107,10 @@ class HypervisorData:
             }
         }
         """
-        variables = {"timestamp_start": timestamp_ago(time_delta)}
+        variables = {
+            "timestamp_start": timestamp_ago(time_delta),
+            "grossFeesMax": GROSS_FEES_MAX
+        }
         response = await self.gamma_client.query(query, variables)
 
         # TODO: hardcoded hypervisor address matches more than one --> MAINNET(xPSDN-ETH1) and OPTIMISM(xUSDC-DAI05)
