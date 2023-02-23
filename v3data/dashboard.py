@@ -94,6 +94,13 @@ class Dashboard:
                     netFeesUSD
                     totalAmountUSD
                 }
+                badRebalances: rebalances(
+                    where: {grossFeesUSD_gte: $grossFeesMax}
+                ) {
+                    grossFeesUSD
+                    protocolFeesUSD
+                    netFeesUSD
+                }
             }
             uniswapV3Rebalances(
                 where: {

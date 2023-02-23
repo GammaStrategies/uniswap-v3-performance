@@ -7,7 +7,7 @@ from v3data import GammaClient
 from v3data.hypervisor import HypervisorInfo
 from v3data.pricing import token_price
 from v3data.utils import timestamp_ago, filter_addresses_byChain
-from v3data.config import EXCLUDED_HYPERVISORS
+from v3data.config import EXCLUDED_HYPERVISORS, GROSS_FEES_MAX
 
 
 class TopLevelData:
@@ -83,13 +83,20 @@ class TopLevelData:
 
     async def _get_all_stats_data(self):
         query = """
-        {
+        query allStats($grossFeesMax: Int!) {
             uniswapV3Hypervisors(
                 first: 1000
             ){
                 id
                 grossFeesClaimedUSD
                 tvlUSD
+                badRebalances: rebalances(
+                    where: {grossFeesUSD_gte: $grossFeesMax}
+                ) {
+                    grossFeesUSD
+                    protocolFeesUSD
+                    netFeesUSD
+                }
             }
             uniswapV3Pools(
                 first: 1000
@@ -99,7 +106,8 @@ class TopLevelData:
         }
         """
 
-        response = await self.gamma_client.query(query)
+        variables = {"grossFeesMax": GROSS_FEES_MAX}
+        response = await self.gamma_client.query(query, variables)
         self.all_stats_data = response["data"]
 
     async def get_recent_rebalance_data(self, hours=24):
@@ -129,23 +137,17 @@ class TopLevelData:
         """
         data = self.all_stats_data
 
-        corrected = 0
         for hypervisor in data["uniswapV3Hypervisors"]:
-            if hypervisor["id"] == "0x8cd73cb1e1fa35628e36b8c543c5f825cd4e77f1":
-                # Correcting incorrect USD value for TCR
-                hypervisor["grossFeesClaimedUSD"] = str(
-                    max(float(hypervisor["grossFeesClaimedUSD"]) - 770480494, 0)
+            if hypervisor["badRebalances"]:
+                correction_value = sum(
+                    [
+                        float(rebalance["grossFeesUSD"])
+                        for rebalance in hypervisor["badRebalances"]
+                    ]
                 )
-                corrected += 1
-
-            if hypervisor["id"] == "0xf0a9f5c64f80fa390a46b298791dab9e2bb29bca":
                 hypervisor["grossFeesClaimedUSD"] = str(
-                    max(float(hypervisor["grossFeesClaimedUSD"]) - 1330101045380587097883525899734185000000000000, 0)
+                    max(float(hypervisor["grossFeesClaimedUSD"]) - correction_value, 0)
                 )
-                corrected += 1
-            
-            if corrected == 2:
-                break
 
         return {
             "pool_count": len(data["uniswapV3Pools"]),
