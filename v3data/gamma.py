@@ -4,7 +4,7 @@ from datetime import timedelta
 from pandas import DataFrame, to_datetime
 
 from v3data import GammaClient
-from v3data.config import DEFAULT_TIMEZONE
+from v3data.config import DEFAULT_TIMEZONE, GROSS_FEES_MAX
 from v3data.pricing import token_price
 from v3data.utils import timestamp_ago
 from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
@@ -171,19 +171,17 @@ class GammaCalculations(GammaData):
         df_data["date"] = to_datetime(df_data.timestamp, unit="s").dt.strftime(
             "%m/%d/%Y"
         )
-        df_data['apr'] = df_data.dailyYield * 365
-        df_data['apy']  =  (1 + df_data.dailyYield) ** 365 - 1
+        df_data["apr"] = df_data.dailyYield * 365
+        df_data["apy"] = (1 + df_data.dailyYield) ** 365 - 1
         df_data.distributed = df_data.distributed / self.decimal_factor
 
-
-        results = df_data[[
-            "timestamp",
-            "date",
-            "distributed",
-            "distributedUSD",
-            "apr",
-            "apy"
-        ]].tail(days).to_dict("records")
+        results = (
+            df_data[
+                ["timestamp", "date", "distributed", "distributedUSD", "apr", "apy"]
+            ]
+            .tail(days)
+            .to_dict("records")
+        )
 
         # results = [
         #     {
@@ -227,22 +225,20 @@ class GammaDistribution(GammaCalculations):
     async def output(self, days):
         distributions = await self.distributions(days=days, get_data=True)
 
-        return {
-            "feeDistribution": distributions[::-1],
-            "latest": distributions[-1]
-        }
+        return {"feeDistribution": distributions[::-1], "latest": distributions[-1]}
 
 
 class ProtocolFeesData:
     def __init__(self, chain: str = "mainnet"):
-        self.visor_client = GammaClient("uniswap_v3", chain)
+        self.gamma_client = GammaClient("uniswap_v3", chain)
 
     def _get_data(self, time_delta):
         query = """
-        query  protocolFees($xgammaAddress: String!, $timestamp_start: Int!) {
+        query  protocolFees($xgammaAddress: String!, $timestamp_start: Int!, $grossFeesMax: Int!) {
             uniswapV3Rebalances(
                 where: {
                     timestamp_gt: $timestamp_start
+                    grossFeesUSD_lt: $grossFeesMax
                 }
             ) {
                 timestamp
@@ -256,8 +252,10 @@ class ProtocolFeesData:
         variables = {
             "xgammaAddress": XGAMMA_ADDRESS,
             "timestamp_start": timestamp_ago(time_delta),
+            "groossFeesMax": GROSS_FEES_MAX
         }
-        self.data = self.visor_client.query(query, variables)["data"]
+        self.data = self.gamma_client.query(query, variables)["data"]
+        print(self.data)
 
 
 class ProtocolFeesCalculations(ProtocolFeesData):

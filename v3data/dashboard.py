@@ -8,7 +8,7 @@ from v3data.toplevel import TopLevelData
 from v3data.rewardshypervisor import RewardsHypervisorInfo
 from v3data.utils import timestamp_ago
 from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
-from v3data.config import legacy_stats
+from v3data.config import legacy_stats, GROSS_FEES_MAX
 
 
 class Dashboard:
@@ -31,7 +31,8 @@ class Dashboard:
             $days: Int!,
             $timezone: String!,
             $timestampStart: Int!,
-            $rebalancesStart: Int!
+            $rebalancesStart: Int!,
+            $grossFeesMax: Int!
         ){
             token(id: $gammaAddress){
                 totalSupply
@@ -79,7 +80,10 @@ class Dashboard:
                 tvlUSD
                 rebalances(
                     first: 1000
-                    where: { timestamp_gte: $timestampStart }
+                    where: {
+                        timestamp_gte: $timestampStart
+                        grossFeesUSD_lt: $grossFeesMax
+                    }
                     orderBy: timestamp
                     orderDirection: desc
                 ) {
@@ -94,6 +98,7 @@ class Dashboard:
             uniswapV3Rebalances(
                 where: {
                     timestamp_gt: $rebalancesStart
+                    grossFeesUSD_lt: $grossFeesMax
                 }
             ) {
                 timestamp
@@ -114,6 +119,7 @@ class Dashboard:
             "timezone": timezone,
             "timestampStart": timestamp_ago(timedelta(self.days)),
             "rebalancesStart": timestamp_ago(timedelta(7)),
+            "grossFeesMax": GROSS_FEES_MAX
         }
 
         response = await self.gamma_client.query(query, variables)
@@ -169,7 +175,6 @@ class Dashboard:
         rewards_info = await rewards.output(get_data=False)
 
         gamma_staked_usd = rewards_info["gamma_staked"] * gamma_price_usd
-
 
         # Use fees for gamma yield
         fees_per_day = collected_fees['weekly']["collected_usd"]

@@ -52,7 +52,9 @@ uniswap_hype_pool_subgraphs = {
     "optimism": {
         "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-optimism"
     },
-    "celo": {"prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-celo"},
+    "celo": {
+        "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-celo"
+    },
 }
 
 
@@ -65,7 +67,9 @@ quickswap_feegrowth_subgraphs = {
 }
 
 quickswap_hype_pool_subgraphs = {
-    "polygon": {"prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-quickswap-polygon"}
+    "polygon": {
+        "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-quickswap-polygon"
+    }
 }
 
 visor_subgraphs = {
@@ -269,3 +273,6 @@ CHAIN_NAME_CONVERSION = {
     "arb1": "arbitrum",
     "celo": "celo",
 }
+
+# Max fees per rebalance to remove outliers
+GROSS_FEES_MAX = 10**6
