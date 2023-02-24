@@ -47,6 +47,7 @@ async def hypervisor_apy(
 
 async def aggregate_stats(protocol: str, chain: str, response: Response = None):
     try:
+        skip_db(protocol, chain)
         _mngr = db_aggregateStats_manager(mongo_url=MONGO_DB_URL)
         result = await _mngr.get_data(chain=chain, protocol=protocol)
         if response:
