@@ -996,7 +996,7 @@ class db_aggregateStats_manager(db_collection_manager):
             "protocol": protocol,
             "datetime": dtime,
             "totalValueLockedUSD": top_level_data["tvl"],
-            "pairCount": top_level_data["pool_count"],
+            "pairCount": top_level_data["hypervisor_count"],
             "totalFeesClaimedUSD": top_level_data["fees_claimed"],
         }
 

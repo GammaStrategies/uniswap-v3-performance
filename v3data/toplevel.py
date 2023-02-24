@@ -151,6 +151,7 @@ class TopLevelData:
 
         return {
             "pool_count": len(data["uniswapV3Pools"]),
+            "hypervisor_count": len(data["uniswapV3Hypervisors"]),
             "tvl": sum(
                 [
                     float(hypervisor["tvlUSD"])

@@ -66,7 +66,7 @@ async def aggregate_stats(protocol: str, chain: str, response: Response = None):
 
         return {
             "totalValueLockedUSD": top_level_data["tvl"],
-            "pairCount": top_level_data["pool_count"],
+            "pairCount": top_level_data["hypervisor_count"],
             "totalFeesClaimedUSD": top_level_data["fees_claimed"],
         }
 
@@ -251,6 +251,4 @@ async def impermanent_divergence(protocol: str, chain: str, days: int):
 
 
 def skip_db(protocol: str, chain: str):
-    if protocol == "uniswap_v3" and chain == "polygon":
-        return
     raise Exception("Force skip DB")
