@@ -2,34 +2,29 @@ import v3data.common
 import v3data.common.charts
 import v3data.common.hypervisor
 import v3data.common.users
+import v3data.common.masterchef
+import v3data.common.masterchef_v2
 
 from fastapi import APIRouter, Response
 from fastapi_cache.decorator import cache
 from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT, DB_CACHE_TIMEOUT
-from v3data.constants import PROTOCOL_UNISWAP_V3
+from v3data.constants import PROTOCOL_ZYBERSWAP
 
-PROTOCOL = PROTOCOL_UNISWAP_V3
-CHAIN = "optimism"
+PROTOCOL = PROTOCOL_ZYBERSWAP
+CHAIN = "arbitrum"
 RUN_FIRST = v3data.common.QueryType.SUBGRAPH
 
-router = APIRouter(prefix="/optimism")
+router = APIRouter(prefix="/zyberswap/arbitrum")
 
 
 @router.get("/")
 def root():
-    return "Gamma Strategies - Optimism"
+    return "Gamma Strategies - Zyberswap - Arbitrum"
 
 
 @router.get("/status/subgraph")
 async def subgraph_status():
     return await v3data.common.subgraph_status(PROTOCOL, CHAIN)
-
-
-@router.get("/charts/bollingerbands/{poolAddress}")
-async def bollingerbands_chart(poolAddress: str, periodHours: int = 24):
-    return await v3data.common.charts.bollingerbands_chart(
-        PROTOCOL, CHAIN, poolAddress, periodHours
-    )
 
 
 @router.get("/charts/baseRange/all")
@@ -172,22 +167,6 @@ async def impermanent_divergence_monthly():
     return await v3data.common.hypervisor.impermanent_divergence(
         protocol=PROTOCOL, chain=CHAIN, days=30
     )
-
-
-@router.get("/allRewards")
-async def all_rewards():
-    return await v3data.common.masterchef.info(PROTOCOL, CHAIN)
-
-
-@router.get("/allRewards2")
-@cache(expire=DB_CACHE_TIMEOUT)
-async def all_rewards_2(response: Response):
-    return await v3data.common.masterchef_v2.info(PROTOCOL, CHAIN, response=response)
-
-
-@router.get("/userRewards/{user_address}")
-async def user_rewards(user_address):
-    return await v3data.common.masterchef.user_rewards(PROTOCOL, CHAIN, user_address)
 
 
 @router.get("/user/{address}")

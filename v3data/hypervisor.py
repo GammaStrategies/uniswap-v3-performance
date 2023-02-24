@@ -13,7 +13,6 @@ from v3data.hype_fees.fees_yield import fee_returns_all
 
 DAY_SECONDS = 24 * 60 * 60
 YEAR_SECONDS = 365 * DAY_SECONDS
-X128 = math.pow(2, 128)
 
 logger = logging.getLogger(__name__)
 

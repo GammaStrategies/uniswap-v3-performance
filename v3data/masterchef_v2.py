@@ -1,7 +1,6 @@
 from v3data import GammaClient, RewarderContract
 from v3data.constants import YEAR_SECONDS
 from v3data.pricing import token_price_from_address
-from v3data.config import DISABLE_POOL_APR
 
 
 class MasterchefV2Data:
@@ -159,9 +158,6 @@ class MasterchefV2Info(MasterchefV2Data):
                     else:
                         weighted_reward_per_second = 0
 
-                    if DISABLE_POOL_APR and pool["poolId"] in ["16", "17"]:
-                        weighted_reward_per_second = 0
-
                     rewarder_info[rewarderPool["rewarder"]["id"]] = {
                         "rewardToken": reward_token,
                         "rewardTokenSymbol": reward_token_symbol,
@@ -184,9 +180,6 @@ class MasterchefV2Info(MasterchefV2Data):
                         )
                     )
                 except ZeroDivisionError:
-                    apr = 0
-
-                if DISABLE_POOL_APR and pool["poolId"] in ["16", "17"]:
                     apr = 0
 
                 pool_info[pool["hypervisor"]["id"]] = {
