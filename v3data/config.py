@@ -1,75 +1,98 @@
 import os
 
-
-V3_FACTORY_ADDRESS = "0x1F98431c8aD98523631AE4a59f267346ea31F984"
-
-uniswap_subgraphs = {
-    "mainnet": {
-        "prod": "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3",
-        "alt": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt",
-        "test": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-testing",
+dex_subgraphs = {
+    "uniswap_v3": {
+        "mainnet": {
+            "prod": "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3",
+            "alt": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt",
+            "test": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-testing",
+        },
+        "polygon": {
+            "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-polygon"
+        },
+        "arbitrum": {
+            "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/arbitrum-dev"
+        },
+        "optimism": {
+            "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/optimism-post-regenesis"
+        },
+        "celo": {
+            "prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"
+        },
     },
-    "polygon": {
-        "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-polygon"
+    "quickswap": {
+        "polygon": {
+            "prod": "https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3"
+        }
     },
-    "arbitrum": {
-        "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/arbitrum-dev"
-    },
-    "optimism": {
-        "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/optimism-post-regenesis"
-    },
-    "celo": {"prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"},
-}
-
-uniswap_feegrowth_subgraphs = {
-    "mainnet": {
-        "prod": "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3",
-        "alt": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt",
-        "test": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-testing",
-    },
-    "polygon": {
-        "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-polygon"
-    },
-    "arbitrum": {
-        "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-v3-arbitrum"
-    },
-    "optimism": {
-        "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/optimism-post-regenesis"
-    },
-    "celo": {"prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"},
-}
-
-uniswap_hype_pool_subgraphs = {
-    "mainnet": {
-        "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-mainnet",
-    },
-    "polygon": {
-        "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-polygon"
-    },
-    "arbitrum": {
-        "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-arbitrum"
-    },
-    "optimism": {
-        "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-optimism"
-    },
-    "celo": {
-        "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-celo"
+    "zyberswap": {
+        "arbitrum": {
+            "prod": "https://api.thegraph.com/subgraphs/name/iliaazhel/zyberswap-info"
+        }
     },
 }
 
 
-quickswap_subgraphs = {
-    "polygon": {"prod": "https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3"}
+dex_feegrowth_subgraphs = {
+    "uniswap_v3": {
+        "mainnet": {
+            "prod": "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3",
+            "alt": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt",
+            "test": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-testing",
+        },
+        "polygon": {
+            "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-polygon"
+        },
+        "arbitrum": {
+            "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/arbitrum-dev"
+        },
+        "optimism": {
+            "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/optimism-post-regenesis"
+        },
+        "celo": {
+            "prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"
+        },
+    },
+    "quickswap": {
+        "polygon": {
+            "prod": "https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3"
+        }
+    },
+    "zyberswap": {
+        "arbitrum": {
+            "prod": "https://api.thegraph.com/subgraphs/name/iliaazhel/zyberswap-info"
+        }
+    },
 }
 
-quickswap_feegrowth_subgraphs = {
-    "polygon": {"prod": "https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3"}
-}
-
-quickswap_hype_pool_subgraphs = {
-    "polygon": {
-        "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-quickswap-polygon"
-    }
+hype_pool_subgraphs = {
+    "uniswap_v3": {
+        "mainnet": {
+            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-mainnet",
+        },
+        "polygon": {
+            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-polygon"
+        },
+        "arbitrum": {
+            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-arbitrum"
+        },
+        "optimism": {
+            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-optimism"
+        },
+        "celo": {
+            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-celo"
+        },
+    },
+    "quickswap": {
+        "polygon": {
+            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-quickswap-polygon"
+        }
+    },
+    "zyberswap": {
+        "arbitrum": {
+            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-zyberswap-arbitrum"
+        }
+    },
 }
 
 visor_subgraphs = {
@@ -108,6 +131,11 @@ gamma_subgraphs = {
             "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-algebra-polygon",
         },
     },
+    "zyberswap": {
+        "arbitrum": {
+            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/zyberswap-arbitrum",
+        }
+    },
 }
 
 THEGRAPH_INDEX_NODE_URL = "https://api.thegraph.com/index-node/graphql"
@@ -118,49 +146,59 @@ UNI_V2_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap
 
 DEX_SUBGRAPH_URLS = {
     "uniswap_v3": {
-        "mainnet": uniswap_subgraphs["mainnet"][
+        "mainnet": dex_subgraphs["uniswap_v3"]["mainnet"][
             os.environ.get("UNISWAP_SUBGRAPH_MAINNET", "prod")
         ],
-        "polygon": uniswap_subgraphs["polygon"][
+        "polygon": dex_subgraphs["uniswap_v3"]["polygon"][
             os.environ.get("UNISWAP_SUBGRAPH_POLYGON", "prod")
         ],
-        "arbitrum": uniswap_subgraphs["arbitrum"][
+        "arbitrum": dex_subgraphs["uniswap_v3"]["arbitrum"][
             os.environ.get("UNISWAP_SUBGRAPH_ARBITRUM", "prod")
         ],
-        "optimism": uniswap_subgraphs["optimism"][
+        "optimism": dex_subgraphs["uniswap_v3"]["optimism"][
             os.environ.get("UNISWAP_SUBGRAPH_OPTIMISM", "prod")
         ],
-        "celo": uniswap_subgraphs["celo"][
+        "celo": dex_subgraphs["uniswap_v3"]["celo"][
             os.environ.get("UNISWAP_SUBGRAPH_CELO", "prod")
         ],
     },
     "quickswap": {
-        "polygon": quickswap_subgraphs["polygon"][
+        "polygon": dex_subgraphs["quickswap"]["polygon"][
             os.environ.get("QUICKSWAP_SUBGRAPH_POLYGON", "prod")
+        ],
+    },
+    "zyberswap": {
+        "arbitrum": dex_subgraphs["zyberswap"]["arbitrum"][
+            os.environ.get("ZYBERSWAP_SUBGRAPH_ARBITRUM", "prod")
         ],
     },
 }
 
 DEX_FEEGROWTH_SUBGRAPH_URLS = {
     "uniswap_v3": {
-        "mainnet": uniswap_feegrowth_subgraphs["mainnet"][
+        "mainnet": dex_feegrowth_subgraphs["uniswap_v3"]["mainnet"][
             os.environ.get("UNISWAP_FG_SUBGRAPH_MAINNET", "prod")
         ],
-        "polygon": uniswap_feegrowth_subgraphs["polygon"][
+        "polygon": dex_feegrowth_subgraphs["uniswap_v3"]["polygon"][
             os.environ.get("UNISWAP_FG_SUBGRAPH_POLYGON", "prod")
         ],
-        "arbitrum": uniswap_feegrowth_subgraphs["arbitrum"][
+        "arbitrum": dex_feegrowth_subgraphs["uniswap_v3"]["arbitrum"][
             os.environ.get("UNISWAP_FG_SUBGRAPH_ARBITRUM", "prod")
         ],
-        "optimism": uniswap_feegrowth_subgraphs["optimism"][
+        "optimism": dex_feegrowth_subgraphs["uniswap_v3"]["optimism"][
             os.environ.get("UNISWAP_FG_SUBGRAPH_OPTIMISM", "prod")
         ],
-        "celo": uniswap_feegrowth_subgraphs["celo"][
+        "celo": dex_feegrowth_subgraphs["uniswap_v3"]["celo"][
             os.environ.get("UNISWAP_FG_SUBGRAPH_CELO", "prod")
         ],
     },
     "quickswap": {
-        "polygon": quickswap_feegrowth_subgraphs["polygon"][
+        "polygon": dex_feegrowth_subgraphs["quickswap"]["polygon"][
+            os.environ.get("QUICKSWAP_FG_SUBGRAPH_POLYGON", "prod")
+        ],
+    },
+    "zyberswap": {
+        "arbitrum": dex_feegrowth_subgraphs["zyberswap"]["arbitrum"][
             os.environ.get("QUICKSWAP_FG_SUBGRAPH_POLYGON", "prod")
         ],
     },
@@ -168,25 +206,30 @@ DEX_FEEGROWTH_SUBGRAPH_URLS = {
 
 DEX_HYPEPOOL_SUBGRAPH_URLS = {
     "uniswap_v3": {
-        "mainnet": uniswap_hype_pool_subgraphs["mainnet"][
+        "mainnet": hype_pool_subgraphs["uniswap_v3"]["mainnet"][
             os.environ.get("UNISWAP_HP_SUBGRAPH_MAINNET", "prod")
         ],
-        "polygon": uniswap_hype_pool_subgraphs["polygon"][
+        "polygon": hype_pool_subgraphs["uniswap_v3"]["polygon"][
             os.environ.get("UNISWAP_HP_SUBGRAPH_POLYGON", "prod")
         ],
-        "arbitrum": uniswap_hype_pool_subgraphs["arbitrum"][
+        "arbitrum": hype_pool_subgraphs["uniswap_v3"]["arbitrum"][
             os.environ.get("UNISWAP_HP_SUBGRAPH_ARBITRUM", "prod")
         ],
-        "optimism": uniswap_hype_pool_subgraphs["optimism"][
+        "optimism": hype_pool_subgraphs["uniswap_v3"]["optimism"][
             os.environ.get("UNISWAP_HP_SUBGRAPH_OPTIMISM", "prod")
         ],
-        "celo": uniswap_hype_pool_subgraphs["celo"][
+        "celo": hype_pool_subgraphs["uniswap_v3"]["celo"][
             os.environ.get("UNISWAP_HP_SUBGRAPH_CELO", "prod")
         ],
     },
     "quickswap": {
-        "polygon": quickswap_hype_pool_subgraphs["polygon"][
+        "polygon": hype_pool_subgraphs["quickswap"]["polygon"][
             os.environ.get("QUICKSWAP_HP_SUBGRAPH_POLYGON", "prod")
+        ],
+    },
+    "zyberswap": {
+        "arbitrum": hype_pool_subgraphs["zyberswap"]["arbitrum"][
+            os.environ.get("ZYBERSWAP_HP_SUBGRAPH_ARBITRUM", "prod")
         ],
     },
 }
@@ -213,7 +256,12 @@ GAMMA_SUBGRAPH_URLS = {
     },
     "quickswap": {
         "polygon": gamma_subgraphs["quickswap"]["polygon"][
-            os.environ.get("QUICKSWAP_SUBGRAPH_POLYGON", "prod")
+            os.environ.get("GAMMA_QUICKSWAP_POLYGON_SUBGRAPH", "prod")
+        ],
+    },
+    "zyberswap": {
+        "arbitrum": gamma_subgraphs["zyberswap"]["arbitrum"][
+            os.environ.get("GAMMA_ZYBERSWAP_ARBITRUM_SUBGRAPH", "prod")
         ],
     },
 }
@@ -251,21 +299,18 @@ ALCHEMY_URLS = {
     "optimism": f"https://opt-mainnet.g.alchemy.com/v2/{os.environ.get('ALCHEMY_OPTIMISM_KEY', '')}",
 }
 
-DISABLE_POOL_APR = {"true": True, "false": False}.get(
-    os.environ.get("DISABLE_POOL_APR", "true").lower(), True
-)
-
 MONGO_DB_URL = os.environ.get("MONGO_DB_URL", "mongodb://localhost:27072")
 MONGO_DB_TIMEOUTMS = int(os.environ.get("MONGO_DB_TIMEOUTMS", 2000))
 MONGO_DB_COLLECTIONS = {
-    "static": {"id": True},  #      no historic
-    "returns": {"id": True},  #     historic
+    "static": {"id": True},  # no historic
+    "returns": {"id": True},  # historic
     "allData": {"id": True},  # id = <chain_protocol>       no historic
     "allRewards2": {"id": True},  # id = <chain_protocol>   no historic
     "agregateStats": {"id": True},  # id = <chain_protocol_timestamp>    historic
 }
 
-# local chain name <-> standard chain short name convention as in https://chainid.network/chains.json  or https://chainid.network/chains_mini.json
+# local chain name <-> standard chain short name convention as in
+# https://chainid.network/chains.json  or https://chainid.network/chains_mini.json
 CHAIN_NAME_CONVERSION = {
     "eth": "mainnet",
     "matic": "polygon",

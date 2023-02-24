@@ -1,5 +1,6 @@
 from fastapi import Response, status
 
+from v3data.common import ExecutionOrderWrapper
 from v3data.hypervisor import HypervisorInfo
 from v3data.toplevel import TopLevelData
 from v3data.hypes.impermanent_data import ImpermanentDivergence
@@ -17,6 +18,74 @@ from v3data.config import MONGO_DB_URL
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+class AllData(ExecutionOrderWrapper):
+    async def _database(self):
+        _mngr = db_allData_manager(mongo_url=MONGO_DB_URL)
+        result = await _mngr.get_data(chain=self.chain, protocol=self.protocol)
+        if self.response:
+            self.response.headers["X-Database"] = "true"
+            self.response.headers["X-Database-itemUpdated"] = "{}".format(
+                result.pop("datetime", "")
+            )
+        return result
+
+    async def _subgraph(self):
+        if self.response:
+            self.response.headers["X-Database"] = "false"
+        hypervisor_info = HypervisorInfo(self.protocol, self.chain)
+        return await hypervisor_info.all_data()
+
+
+class FeeReturns(ExecutionOrderWrapper):
+    def __init__(self, protocol: str, chain: str, days: int, response: Response = None):
+        self.days = days
+        super().__init__(protocol, chain, response)
+
+    async def _database(self):
+        print("trying db")
+        returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
+        result = await returns_manager.get_feeReturns(
+            chain=self.chain, protocol=self.protocol, period=self.days
+        )
+        if self.response:
+            self.response.headers["X-Database"] = "true"
+            self.response.headers["X-Database-itemUpdated"] = "{}".format(
+                result.pop("datetime", "")
+            )
+
+        return result
+
+    async def _subgraph(self):
+        print("trying subgraph")
+        if self.response:
+            self.response.headers["X-Database"] = "false"
+        return await fee_returns_all(self.protocol, self.chain, self.days)
+
+
+class AggregateStats(ExecutionOrderWrapper):
+    async def _database(self):
+        _mngr = db_aggregateStats_manager(mongo_url=MONGO_DB_URL)
+        result = await _mngr.get_data(chain=self.chain, protocol=self.protocol)
+        if self.response:
+            self.response.headers["X-Database"] = "true"
+            self.response.headers["X-Database-itemUpdated"] = "{}".format(
+                result.pop("datetime", "")
+            )
+        return result
+
+    async def _subgraph(self):
+        if self.response:
+            self.response.headers["X-Database"] = "false"
+        top_level = TopLevelData(self.protocol, self.chain)
+        top_level_data = await top_level.all_stats()
+
+        return {
+            "totalValueLockedUSD": top_level_data["tvl"],
+            "pairCount": top_level_data["hypervisor_count"],
+            "totalFeesClaimedUSD": top_level_data["fees_claimed"],
+        }
 
 
 async def hypervisor_basic_stats(
@@ -43,33 +112,6 @@ async def hypervisor_apy(
     else:
         response.status_code = status.HTTP_400_BAD_REQUEST
         return "Invalid hypervisor address or not enough data"
-
-
-async def aggregate_stats(protocol: str, chain: str, response: Response = None):
-    try:
-        skip_db(protocol, chain)
-        _mngr = db_aggregateStats_manager(mongo_url=MONGO_DB_URL)
-        result = await _mngr.get_data(chain=chain, protocol=protocol)
-        if response:
-            response.headers["X-Database"] = "true"
-            response.headers["X-Database-itemUpdated"] = "{}".format(
-                result.pop("datetime", "")
-            )
-        return result
-    except:
-        logger.warning(
-            f" Could not get database aggregateStats data for {protocol} in {chain}. Return calculated data."
-        )
-        if response:
-            response.headers["X-Database"] = "false"
-        top_level = TopLevelData(protocol, chain)
-        top_level_data = await top_level.all_stats()
-
-        return {
-            "totalValueLockedUSD": top_level_data["tvl"],
-            "pairCount": top_level_data["hypervisor_count"],
-            "totalFeesClaimedUSD": top_level_data["fees_claimed"],
-        }
 
 
 async def recent_fees(protocol: str, chain: str, hours: int = 24):
@@ -187,29 +229,6 @@ async def hypervisor_average_return(
     )
 
 
-async def hypervisors_all(protocol: str, chain: str, response: Response = None):
-    try:
-        skip_db(protocol, chain)
-        # Database result
-        _mngr = db_allData_manager(mongo_url=MONGO_DB_URL)
-        result = await _mngr.get_data(chain=chain, protocol=protocol)
-        if response:
-            response.headers["X-Database"] = "true"
-            response.headers["X-Database-itemUpdated"] = "{}".format(
-                result.pop("datetime", "")
-            )
-        return result
-    except:
-        # Calculated result
-        logger.warning(
-            f" Could not get database allData for {protocol} in {chain}. Return calculated data."
-        )
-    if response:
-        response.headers["X-Database"] = "false"
-    hypervisor_info = HypervisorInfo(protocol, chain)
-    return await hypervisor_info.all_data()
-
-
 async def uncollected_fees(protocol: str, chain: str, hypervisor_address: str):
     return (await fees_all(protocol, chain))[hypervisor_address]
 
@@ -218,38 +237,9 @@ async def uncollected_fees_all(protocol: str, chain: str):
     return await fees_all(protocol, chain)
 
 
-async def fee_returns(protocol: str, chain: str, days: int, response: Response = None):
-    try:
-        skip_db(protocol, chain)
-        returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
-        result = await returns_manager.get_feeReturns(
-            chain=chain, protocol=protocol, period=days
-        )
-        if response:
-            response.headers["X-Database"] = "true"
-            response.headers["X-Database-itemUpdated"] = "{}".format(
-                result.pop("datetime", "")
-            )
-
-        return result
-    except:
-        # Calculated result
-        logger.warning(
-            f" Could not get database allData for {protocol} in {chain}. Return calculated data."
-        )
-    if response:
-        response.headers["X-Database"] = "false"
-
-    return await fee_returns_all(protocol, chain, days)
-
-
 async def impermanent_divergence(protocol: str, chain: str, days: int):
     impermanent_manager = ImpermanentDivergence(
         period_days=days, protocol=protocol, chain=chain
     )
     output = await impermanent_manager.get_impermanent_data()
     return output
-
-
-def skip_db(protocol: str, chain: str):
-    raise Exception("Force skip DB")
