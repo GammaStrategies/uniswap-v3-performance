@@ -20,10 +20,10 @@ class ExecutionOrderWrapper(ABC):
         self.chain = chain
         self.response = response
 
-    async def run(self, first: QueryType = QueryType.DATABASE):
-        first_func = self._database
-        second_func = self._subgraph
-        if first == QueryType.SUBGRAPH:
+    async def run(self, first: QueryType = QueryType.SUBGRAPH):
+        first_func = self._subgraph
+        second_func = self._database
+        if first == QueryType.DATABASE:
             first_func, second_func = second_func, first_func
         try:
             results = await first_func()

@@ -87,7 +87,7 @@ async def hypervisor_uncollected_fees(hypervisor_address: str):
 @router.get("/hypervisors/aggregateStats")
 async def aggregate_stats(response: Response):
     aggregate_stats = v3data.common.hypervisor.AggregateStats(PROTOCOL, CHAIN, response)
-    return await aggregate_stats.run()
+    return await aggregate_stats.run(RUN_FIRST)
 
 
 @router.get("/hypervisors/returns")
