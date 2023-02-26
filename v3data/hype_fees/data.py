@@ -7,10 +7,6 @@ from v3data.hype_fees.schema import (
     FeesDataRange,
     HypervisorStaticInfo,
     Time,
-    _PositionData,
-    _TickData,
-    _TokenPair,
-    _TokenPairDecimals,
 )
 from v3data.utils import estimate_block_from_timestamp_diff
 
@@ -40,59 +36,72 @@ class FeeGrowthDataABC(ABC):
         fee_growth_global_1: int,
     ) -> FeesData:
         return FeesData(
+            block=block,
+            timestamp=timestamp,
             hypervisor=hypervisor_id,
             symbol=self._static_data[hypervisor_id].symbol,
-            block=block,  # set to block
-            timestamp=timestamp,  # set to timestamp
             currentTick=current_tick,
-            price=_TokenPairDecimals(price_0, price_1),
-            decimals=_TokenPair(
-                self._static_data[hypervisor_id].decimals.value0,
-                self._static_data[hypervisor_id].decimals.value1,
-            ),
-            tvl=_TokenPair(hypervisor["tvl0"], hypervisor["tvl1"]),
+            price0=price_0,
+            price1=price_1,
+            decimals0=self._static_data[hypervisor_id].decimals.value0,
+            decimals1=self._static_data[hypervisor_id].decimals.value1,
+            tvl0=hypervisor["tvl0"],
+            tvl1=hypervisor["tvl1"],
             tvl_usd=hypervisor["tvlUSD"],
-            fee_growth_global=_TokenPair(fee_growth_global_0, fee_growth_global_1),
-            base_position=self._init_position_data(hypervisor, "basePosition"),
-            limit_position=self._init_position_data(hypervisor, "limitPosition"),
-        )
-
-    def _init_position_data(
-        self, hypervisor: dict, position_type: str
-    ) -> _PositionData:
-        return _PositionData(
-            liquidity=hypervisor[position_type]["liquidity"],
-            tokens_owed=_TokenPair(
-                hypervisor[position_type]["tokensOwed0"],
-                hypervisor[position_type]["tokensOwed1"],
-            ),
-            fee_growth_inside=_TokenPair(
-                hypervisor[position_type]["feeGrowthInside0X128"],
-                hypervisor[position_type]["feeGrowthInside1X128"],
-            ),
-            tick_lower=self._init_tick_data(hypervisor, position_type, "tickLower"),
-            tick_upper=self._init_tick_data(hypervisor, position_type, "tickUpper"),
-        )
-
-    def _init_tick_data(
-        self, hypervisor: dict, position_type: str, tick_type: str
-    ) -> _TickData:
-        return _TickData(
-            tick_index=hypervisor[position_type][tick_type]["tickIdx"],
-            fee_growth_outside=_TokenPair(
-                hypervisor[position_type][tick_type]["feeGrowthOutside0X128"],
-                hypervisor[position_type][tick_type]["feeGrowthOutside1X128"],
-            ),
+            fee_growth_global0=fee_growth_global_0,
+            fee_growth_global1=fee_growth_global_1,
+            liquidity_base=hypervisor["basePosition"]["liquidity"],
+            tokens_owed_base0=hypervisor["basePosition"]["tokensOwed0"],
+            tokens_owed_base1=hypervisor["basePosition"]["tokensOwed1"],
+            fee_growth_inside_base0=hypervisor["basePosition"]["feeGrowthInside0X128"],
+            fee_growth_inside_base1=hypervisor["basePosition"]["feeGrowthInside1X128"],
+            tick_index_lower_base=hypervisor["basePosition"]["tickLower"]["tickIdx"],
+            fee_growth_outside_lower_base0=hypervisor["basePosition"]["tickLower"][
+                "feeGrowthOutside0X128"
+            ],
+            fee_growth_outside_lower_base1=hypervisor["basePosition"]["tickLower"][
+                "feeGrowthOutside1X128"
+            ],
+            tick_index_upper_base=hypervisor["basePosition"]["tickUpper"]["tickIdx"],
+            fee_growth_outside_upper_base0=hypervisor["basePosition"]["tickUpper"][
+                "feeGrowthOutside0X128"
+            ],
+            fee_growth_outside_upper_base1=hypervisor["basePosition"]["tickUpper"][
+                "feeGrowthOutside1X128"
+            ],
+            liquidity_limit=hypervisor["limitPosition"]["liquidity"],
+            tokens_owed_limit0=hypervisor["limitPosition"]["tokensOwed0"],
+            tokens_owed_limit1=hypervisor["limitPosition"]["tokensOwed1"],
+            fee_growth_inside_limit0=hypervisor["limitPosition"][
+                "feeGrowthInside0X128"
+            ],
+            fee_growth_inside_limit1=hypervisor["limitPosition"][
+                "feeGrowthInside1X128"
+            ],
+            tick_index_lower_limit=hypervisor["limitPosition"]["tickLower"]["tickIdx"],
+            fee_growth_outside_lower_limit0=hypervisor["limitPosition"]["tickLower"][
+                "feeGrowthOutside0X128"
+            ],
+            fee_growth_outside_lower_limit1=hypervisor["limitPosition"]["tickLower"][
+                "feeGrowthOutside1X128"
+            ],
+            tick_index_upper_limit=hypervisor["limitPosition"]["tickUpper"]["tickIdx"],
+            fee_growth_outside_upper_limit0=hypervisor["limitPosition"]["tickUpper"][
+                "feeGrowthOutside0X128"
+            ],
+            fee_growth_outside_upper_limit1=hypervisor["limitPosition"]["tickUpper"][
+                "feeGrowthOutside1X128"
+            ],
+            total_supply=hypervisor.get("totalSupply"),
+            total_supply_decimals=18 if hypervisor.get("totalSupply") else 0,
         )
 
     def _extract_static_data(self, hypervisor_static_data: dict) -> None:
         self._static_data = {
             hypervisor["id"]: HypervisorStaticInfo(
                 symbol=hypervisor["symbol"],
-                decimals=_TokenPair(
-                    hypervisor["pool"]["token0"]["decimals"],
-                    hypervisor["pool"]["token1"]["decimals"],
-                ),
+                decimals0=hypervisor["pool"]["token0"]["decimals"],
+                decimals1=hypervisor["pool"]["token1"]["decimals"],
             )
             for hypervisor in hypervisor_static_data
         }
@@ -625,6 +634,7 @@ class ImpermanentDivergenceData(FeeGrowthTemporalData):
             }
             latest: hypervisors(block: {number: $blockEnd}) {
                 id
+                totalSupply
                 tvl0
                 tvl1
                 tvlUSD
@@ -676,6 +686,7 @@ class ImpermanentDivergenceData(FeeGrowthTemporalData):
             }
             initial: hypervisors(block: {number: $blockStart}) {
                 id
+                totalSupply
                 tvl0
                 tvl1
                 tvlUSD

@@ -255,7 +255,6 @@ class ProtocolFeesData:
             "groossFeesMax": GROSS_FEES_MAX
         }
         self.data = self.gamma_client.query(query, variables)["data"]
-        print(self.data)
 
 
 class ProtocolFeesCalculations(ProtocolFeesData):
