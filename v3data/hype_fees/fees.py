@@ -30,7 +30,7 @@ class Fees:
         try:
             base_fees_x128 = self._calc_position_fees(PositionType.BASE)
         except (IndexError, TypeError):
-            base_fees_x128 = _TokenPair(0, 0)
+            base_fees_x128 = _TokenPair(0, 0, 0, 0)
             logger.warning(
                 f"Base fees set to 0, missing data for hype: {self.data.hypervisor}, "
                 f"ticks: ({self.data.base_position.tick_lower.tick_index}, "
@@ -40,7 +40,7 @@ class Fees:
         try:
             limit_fees_x128 = self._calc_position_fees(PositionType.LIMIT)
         except (IndexError, TypeError):
-            limit_fees_x128 = _TokenPair(0, 0)
+            limit_fees_x128 = _TokenPair(0, 0, 0, 0)
             logger.warning(
                 f"Limit fees set to 0, missing data for hype: {self.data.hypervisor}, "
                 f"ticks: ({self.data.limit_position.tick_lower.tick_index}, "
@@ -48,14 +48,14 @@ class Fees:
             )
 
         return UncollectedFees(
-            base_fees0_x128=base_fees_x128.value0,
-            base_fees1_x128=base_fees_x128.value1,
-            base_owed0_x128=self.data.base_position.tokens_owed.value0,
-            base_owed1_x128=self.data.base_position.tokens_owed.value1,
-            limit_fees0_x128=limit_fees_x128.value0,
-            limit_fees1_x128=limit_fees_x128.value1,
-            limit_owed0_x128=self.data.limit_position.tokens_owed.value0,
-            limit_owed1_x128=self.data.limit_position.tokens_owed.value1,
+            base_fees0_x128=base_fees_x128.value0.raw,
+            base_fees1_x128=base_fees_x128.value1.raw,
+            base_owed0_x128=self.data.base_position.tokens_owed.value0.raw,
+            base_owed1_x128=self.data.base_position.tokens_owed.value1.raw,
+            limit_fees0_x128=limit_fees_x128.value0.raw,
+            limit_fees1_x128=limit_fees_x128.value1.raw,
+            limit_owed0_x128=self.data.limit_position.tokens_owed.value0.raw,
+            limit_owed1_x128=self.data.limit_position.tokens_owed.value1.raw,
             decimals0=self.data.decimals.value0,
             decimals1=self.data.decimals.value1,
             price0=self.data.price.value0,
@@ -112,7 +112,12 @@ class Fees:
             sub_in_256(fees_accum_now_1, position.fee_growth_inside.value1)
         )
 
-        return _TokenPair(value0=uncollected_fees_0, value1=uncollected_fees_1)
+        return _TokenPair(
+            raw0=uncollected_fees_0,
+            raw1=uncollected_fees_1,
+            decimals0=self.data.decimals.value0,
+            decimals1=self.data.decimals.value1,
+        )
 
 
 async def fees_all(protocol: str, chain: str) -> dict[str, UncollectedFees]:

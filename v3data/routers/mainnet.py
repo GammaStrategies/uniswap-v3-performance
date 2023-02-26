@@ -273,3 +273,11 @@ async def dashboard(period: str = "weekly"):
     dashboard = Dashboard(period.lower())
 
     return await dashboard.info("UTC")
+
+
+@router.get("/divergence")
+async def divergence(response: Response, days: int = 1):
+    divergence = v3data.common.hypervisor.ImpermanentDivergence(
+        PROTOCOL, CHAIN, days, response
+    )
+    return await divergence.run(RUN_FIRST)

@@ -131,6 +131,7 @@ async def fee_returns_daily(response: Response):
     fee_returns = v3data.common.hypervisor.FeeReturns(
         PROTOCOL, CHAIN, 1, response=response
     )
+
     return await fee_returns.run(RUN_FIRST)
 
 
@@ -205,3 +206,11 @@ async def user_data(address: str):
 @router.get("/vault/{address}")
 async def account_data(address: str):
     return await v3data.common.users.account_data(PROTOCOL, CHAIN, address)
+
+
+@router.get("/divergence")
+async def divergence(response: Response, days: int = 1):
+    divergence = v3data.common.hypervisor.ImpermanentDivergence(
+        PROTOCOL, CHAIN, days, response
+    )
+    return await divergence.run(RUN_FIRST)

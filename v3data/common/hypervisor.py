@@ -3,9 +3,12 @@ from fastapi import Response, status
 from v3data.common import ExecutionOrderWrapper
 from v3data.hypervisor import HypervisorInfo
 from v3data.toplevel import TopLevelData
-from v3data.hypes.impermanent_data import ImpermanentDivergence
+from v3data.hypes.impermanent_data import (
+    ImpermanentDivergence as ImpermanentDivergenceOld,
+)
 from v3data.hype_fees.fees import fees_all
 from v3data.hype_fees.fees_yield import fee_returns_all
+from v3data.hype_fees.impermanent_divergence import impermanent_divergence_all
 
 
 from database.collection_endpoint import (
@@ -44,7 +47,6 @@ class FeeReturns(ExecutionOrderWrapper):
         super().__init__(protocol, chain, response)
 
     async def _database(self):
-        print("trying db")
         returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
         result = await returns_manager.get_feeReturns(
             chain=self.chain, protocol=self.protocol, period=self.days
@@ -58,7 +60,6 @@ class FeeReturns(ExecutionOrderWrapper):
         return result
 
     async def _subgraph(self):
-        print("trying subgraph")
         if self.response:
             self.response.headers["X-Database"] = "false"
         return await fee_returns_all(self.protocol, self.chain, self.days)
@@ -86,6 +87,20 @@ class AggregateStats(ExecutionOrderWrapper):
             "pairCount": top_level_data["hypervisor_count"],
             "totalFeesClaimedUSD": top_level_data["fees_claimed"],
         }
+
+
+class ImpermanentDivergence(ExecutionOrderWrapper):
+    def __init__(self, protocol: str, chain: str, days: int, response: Response = None):
+        self.days = days
+        super().__init__(protocol, chain, response)
+
+    async def _database(self):
+        pass
+
+    async def _subgraph(self):
+        if self.response:
+            self.response.headers["X-Database"] = "false"
+        return await impermanent_divergence_all(self.protocol, self.chain, self.days)
 
 
 async def hypervisor_basic_stats(
@@ -238,7 +253,7 @@ async def uncollected_fees_all(protocol: str, chain: str):
 
 
 async def impermanent_divergence(protocol: str, chain: str, days: int):
-    impermanent_manager = ImpermanentDivergence(
+    impermanent_manager = ImpermanentDivergenceOld(
         period_days=days, protocol=protocol, chain=chain
     )
     output = await impermanent_manager.get_impermanent_data()
