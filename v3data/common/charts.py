@@ -5,16 +5,17 @@ from v3data.charts.benchmark import Benchmark
 
 from v3data.config import CHARTS_CACHE_TIMEOUT
 from v3data.utils import parse_date
+from v3data.enums import Chain, Protocol
 
 
 @cache(expire=CHARTS_CACHE_TIMEOUT)
-async def bollingerbands_chart(protocol: str, chain: str, poolAddress: str, periodHours: int = 24):
+async def bollingerbands_chart(protocol: Protocol, chain: Chain, poolAddress: str, periodHours: int = 24):
     bband = BollingerBand(poolAddress, periodHours, protocol, chain=chain)
     return {"data": await bband.chart_data()}
 
 
 @cache(expire=CHARTS_CACHE_TIMEOUT)
-async def base_range_chart_all(protocol: str, chain: str, days: int = 20):
+async def base_range_chart_all(protocol: Protocol, chain: Chain, days: int = 20):
     hours = days * 24
     baseLimitData = BaseLimit(protocol=protocol, hours=hours, chart=True, chain=chain)
     chart_data = await baseLimitData.all_rebalance_ranges()
@@ -23,7 +24,7 @@ async def base_range_chart_all(protocol: str, chain: str, days: int = 20):
 
 @cache(expire=CHARTS_CACHE_TIMEOUT)
 async def base_range_chart(
-    protocol: str, chain: str, hypervisor_address: str, days: int = 20
+    protocol: Protocol, chain: Chain, hypervisor_address: str, days: int = 20
 ):
     hours = days * 24
     hypervisor_address = hypervisor_address.lower()
@@ -36,8 +37,8 @@ async def base_range_chart(
 
 
 async def benchmark_chart(
-    protocol: str,
-    chain: str,
+    protocol: Protocol,
+    chain: Chain,
     hypervisor_address: str,
     startDate: str = "",
     endDate: str = "",

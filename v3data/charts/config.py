@@ -1,6 +1,8 @@
+from v3data.enums import Chain
+
 BASE_POOLS_CONFIG = {
-    "mainnet": {
-        # OHM 
+    Chain.MAINNET: {
+        # OHM
         "0x64aa3364f17a4d01c6f1751fd97c2bd3d7e7f1d5": {
             "priority": 1,
             "v3": {
@@ -8,7 +10,7 @@ BASE_POOLS_CONFIG = {
                 "usdc_token_index": 3,
             }
         },
-        # OCEAN 
+        # OCEAN
         "0x967da4048cd07ab37855c090aaf366e4ce1b9f48": {
             "priority": 2,
             "v3": {
@@ -77,7 +79,7 @@ BASE_POOLS_CONFIG = {
             }
         },
     },
-    "polygon": {
+    Chain.POLYGON: {
         # WBTC
         "0x1bfd67037b42cf73acf2047067bd4f2c47d9bfd6": {
             "priority": 1,
@@ -119,7 +121,7 @@ BASE_POOLS_CONFIG = {
             }
         },
     },
-    "optimism": {
+    Chain.OPTIMISM: {
         # WBTC
         "0x68f180fcce6836688e9084f035309e29bf0a2095": {
             "priority": 1,
@@ -161,7 +163,7 @@ BASE_POOLS_CONFIG = {
             }
         },
     },
-    "arbitrum": {
+    Chain.ARBITRUM: {
         # WBTC
         "0x2f2a2543b76a4166549f7aab2e75bef0aefc5b0f": {
             "priority": 1,
@@ -203,7 +205,7 @@ BASE_POOLS_CONFIG = {
             }
         },
     },
-    "celo": {
+    Chain.CELO: {
         # WETH
         # "0x66803fb87abd4aac3cbb3fad7c3aa01f6f3fb207": {
         #     "priority": 1,
@@ -240,9 +242,9 @@ BASE_POOLS_CONFIG = {
 }
 
 WETH_USDC_POOL = {
-    "mainnet": "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8",
-    "polygon": "0x45dda9cb7c25131df268515131f647d726f50608",
-    "optimism": "0x85149247691df622eaf1a8bd0cafd40bc45154a9",
-    "arbitrum": "0x17c14d2c404d167802b16c450d3c99f88f2c4f4d",
-    "celo": "0xd88d5f9e6c10e6febc9296a454f6c2589b1e8fae"  # needs to be fixed
+    Chain.MAINNET: "0x8ad599c3a0ff1de082011efddc58f1908eb6e6d8",
+    Chain.POLYGON: "0x45dda9cb7c25131df268515131f647d726f50608",
+    Chain.OPTIMISM: "0x85149247691df622eaf1a8bd0cafd40bc45154a9",
+    Chain.ARBITRUM: "0x17c14d2c404d167802b16c450d3c99f88f2c4f4d",
+    Chain.CELO: "0xd88d5f9e6c10e6febc9296a454f6c2589b1e8fae"  # needs to be fixed
 }

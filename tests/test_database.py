@@ -17,7 +17,7 @@ PARENT_FOLDER = os.path.dirname(CURRENT_FOLDER)
 sys.path.append(PARENT_FOLDER)
 
 
-from v3data.constants import PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP
+from v3data.enums import Protocol
 from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS, DEFAULT_TIMEZONE
 
 from database.collection_endpoint import (
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 async def test_put_data_to_Mongodb_v1():
 
     # create a chain protocol list
-    protocols = [PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP]
+    protocols = Protocol
     chains_protocols = [
         (chain, protocol)
         for protocol in protocols
@@ -101,13 +101,13 @@ async def test_put_historicData_to_Mongodb():
 
 
 async def test_put_historicData_to_Mongodb_vExpert(
-    chain="polygon", periods=[1], process_quickswap=True
+    chain=Chain.POLYGON, periods=[1], process_quickswap=True
 ):
 
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     requests = [
         returns_manager.feed_db(
-            chain=chain, protocol=PROTOCOL_UNISWAP_V3, periods=periods
+            chain=chain, protocol=Protocol.UNISWAP, periods=periods
         )
     ]
 
@@ -115,7 +115,7 @@ async def test_put_historicData_to_Mongodb_vExpert(
         requests.extend(
             [
                 returns_manager.feed_db(
-                    chain=chain, protocol=PROTOCOL_QUICKSWAP, periods=periods
+                    chain=chain, protocol=Protocol.QUICKSWAP, periods=periods
                 )
             ]
         )
@@ -125,7 +125,7 @@ async def test_put_historicData_to_Mongodb_vExpert(
 
 async def test_get_data_from_Mongodb_v1():
 
-    protocols = [PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP]
+    protocols = Protocol
     chains_protocols = [
         (chain, protocol)
         for protocol in protocols
@@ -153,7 +153,7 @@ async def test_get_data_from_Mongodb_v1():
 
 async def test_get_data_from_Mongodb_v2():
 
-    protocols = [PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP]
+    protocols = Protocol
     chains_protocols = [
         (chain, protocol)
         for protocol in protocols

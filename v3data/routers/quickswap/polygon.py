@@ -8,11 +8,11 @@ import v3data.common.masterchef_v2
 from fastapi import APIRouter, Response
 from fastapi_cache.decorator import cache
 from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT, DB_CACHE_TIMEOUT
-from v3data.constants import PROTOCOL_QUICKSWAP
+from v3data.enums import Chain, Protocol, QueryType
 
-PROTOCOL = PROTOCOL_QUICKSWAP
-CHAIN = "polygon"
-RUN_FIRST = v3data.common.QueryType.SUBGRAPH
+PROTOCOL = Protocol.QUICKSWAP
+CHAIN = Chain.POLYGON
+RUN_FIRST = QueryType.SUBGRAPH
 
 router = APIRouter(prefix="/quickswap/polygon")
 
@@ -177,20 +177,11 @@ async def impermanent_divergence_monthly():
     )
 
 
-@router.get("/allRewards")
-async def all_rewards():
-    return await v3data.common.masterchef.info(PROTOCOL, CHAIN)
-
-
 @router.get("/allRewards2")
 @cache(expire=DB_CACHE_TIMEOUT)
 async def all_rewards_2(response: Response):
-    return await v3data.common.masterchef_v2.info(PROTOCOL, CHAIN, response=response)
-
-
-@router.get("/userRewards/{user_address}")
-async def user_rewards(user_address):
-    return await v3data.common.masterchef.user_rewards(PROTOCOL, CHAIN, user_address)
+    masterchef_v2_info = v3data.common.masterchef_v2.AllRewards2(PROTOCOL, CHAIN, response)
+    return await masterchef_v2_info.run(RUN_FIRST)
 
 
 @router.get("/userRewards2/{user_address}")

@@ -6,19 +6,14 @@ from v3data.hype_fees.schema import (
     _TokenPair,
 )
 from v3data.hype_fees.data import FeeGrowthData
+from v3data.enums import Chain, PositionType, Protocol
 
-from enum import Enum
 
 logger = logging.getLogger(__name__)
 
 
-class PositionType(Enum):
-    BASE = "BASE"
-    LIMIT = "LIMIT"
-
-
 class Fees:
-    def __init__(self, data: FeesData, protocol: str, chain: str):
+    def __init__(self, data: FeesData, protocol: Protocol, chain: Chain):
         self.data = data
         self.protocol = protocol
         self.chain = chain
@@ -120,7 +115,7 @@ class Fees:
         )
 
 
-async def fees_all(protocol: str, chain: str) -> dict[str, UncollectedFees]:
+async def fees_all(protocol: Protocol, chain: Chain) -> dict[str, UncollectedFees]:
     fees_data = FeeGrowthData(protocol, chain)
     await fees_data.get_data()
 

@@ -7,12 +7,12 @@ import v3data.common.masterchef
 from fastapi import APIRouter, Response
 from fastapi_cache.decorator import cache
 from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT, DB_CACHE_TIMEOUT
-from v3data.constants import PROTOCOL_UNISWAP_V3
+from v3data.enums import Chain, Protocol, QueryType
 
 
-PROTOCOL = PROTOCOL_UNISWAP_V3
-CHAIN = "celo"
-RUN_FIRST = v3data.common.QueryType.SUBGRAPH
+PROTOCOL = Protocol.UNISWAP
+CHAIN = Chain.CELO
+RUN_FIRST = QueryType.SUBGRAPH
 
 router = APIRouter(prefix="/celo")
 

@@ -10,6 +10,7 @@ from v3data.masterchef_v2 import MasterchefV2Info, UserRewardsV2
 from v3data.hypes.impermanent_data import ImpermanentDivergence
 from v3data.toplevel import TopLevelData
 from v3data.hype_fees.fees_yield import fee_returns_all
+from v3data.enums import Chain, Protocol
 
 from database.common.collections_common import db_collections_common
 
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 class db_collection_manager(db_collections_common):
     db_collection_name = ""
 
-    async def feed_db(self, chain: str, protocol: str):
+    async def feed_db(self, chain: Chain, protocol: Protocol):
         try:
             await self.save_items_to_database(
                 data=await self.create_data(chain=chain, protocol=protocol),
@@ -39,7 +40,7 @@ class db_collection_manager(db_collections_common):
 class db_static_manager(db_collection_manager):
     db_collection_name = "static"
 
-    async def create_data(self, chain: str, protocol: str) -> dict:
+    async def create_data(self, chain: Chain, protocol: Protocol) -> dict:
         """Create a dictionary of hypervisor_static database models
 
         Args:
@@ -104,7 +105,7 @@ class db_returns_manager(db_collection_manager):
     db_collection_name = "returns"
 
     # format data to be used with mongo db
-    async def create_data(self, chain: str, protocol: str, period_days: int) -> dict:
+    async def create_data(self, chain: Chain, protocol: Protocol, period_days: int) -> dict:
         """Create a dictionary of hypervisor_return database models
 
         Args:
@@ -167,7 +168,7 @@ class db_returns_manager(db_collection_manager):
 
         return result
 
-    async def feed_db(self, chain: str, protocol: str, periods: list[int] = [1, 7, 30]):
+    async def feed_db(self, chain: Chain, protocol: Protocol, periods: list[int] = [1, 7, 30]):
 
         try:
             requests = [
@@ -187,7 +188,7 @@ class db_returns_manager(db_collection_manager):
             )
 
     async def get_hypervisors_average(
-        self, chain: str, period: int = 0, protocol: str = ""
+        self, chain: Chain, period: int = 0, protocol: Protocol = ""
     ) -> dict:
         result = await self._get_data(
             query=self.query_hypervisors_average(
@@ -200,7 +201,7 @@ class db_returns_manager(db_collection_manager):
             return {}
 
     async def get_hypervisors_returns_average(
-        self, chain: str, period: int = 0, protocol: str = ""
+        self, chain: Chain, period: int = 0, protocol: Protocol = ""
     ) -> dict:
         result = await self._get_data(
             query=self.query_hypervisors_returns_average(
@@ -213,7 +214,7 @@ class db_returns_manager(db_collection_manager):
             return {}
 
     async def get_hypervisor_average(
-        self, chain: str, hypervisor_address: str, period: int = 0, protocol: str = ""
+        self, chain: Chain, hypervisor_address: str, period: int = 0, protocol: Protocol = ""
     ) -> dict:
         result = await self._get_data(
             query=self.query_hypervisors_average(
@@ -229,7 +230,7 @@ class db_returns_manager(db_collection_manager):
             return {}
 
     async def get_feeReturns(
-        self, chain: str, protocol: str, period: int, hypervisor_address: str = ""
+        self, chain: Chain, protocol: Protocol, period: int, hypervisor_address: str = ""
     ) -> dict:
 
         # query database
@@ -261,7 +262,7 @@ class db_returns_manager(db_collection_manager):
         return result
 
     async def get_returns(
-        self, chain: str, protocol: str, hypervisor_address: str = ""
+        self, chain: Chain, protocol: Protocol, hypervisor_address: str = ""
     ) -> dict:
 
         # query database
@@ -297,7 +298,7 @@ class db_returns_manager(db_collection_manager):
     # TODO: return dict item with hypervisor id's as keys and 1 item list only ... to match others
     @staticmethod
     def query_hypervisors_average(
-        chain: str, period: int = 0, protocol: str = "", hypervisor_address: str = ""
+        chain: Chain, period: int = 0, protocol: Protocol = "", hypervisor_address: str = ""
     ) -> list[dict]:
         """get all average returns from collection
 
@@ -427,7 +428,7 @@ class db_returns_manager(db_collection_manager):
 
     @staticmethod
     def query_hypervisors_returns_average(
-        chain: str, period: int = 0, protocol: str = "", hypervisor_address: str = ""
+        chain: Chain, period: int = 0, protocol: Protocol = "", hypervisor_address: str = ""
     ) -> list[dict]:
         """get all average returns from collection
 
@@ -549,7 +550,7 @@ class db_returns_manager(db_collection_manager):
 
     @staticmethod
     def query_last_returns(
-        chain: str, period: int = 0, protocol: str = "", hypervisor_address: str = ""
+        chain: Chain, period: int = 0, protocol: Protocol = "", hypervisor_address: str = ""
     ) -> list[dict]:
         """return the last items found not zero lower than 800% apy apr :
                 daily, weekly and monthly apr apy ( alltime is the monthly figure)
@@ -801,7 +802,7 @@ class db_returns_manager(db_collection_manager):
 class db_allData_manager(db_collection_manager):
     db_collection_name = "allData"
 
-    async def create_data(self, chain: str, protocol: str) -> dict:
+    async def create_data(self, chain: Chain, protocol: Protocol) -> dict:
         """Create a dictionary of hypervisor_allData database models
 
         Args:
@@ -828,7 +829,7 @@ class db_allData_manager(db_collection_manager):
 
         return allData
 
-    async def feed_db(self, chain: str, protocol: str):
+    async def feed_db(self, chain: Chain, protocol: Protocol):
         try:
             # save as 1 item ( not separated)
             await self.save_item_to_database(
@@ -840,7 +841,7 @@ class db_allData_manager(db_collection_manager):
                 f" Unexpected error feeding  {chain}'s {protocol} allData to db   err:{sys.exc_info()[0]}"
             )
 
-    async def get_data(self, chain: str, protocol: str) -> dict:
+    async def get_data(self, chain: Chain, protocol: Protocol) -> dict:
         result = await self._get_data(
             query=self.query_all(chain=chain, protocol=protocol)
         )
@@ -850,7 +851,7 @@ class db_allData_manager(db_collection_manager):
             return {}
 
     @staticmethod
-    def query_all(chain: str, protocol: str = "") -> list[dict]:
+    def query_all(chain: Chain, protocol: Protocol = "") -> list[dict]:
         """
         Args:
             chain (str): _description_
@@ -870,7 +871,7 @@ class db_allData_manager(db_collection_manager):
 class db_allRewards2_manager(db_collection_manager):
     db_collection_name = "allRewards2"
 
-    async def create_data(self, chain: str, protocol: str) -> dict:
+    async def create_data(self, chain: Chain, protocol: Protocol) -> dict:
         """
 
         Args:
@@ -901,7 +902,7 @@ class db_allRewards2_manager(db_collection_manager):
 
         return data
 
-    async def feed_db(self, chain: str, protocol: str):
+    async def feed_db(self, chain: Chain, protocol: Protocol):
         try:
 
             # save as 1 item ( not separated)
@@ -914,7 +915,7 @@ class db_allRewards2_manager(db_collection_manager):
                 f" Unexpected error feeding  {chain}'s {protocol} allRewards2 to db   err:{sys.exc_info()[0]}"
             )
 
-    async def get_data(self, chain: str, protocol: str) -> dict:
+    async def get_data(self, chain: Chain, protocol: Protocol) -> dict:
         result = await self._get_data(
             query=self.query_all(chain=chain, protocol=protocol)
         )
@@ -923,7 +924,7 @@ class db_allRewards2_manager(db_collection_manager):
         except:
             return {}
 
-    async def get_last_data(self, chain: str, protocol: str) -> dict:
+    async def get_last_data(self, chain: Chain, protocol: Protocol) -> dict:
         """Retrieve last chain+protocol data available at database
 
         Args:
@@ -943,7 +944,7 @@ class db_allRewards2_manager(db_collection_manager):
             return {}
 
     @staticmethod
-    def query_all(chain: str, protocol: str = "") -> list[dict]:
+    def query_all(chain: Chain, protocol: Protocol = "") -> list[dict]:
         """
         Args:
             chain (str): _description_
@@ -960,7 +961,7 @@ class db_allRewards2_manager(db_collection_manager):
         return [{"$match": _match}, {"$unset": ["_id", "id"]}]
 
     @staticmethod
-    def query_last(chain: str, protocol: str) -> list[str]:
+    def query_last(chain: Chain, protocol: Protocol) -> list[str]:
         # set return match vars
         _match = {"chain": chain, "protocol": protocol}
 
@@ -975,7 +976,7 @@ class db_allRewards2_manager(db_collection_manager):
 class db_aggregateStats_manager(db_collection_manager):
     db_collection_name = "agregateStats"
 
-    async def create_data(self, chain: str, protocol: str) -> dict:
+    async def create_data(self, chain: Chain, protocol: Protocol) -> dict:
         """
 
         Args:
@@ -1000,7 +1001,7 @@ class db_aggregateStats_manager(db_collection_manager):
             "totalFeesClaimedUSD": top_level_data["fees_claimed"],
         }
 
-    async def feed_db(self, chain: str, protocol: str):
+    async def feed_db(self, chain: Chain, protocol: Protocol):
         try:
             # save as 1 item ( not separated)
             await self.save_item_to_database(
@@ -1012,7 +1013,7 @@ class db_aggregateStats_manager(db_collection_manager):
                 f" Unexpected error feeding  {chain}'s {protocol} aggregateStats to db   err:{sys.exc_info()[0]}"
             )
 
-    async def get_data(self, chain: str, protocol: str) -> dict:
+    async def get_data(self, chain: Chain, protocol: Protocol) -> dict:
         result = await self._get_data(
             query=self.query_last(chain=chain, protocol=protocol)
         )
@@ -1022,7 +1023,7 @@ class db_aggregateStats_manager(db_collection_manager):
             return {}
 
     @staticmethod
-    def query_last(chain: str, protocol: str = "") -> list[dict]:
+    def query_last(chain: Chain, protocol: Protocol = "") -> list[dict]:
         """Query last item ( highest datetime )
         Args:
             chain (str):

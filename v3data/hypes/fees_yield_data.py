@@ -6,10 +6,11 @@ from v3data import GammaClient, DexFeeGrowthClient, LlamaClient
 from v3data.utils import (
     timestamp_ago,
     estimate_block_from_timestamp_diff,
-    filter_addresses_byChain,
+    filter_address_by_chain,
 )
 from v3data.constants import BLOCK_TIME_SECONDS
 from v3data.config import EXCLUDED_HYPERVISORS
+from v3data.enums import Chain, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +19,8 @@ class YieldData:
     def __init__(
         self,
         period_days,
-        protocol: str,
-        chain: str = "mainnet",
+        protocol: Protocol,
+        chain: Chain = Chain.MAINNET,
         delay_buffer_seconds: int = 3600,
     ):
         self.period_days = period_days
@@ -37,7 +38,7 @@ class YieldData:
         self._pool_data = {}
         self.data = {}
 
-        self.excluded_hypervisors = filter_addresses_byChain(
+        self.excluded_hypervisors = filter_address_by_chain(
             EXCLUDED_HYPERVISORS, chain
         )
 
@@ -134,51 +135,6 @@ class YieldData:
             }
             """
 
-        transition_all_but_query = """
-            query transitions($timestamp_start: Int!, $timestamp_end: Int!, $ids: [String!]!){
-                uniswapV3Hypervisors(
-                    first: 1000,
-                    where: {
-                        id_not_in: $ids
-                    }
-                ){
-                    id
-                    withdraws(
-                        where: {
-                            timestamp_gt: $timestamp_start
-                            timestamp_lt: $timestamp_end
-                        }
-                    ) {
-                        block
-                        timestamp
-                    }
-                    rebalances(
-                        where: {
-                            timestamp_gt: $timestamp_start
-                            timestamp_lt: $timestamp_end
-                        }
-                    ) {
-                        block
-                        timestamp
-                    }
-                    deposits(
-                        where: {
-                            timestamp_gt: $timestamp_start
-                            timestamp_lt: $timestamp_end
-                        }
-                    ) {
-                        block
-                        timestamp
-                    }
-                }
-                _meta {
-                    block {
-                        number
-                    }
-                }
-            }
-            """
-
         if len(self.excluded_hypervisors) > 0:
             variables = {
                 "timestamp_start": timestamp_ago(
@@ -207,31 +163,6 @@ class YieldData:
         self._transition_data = response["data"]
 
     async def _get_fee_update_data(self, period_days):
-
-        all_but_query = """
-        query transitions($timestamp_start: Int!, $timestamp_end: Int!, $ids: [String!]!){
-            uniswapV3Hypervisors(
-                first: 1000,
-                where: {
-                    id_not_in: $ids
-                }) {
-                id
-                feeUpdates(
-                    where: {
-                        timestamp_gt: $timestamp_start
-                        timestamp_lt: $timestamp_end}
-                ) {
-                    block
-                    timestamp
-                }
-            }
-            _meta {
-                block {
-                    number
-                }
-            }
-        }
-        """
 
         query = """
         query transitions($timestamp_start: Int!, $timestamp_end: Int!){
@@ -367,7 +298,7 @@ class YieldData:
                         self.chain, self.protocol, pool_address, block, error["message"]
                     )
                 )
-        elif not "data" in response:
+        elif "data" not in response:
             logger.warning(
                 "[{}-{}] No pool data found for {} at block {}.".format(
                     self.chain, self.protocol, pool_address, block
@@ -427,7 +358,7 @@ class YieldData:
             block_hypervisor_map[initial_block].append(hypervisor["id"])
             block_hypervisor_map[current_block].append(hypervisor["id"])
 
-            if self.protocol == "quickswap":
+            if self.protocol == Protocol.QUICKSWAP:
                 tx_types = ["feeUpdates"]
             else:
                 tx_types = ["deposits", "withdraws", "rebalances"]
@@ -485,7 +416,7 @@ class YieldData:
         # init and fill pool data requests
         pool_requests = list()
         for params in pool_query_params:
-            if not "pool" in params["hypervisor"]:
+            if "pool" not in params["hypervisor"]:
                 logger.error(
                     "[{}-{}] No pool data found for hypervisor {} ({}) while building requests.".format(
                         self.chain,
@@ -494,7 +425,7 @@ class YieldData:
                         params["hypervisor"]["id"],
                     )
                 )
-            elif not "id" in params["hypervisor"]["pool"]:
+            elif "id" not in params["hypervisor"]["pool"]:
                 logger.error(
                     "[{}-{}] No pool id found for hypervisor {} ({}) while building requests.".format(
                         self.chain,
@@ -539,13 +470,13 @@ class YieldData:
                                 error["message"],
                             )
                         )
-                    except:
+                    except Exception:
                         logger.error(
                             "[{}-{}] Error while getting pool data. Thegraph response:{}".format(
                                 self.chain, self.protocol, error["message"]
                             )
                         )
-            elif not "pool" in response:
+            elif "pool" not in response:
                 try:
                     err_hypervisor_id = pool_query_params[index]["hypervisor"]["id"]
                     err_hypervisor_name = pool_query_params[index]["hypervisor"][
@@ -559,13 +490,13 @@ class YieldData:
                             err_hypervisor_id,
                         )
                     )
-                except:
+                except Exception:
                     logger.error(
                         "[{}-{}] No pool data found for hypervisor's query parameters index num. {}".format(
                             self.chain, self.protocol, index
                         )
                     )
-            elif response["pool"] == None or not "id" in response["pool"]:
+            elif response["pool"] is None or "id" not in response["pool"]:
                 try:
                     err_hypervisor_id = pool_query_params[index]["hypervisor"]["id"]
                     err_hypervisor_name = pool_query_params[index]["hypervisor"][
@@ -579,7 +510,7 @@ class YieldData:
                             err_hypervisor_id,
                         )
                     )
-                except:
+                except Exception:
                     logger.error(
                         "[{}-{}] No pool id found for hypervisor's query parameters index num. {}".format(
                             self.chain, self.protocol, index
@@ -608,7 +539,7 @@ class YieldData:
 
     async def get_data(self):
         # Get transition data to identify blocks for making time-travel query
-        if self.protocol == "quickswap":
+        if self.protocol == Protocol.QUICKSWAP:
             await self._get_fee_update_data(self.period_days)
         else:
             await self._get_transition_data(self.period_days)

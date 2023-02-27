@@ -9,10 +9,11 @@ from v3data.hype_fees.schema import (
     Time,
 )
 from v3data.utils import estimate_block_from_timestamp_diff
+from v3data.enums import Chain, Protocol
 
 
 class FeeGrowthDataABC(ABC):
-    def __init__(self, protocol: str, chain: str) -> None:
+    def __init__(self, protocol: Protocol, chain: Chain) -> None:
         self.protocol = protocol
         self.chain = chain
         self.fee_growth_client = HypePoolClient(protocol, chain)
@@ -113,8 +114,8 @@ class FeeGrowthTemporalData(FeeGrowthDataABC):
     def __init__(
         self,
         period_days,
-        protocol: str,
-        chain: str,
+        protocol: Protocol,
+        chain: Chain,
     ) -> None:
         self.period_days = period_days
         self.llama_client = LlamaClient(chain)

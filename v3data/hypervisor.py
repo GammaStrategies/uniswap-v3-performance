@@ -1,15 +1,14 @@
 import logging
-import math
 import numpy as np
 from datetime import timedelta
 from pandas import DataFrame
 
 from v3data import GammaClient, UniswapV3Client
-from v3data.utils import timestamp_ago, timestamp_to_date, filter_addresses_byChain
+from v3data.utils import timestamp_ago, timestamp_to_date, filter_address_by_chain
 from v3data.constants import DAYS_IN_PERIOD, SECONDS_IN_DAYS
 from v3data.config import EXCLUDED_HYPERVISORS, FALLBACK_DAYS, GROSS_FEES_MAX
 from v3data.hype_fees.fees_yield import fee_returns_all
-
+from v3data.enums import Chain, Protocol
 
 DAY_SECONDS = 24 * 60 * 60
 YEAR_SECONDS = 365 * DAY_SECONDS
@@ -18,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 class HypervisorData:
-    def __init__(self, protocol: str, chain: str = "mainnet"):
+    def __init__(self, protocol: Protocol, chain: Chain = Chain.MAINNET):
         self.protocol = protocol
         self.chain = chain
         self.gamma_client = GammaClient(protocol, chain)
@@ -27,7 +26,7 @@ class HypervisorData:
         self.pools_data = {}
         self.fees_data = {}
 
-        self.excluded_hypervisors = filter_addresses_byChain(
+        self.excluded_hypervisors = filter_address_by_chain(
             EXCLUDED_HYPERVISORS, chain
         )
 
@@ -315,7 +314,7 @@ class HypervisorInfo(HypervisorData):
         latest_rebalance_ts = df_rebalances.loc[df_rebalances.index[-1], "timestamp"]
 
         # Calculate fee return rate for each rebalance event
-        shift = 1 if self.chain == "mainnet" else 0
+        shift = 1 if self.chain == Chain.MAINNET else 0
 
         df_rebalances[
             "feeRate"

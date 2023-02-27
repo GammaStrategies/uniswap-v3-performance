@@ -9,12 +9,13 @@ from v3data.rewardshypervisor import RewardsHypervisorInfo
 from v3data.utils import timestamp_ago
 from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
 from v3data.config import legacy_stats, GROSS_FEES_MAX
+from v3data.enums import Chain, Protocol
 
 
 class Dashboard:
     def __init__(self, period: str):
-        self.chain = "mainnet"
-        self.gamma_client = GammaClient("uniswap_v3", self.chain)
+        self.chain = Chain.MAINNET
+        self.gamma_client = GammaClient(Protocol.UNISWAP, self.chain)
         self.period = period
         self.days = 30
         self.visr_data = {}
@@ -169,7 +170,7 @@ class Dashboard:
         protocol_fees_calcs.data = self.protocol_fees_data
         collected_fees = await protocol_fees_calcs.collected_fees(get_data=False)
 
-        top_level = TopLevelData("uniswap_v3", self.chain)
+        top_level = TopLevelData(Protocol.UNISWAP, self.chain)
         top_level.all_stats_data = self.top_level_data
         top_level.all_returns_data = self.top_level_returns_data
         top_level_data = top_level._all_stats()

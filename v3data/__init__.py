@@ -17,6 +17,8 @@ from v3data.config import (
 
 from v3data import abi
 
+from v3data.enums import Chain, Protocol
+
 logger = logging.getLogger(__name__)
 async_client = httpx.AsyncClient(
     transport=httpx.AsyncHTTPTransport(
@@ -27,7 +29,7 @@ async_client = httpx.AsyncClient(
 
 
 class SubgraphClient:
-    def __init__(self, url: str, chain: str = "mainnet"):
+    def __init__(self, url: str, chain: Chain = Chain.MAINNET):
         self._url = url
         self.chain = chain
 
@@ -38,14 +40,14 @@ class SubgraphClient:
         else:
             params = {"query": query}
         # TODO: error handling -> connection, result and others   httpcore.RemoteProtocolError
-        #                                                         ssl.SSLError:   [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure
+        # ssl.SSLError:   [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure
         #
         response = await async_client.post(self._url, json=params)
 
         if response.status_code == 200:
             try:
                 return response.json()
-            except:
+            except Exception:
                 logger.error(
                     " Unexpected error while converting response to json. resp.text: {}  ".format(
                         response.text
@@ -131,7 +133,7 @@ class VisorClient(SubgraphClient):
 
 
 class GammaClient(SubgraphClient):
-    def __init__(self, protocol: str, chain: str):
+    def __init__(self, protocol: Protocol, chain: Chain):
         super().__init__(GAMMA_SUBGRAPH_URLS[protocol][chain], chain)
 
 
@@ -141,17 +143,17 @@ class UniswapV2Client(SubgraphClient):
 
 
 class UniswapV3Client(SubgraphClient):
-    def __init__(self, protocol: str, chain: str):
+    def __init__(self, protocol: Protocol, chain: Chain):
         super().__init__(DEX_SUBGRAPH_URLS[protocol][chain], chain)
 
 
 class DexFeeGrowthClient(SubgraphClient):
-    def __init__(self, protocol: str, chain: str):
+    def __init__(self, protocol: Protocol, chain: Chain):
         super().__init__(DEX_FEEGROWTH_SUBGRAPH_URLS[protocol][chain], chain)
 
 
 class HypePoolClient(SubgraphClient):
-    def __init__(self, protocol: str, chain: str):
+    def __init__(self, protocol: Protocol, chain: Chain):
         super().__init__(DEX_HYPEPOOL_SUBGRAPH_URLS[protocol][chain], chain)
 
 
@@ -182,7 +184,7 @@ class EthBlocksClient(SubgraphClient):
 
 
 class IndexNodeClient(SubgraphClient):
-    def __init__(self, protocol: str, chain: str):
+    def __init__(self, protocol: Protocol, chain: Chain):
         super().__init__(THEGRAPH_INDEX_NODE_URL)
         self.url = GAMMA_SUBGRAPH_URLS[protocol][chain]
         self.set_subgraph_name()
@@ -238,12 +240,12 @@ class CoingeckoClient:
 
 
 class LlamaClient:
-    def __init__(self, chain):
+    def __init__(self, chain: Chain):
         self.base = "https://coins.llama.fi/"
         self.chain = self._translate_chain_name(chain)
 
     def _translate_chain_name(self, chain):
-        mapping = {"mainnet": "ethereum"}
+        mapping = {Chain.MAINNET: "ethereum"}
         return mapping.get(chain, chain)
 
     async def block_from_timestamp(self, timestamp, return_timestamp=False):
@@ -259,7 +261,7 @@ class LlamaClient:
 
 
 class MasterChefContract:
-    def __init__(self, address, chain: str):
+    def __init__(self, address, chain: Chain):
         w3 = Web3(Web3.HTTPProvider(ALCHEMY_URLS[chain]))
         self.contract = w3.eth.contract(
             address=Web3.toChecksumAddress(address), abi=abi.MASTERCHEF_ABI
@@ -272,7 +274,7 @@ class MasterChefContract:
 
 
 class RewarderContract:
-    def __init__(self, address, chain: str):
+    def __init__(self, address, chain: Chain):
         w3 = Web3(Web3.HTTPProvider(ALCHEMY_URLS[chain]))
         self.contract = w3.eth.contract(
             address=Web3.toChecksumAddress(address), abi=abi.REWARDER_ABI

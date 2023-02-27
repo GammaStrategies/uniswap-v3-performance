@@ -17,7 +17,7 @@ PARENT_FOLDER = os.path.dirname(CURRENT_FOLDER)
 sys.path.append(PARENT_FOLDER)
 
 import v3data
-from v3data.constants import PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP
+from v3data.enums import Protocol
 from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS
 
 from v3data.bollingerbands import BollingerBand
@@ -28,19 +28,19 @@ from v3data.toplevel import TopLevelData
 from v3data.accounts import AccountInfo
 
 from v3data.common import hypervisor
-
+from v3data.enums import Chain, Protocol
 
 logger = logging.getLogger(__name__)
 
 
-async def base_range_chart_all(protocol: str, chain: str, days: int = 20):
+async def base_range_chart_all(protocol: Protocol, chain: Chain, days: int = 20):
     hours = days * 24
     baseLimitData = BaseLimit(protocol=protocol, hours=hours, chart=True, chain=chain)
     chart_data = await baseLimitData.all_rebalance_ranges()
     return chart_data
 
 
-async def recent_fees(protocol: str, chain: str, hours: int = 24):
+async def recent_fees(protocol: Protocol, chain: Chain, hours: int = 24):
     top_level = TopLevelData(protocol, chain)
     recent_fees = await top_level.recent_fees(hours)
 
@@ -49,8 +49,8 @@ async def recent_fees(protocol: str, chain: str, hours: int = 24):
 
 async def account():
     address = "0x8A0Dcd7cf2f6242Ff03ad126c980d60f7fFCbeC7"
-    chain = "polygon"
-    protocol = PROTOCOL_UNISWAP_V3
+    chain = Chain.POLYGON
+    protocol = Protocol.UNISWAP
     account_info = AccountInfo(protocol, chain, address)
     popo = await account_info.output()
 
@@ -74,10 +74,10 @@ from v3data.hypes.fees_yield import FeesYield
 
 async def test_temporal():
     terst_var = await hypervisor.hypervisors_return(
-        protocol=PROTOCOL_UNISWAP_V3, chain="polygon"
+        protocol=Protocol.UNISWAP, chain=Chain.POLYGON
     )
 
-    fees_yield = FeesYield(1, PROTOCOL_QUICKSWAP, "polygon")
+    fees_yield = FeesYield(1, Protocol.QUICKSWAP, Chain.POLYGON)
     output = await fees_yield.get_fees_yield()
     return output
 
@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
     # base range chart all
     # data = asyncio.run(
-    #    base_range_chart_all(protocol=PROTOCOL_UNISWAP_V3, chain="mainnet", days=20)
+    #    base_range_chart_all(protocol=Protocol.UNISWAP, chain=Chain.MAINNET, days=20)
     # )
 
     # recent fees

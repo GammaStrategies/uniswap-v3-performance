@@ -3,7 +3,8 @@ from dataclasses import dataclass
 import logging
 from v3data import GammaClient, DexFeeGrowthClient
 from v3data.config import EXCLUDED_HYPERVISORS
-from v3data.utils import filter_addresses_byChain
+from v3data.utils import filter_address_by_chain
+from v3data.enums import Chain, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +19,13 @@ class PoolQueryParams:
 
 
 class FeesData:
-    def __init__(self, protocol: str, chain: str = "mainnet"):
+    def __init__(self, protocol: Protocol, chain: Chain = Chain.MAINNET):
         self.chain = chain
         self.gamma_client = GammaClient(protocol, chain)
         self.uniswap_client = DexFeeGrowthClient(protocol, chain)
         self.data = {}
 
-        self.excluded_hypervisors = filter_addresses_byChain(
+        self.excluded_hypervisors = filter_address_by_chain(
             EXCLUDED_HYPERVISORS, chain
         )
 
@@ -34,44 +35,6 @@ class FeesData:
             uniswapV3Hypervisors(
                 where: {
                     id_in: $ids
-                }
-            ){
-                id
-                symbol
-                pool{
-                    id
-                    token0 {decimals}
-                    token1 {decimals}
-                }
-                baseLiquidity
-                baseLower
-                baseUpper
-                baseTokensOwed0
-                baseTokensOwed1
-                baseFeeGrowthInside0LastX128
-                baseFeeGrowthInside1LastX128
-                limitLiquidity
-                limitLower
-                limitUpper
-                limitTokensOwed0
-                limitTokensOwed1
-                limitFeeGrowthInside0LastX128
-                limitFeeGrowthInside1LastX128
-                conversion {
-                    baseTokenIndex
-                    priceTokenInBase
-                    priceBaseInUSD
-                }
-                tvlUSD
-            }
-        }
-        """
-
-        hypervisor_all_but_query = """
-        query hypervisor($ids: [String!]!){
-            uniswapV3Hypervisors(
-                where: {
-                    id_not_in: $ids
                 }
             ){
                 id
