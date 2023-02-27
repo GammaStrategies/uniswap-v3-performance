@@ -204,40 +204,8 @@ class FeeGrowthData(FeeGrowthDataABC):
                         priceUSD
                     }
                 }
-                basePosition {
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
-                limitPosition {
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
+                basePosition { ...positionFields }
+                limitPosition {...positionFields }
             }
             _meta {
                 block {
@@ -245,6 +213,22 @@ class FeeGrowthData(FeeGrowthDataABC):
                 timestamp
                 }
             }
+        }
+
+        fragment tickFields on Tick {
+            tickIdx
+            feeGrowthOutside0X128
+            feeGrowthOutside1X128
+        }
+
+        fragment positionFields on HypervisorPosition {
+            liquidity
+            tokensOwed0
+            tokensOwed1
+            feeGrowthInside0X128
+            feeGrowthInside1X128
+            tickLower { ...tickFields }
+            tickUpper { ...tickFields }
         }
         """
 
@@ -280,9 +264,9 @@ class FeeGrowthSnapshotData(FeeGrowthTemporalData):
     async def _query_data(self) -> dict:
         query = """
         query Snapshots(
-            $blockStart: Int!
-            $timestampStart: Int!
-            $blockEnd: Int!
+            $blockStart: Int!,
+            $timestampStart: Int!,
+            $blockEnd: Int!,
             $timestampEnd: Int!
         ) {
             static: hypervisors(block: {number: $blockEnd}) {
@@ -300,213 +284,90 @@ class FeeGrowthSnapshotData(FeeGrowthTemporalData):
                 }
             }
             latest: hypervisors(block: {number: $blockEnd}) {
-                id
-                tvl0
-                tvl1
-                tvlUSD
-                pool {
-                    currentTick
-                    feeGrowthGlobal0X128
-                    feeGrowthGlobal1X128
-                    token0 {
-                        priceUSD
-                    }
-                    token1 {
-                        priceUSD
-                    }
-                }
-                basePosition {
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
-                limitPosition {
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
+                ...hypervisorFields
             }
             initial: hypervisors(block: {number: $blockStart}) {
-                id
-                tvl0
-                tvl1
-                tvlUSD
-                pool {
-                    currentTick
-                    feeGrowthGlobal0X128
-                    feeGrowthGlobal1X128
-                    token0 {
-                        priceUSD
-                    }
-                    token1 {
-                        priceUSD
-                    }
-                }
-                basePosition{
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
-                limitPosition {
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
+                ...hypervisorFields
             }
             snapshots: hypervisors {
                 id
-                feeSnapshots(
-                    where: {
-                        timestamp_gte: $timestampStart
-                        timestamp_lte: $timestampEnd
-                    }
-                ) {
+                feeSnapshots(where: {
+                    timestamp_gte: $timestampStart,
+                    timestamp_lte: $timestampEnd
+                }) {
                     blockNumber
                     timestamp
-                    currentBlock {
-                        tick
-                        feeGrowthGlobal0X128
-                        feeGrowthGlobal1X128
-                        price0
-                        price1
-                        tvl0
-                        tvl1
-                        tvlUSD
-                        basePosition {
-                            liquidity
-                            tokensOwed0
-                            tokensOwed1
-                            feeGrowthInside0X128
-                            feeGrowthInside1X128
-                            tickLower {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                            tickUpper {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                        }
-                        limitPosition {
-                            liquidity
-                            tokensOwed0
-                            tokensOwed1
-                            feeGrowthInside0X128
-                            feeGrowthInside1X128
-                            tickLower {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                            tickUpper {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                        }
-                    }
-                    previousBlock {
-                        tick
-                        feeGrowthGlobal0X128
-                        feeGrowthGlobal1X128
-                        price0
-                        price1
-                        tvl0
-                        tvl1
-                        tvlUSD
-                        basePosition {
-                            liquidity
-                            tokensOwed0
-                            tokensOwed1
-                            feeGrowthInside0X128
-                            feeGrowthInside1X128
-                            tickLower {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                            tickUpper {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                        }
-                        limitPosition {
-                            liquidity
-                            tokensOwed0
-                            tokensOwed1
-                            feeGrowthInside0X128
-                            feeGrowthInside1X128
-                            tickLower {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                            tickUpper {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                        }
-                    }
+                    currentBlock { ...blockSnapshotFields }
+                    previousBlock { ...blockSnapshotFields }
                 }
             }
             _meta {
                 block {
-                number
-                timestamp
+                    number
+                    timestamp
                 }
             }
+        }
+
+        fragment tickFields on Tick {
+            tickIdx
+            feeGrowthOutside0X128
+            feeGrowthOutside1X128
+        }
+
+        fragment tickSnapshotFields on TickSnapshot {
+            tickIdx
+            feeGrowthOutside0X128
+            feeGrowthOutside1X128
+        }
+
+        fragment positionFields on HypervisorPosition {
+            liquidity
+            tokensOwed0
+            tokensOwed1
+            feeGrowthInside0X128
+            feeGrowthInside1X128
+            tickLower { ...tickFields }
+            tickUpper { ...tickFields }
+        }
+
+        fragment positionSnapshotFields on PositionSnapshot {
+            liquidity
+            tokensOwed0
+            tokensOwed1
+            feeGrowthInside0X128
+            feeGrowthInside1X128
+            tickLower { ...tickSnapshotFields }
+            tickUpper { ...tickSnapshotFields }
+        }
+
+        fragment hypervisorFields on Hypervisor {
+            id
+            tvl0
+            tvl1
+            tvlUSD
+            pool {
+                currentTick
+                feeGrowthGlobal0X128
+                feeGrowthGlobal1X128
+                token0 { priceUSD }
+                token1 { priceUSD }
+            }
+            basePosition { ...positionFields }
+            limitPosition { ...positionFields }
+        }
+
+        fragment blockSnapshotFields on FeeCollectionSnapshot {
+            tick
+            feeGrowthGlobal0X128
+            feeGrowthGlobal1X128
+            price0
+            price1
+            tvl0
+            tvl1
+            tvlUSD
+            basePosition { ...positionSnapshotFields }
+            limitPosition { ...positionSnapshotFields }
         }
         """
 
@@ -634,108 +495,10 @@ class ImpermanentDivergenceData(FeeGrowthTemporalData):
                 }
             }
             latest: hypervisors(block: {number: $blockEnd}) {
-                id
-                totalSupply
-                tvl0
-                tvl1
-                tvlUSD
-                pool {
-                    currentTick
-                    feeGrowthGlobal0X128
-                    feeGrowthGlobal1X128
-                    token0 {
-                        priceUSD
-                    }
-                    token1 {
-                        priceUSD
-                    }
-                }
-                basePosition {
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
-                limitPosition {
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
+                ...hypervisorFields
             }
             initial: hypervisors(block: {number: $blockStart}) {
-                id
-                totalSupply
-                tvl0
-                tvl1
-                tvlUSD
-                pool {
-                    currentTick
-                    feeGrowthGlobal0X128
-                    feeGrowthGlobal1X128
-                    token0 {
-                        priceUSD
-                    }
-                    token1 {
-                        priceUSD
-                    }
-                }
-                basePosition{
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
-                limitPosition {
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
+                ...hypervisorFields
             }
             _meta {
                 block {
@@ -743,6 +506,39 @@ class ImpermanentDivergenceData(FeeGrowthTemporalData):
                 timestamp
                 }
             }
+        }
+
+        fragment tickFields on Tick {
+            tickIdx
+            feeGrowthOutside0X128
+            feeGrowthOutside1X128
+        }
+
+        fragment positionFields on HypervisorPosition {
+            liquidity
+            tokensOwed0
+            tokensOwed1
+            feeGrowthInside0X128
+            feeGrowthInside1X128
+            tickLower { ...tickFields }
+            tickUpper { ...tickFields }
+        }
+
+        fragment hypervisorFields on Hypervisor {
+            id
+            totalSupply
+            tvl0
+            tvl1
+            tvlUSD
+            pool {
+                currentTick
+                feeGrowthGlobal0X128
+                feeGrowthGlobal1X128
+                token0 { priceUSD }
+                token1 { priceUSD }
+            }
+            basePosition { ...positionFields }
+            limitPosition { ...positionFields }
         }
         """
 
