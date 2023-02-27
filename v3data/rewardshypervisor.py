@@ -1,10 +1,11 @@
 from v3data import GammaClient
 from v3data.constants import XGAMMA_ADDRESS
+from v3data.enums import Chain, Protocol
 
 
 class RewardsHypervisorData:
     def __init__(self):
-        self.client = GammaClient("uniswap_v3", "mainnet")
+        self.client = GammaClient(Protocol.UNISWAP, Chain.MAINNET)
         self.decimal_factor = 10**18
         self.data = {}
 

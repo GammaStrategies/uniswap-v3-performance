@@ -1,14 +1,11 @@
-import numpy as np
-from pandas import DataFrame
-
 from v3data import GammaClient
 from v3data.config import DEFAULT_TIMEZONE
-from v3data.utils import timestamp_to_date, sqrtPriceX96_to_priceDecimal
-from v3data.constants import DAYS_IN_PERIOD
+from v3data.utils import timestamp_to_date
+from v3data.enums import Chain, Protocol
 
 
 class EthData:
-    def __init__(self, protocol: str, chain: str, days, timezone=DEFAULT_TIMEZONE):
+    def __init__(self, protocol: Protocol, chain: Chain, days, timezone=DEFAULT_TIMEZONE):
         self.gamma_client = GammaClient(protocol, chain)
         self.days = days
         self.timezone = timezone
@@ -47,7 +44,7 @@ class EthData:
 
 
 class EthCalculations(EthData):
-    def __init__(self, chain: str, days=30):
+    def __init__(self, chain: Chain, days=30):
         super().__init__(chain, days=days)
 
     async def basic_info(self, get_data=True):
@@ -79,7 +76,7 @@ class EthCalculations(EthData):
 
 
 class EthDistribution(EthCalculations):
-    def __init__(self, chain: str, days=6, timezone=DEFAULT_TIMEZONE):
+    def __init__(self, chain: Chain, days=6, timezone=DEFAULT_TIMEZONE):
         super().__init__(chain, days=days)
 
     async def output(self):

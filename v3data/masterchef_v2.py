@@ -1,10 +1,11 @@
 from v3data import GammaClient, RewarderContract
 from v3data.constants import YEAR_SECONDS
 from v3data.pricing import token_price_from_address
+from v3data.enums import Chain, Protocol
 
 
 class MasterchefV2Data:
-    def __init__(self, protocol: str, chain: str = "mainnet"):
+    def __init__(self, protocol: Protocol, chain: Chain = Chain.MAINNET):
         self.protocol = protocol
         self.chain = chain
         self.gamma_client = GammaClient(protocol, chain)
@@ -195,13 +196,13 @@ class MasterchefV2Info(MasterchefV2Data):
 
 
 class UserRewardsV2(MasterchefV2Data):
-    def __init__(self, user_address: str, protocol: str, chain: str = "mainnet"):
+    def __init__(self, user_address: str, protocol: Protocol, chain: Chain = Chain.MAINNET):
         super().__init__(protocol, chain)
         self.user_address = user_address.lower()
 
     async def output(self, get_data=True):
         if get_data:
-            if self.protocol == "quickswap":
+            if self.protocol == Protocol.QUICKSWAP:
                 await self._get_user_data_pool(self.user_address)
             else:
                 await self._get_user_data(self.user_address)
@@ -211,7 +212,7 @@ class UserRewardsV2(MasterchefV2Data):
 
         info = []
 
-        if self.protocol == "quickswap":
+        if self.protocol == Protocol.QUICKSWAP:
             for account in self.data["mcv2PoolAccounts"]:
                 pool = account["pool"]
                 masterchef_id = pool["masterChef"]["id"]

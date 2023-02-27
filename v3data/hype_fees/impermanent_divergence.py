@@ -4,12 +4,13 @@ from v3data.hype_fees.data import ImpermanentDivergenceData
 from v3data.hype_fees.fees import Fees
 from v3data.hype_fees.schema import FeesDataRange
 from v3data.constants import X128
+from v3data.enums import Chain, Protocol
 
 logger = logging.getLogger(__name__)
 
 
 class ImpermanentDivergence:
-    def __init__(self, data: FeesDataRange, protocol: str, chain: str):
+    def __init__(self, data: FeesDataRange, protocol: Protocol, chain: Chain):
         self.protocol = protocol
         self.chain = chain
         self.data = data
@@ -167,7 +168,7 @@ class ImpermanentDivergence:
         }
 
 
-async def impermanent_divergence_all(protocol: str, chain: str, days: int) -> dict:
+async def impermanent_divergence_all(protocol: Protocol, chain: Chain, days: int) -> dict:
     divergence_data = ImpermanentDivergenceData(days, protocol, chain)
     await divergence_data.get_data()
 

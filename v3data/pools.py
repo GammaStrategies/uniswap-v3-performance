@@ -1,8 +1,8 @@
 import datetime
-from urllib import response
 from v3data import UniswapV3Client
 from v3data.data import UniV3Data
 from v3data.utils import sqrtPriceX96_to_priceDecimal
+from v3data.enums import Chain, Protocol
 
 
 async def pools_from_symbol(symbol):
@@ -27,7 +27,7 @@ async def pools_from_symbol(symbol):
 
 
 class Pool:
-    def __init__(self, protocol: str, chain: str = "mainnet"):
+    def __init__(self, protocol: Protocol, chain: Chain = Chain.MAINNET):
         self.client = UniswapV3Client(protocol, chain)
 
     async def swap_prices(self, pool_address, time_delta=None):

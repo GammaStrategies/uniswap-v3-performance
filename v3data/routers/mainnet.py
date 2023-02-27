@@ -17,12 +17,12 @@ from v3data.dashboard import Dashboard
 from v3data.eth import EthDistribution
 
 from v3data.gamma import GammaDistribution, GammaInfo, GammaYield
-from v3data.constants import PROTOCOL_UNISWAP_V3
+from v3data.enums import Chain, Protocol, QueryType
 
 
-PROTOCOL = PROTOCOL_UNISWAP_V3
-CHAIN = "mainnet"
-RUN_FIRST = v3data.common.QueryType.SUBGRAPH
+PROTOCOL = Protocol.UNISWAP
+CHAIN = Chain.MAINNET
+RUN_FIRST = QueryType.SUBGRAPH
 
 router = APIRouter()
 

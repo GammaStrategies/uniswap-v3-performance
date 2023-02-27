@@ -7,6 +7,7 @@ from v3data.hype_fees.data import FeeGrowthSnapshotData
 from v3data.hype_fees.fees import Fees
 from v3data.hype_fees.schema import FeesData, FeesSnapshot, FeeYield
 from v3data.constants import DAY_SECONDS, YEAR_SECONDS
+from v3data.enums import Chain, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ YIELD_PER_DAY_MAX = 300
 
 
 class FeesYield:
-    def __init__(self, data: [FeesData], protocol: str, chain: str) -> None:
+    def __init__(self, data: [FeesData], protocol: Protocol, chain: Chain) -> None:
         self.data = data
         self.protocol = protocol
         self.chain = chain
@@ -105,7 +106,7 @@ class FeesYield:
         )
 
 
-async def fee_returns_all(protocol: str, chain: str, days: int) -> dict[str, dict]:
+async def fee_returns_all(protocol: Protocol, chain: Chain, days: int) -> dict[str, dict]:
     fees_data = FeeGrowthSnapshotData(days, protocol, chain)
     await fees_data.get_data()
 

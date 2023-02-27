@@ -6,6 +6,7 @@ from datetime import timedelta
 from v3data import GammaClient
 from v3data.pools import Pool
 from v3data.utils import tick_to_priceDecimal, timestamp_ago
+from v3data.enums import Chain, Protocol
 
 
 BASE_TOKEN_PRIORITY = {
@@ -23,7 +24,7 @@ OVERRIDE_TS = [1625162739, 1625332777, 1627458476]
 
 
 class BaseLimit:
-    def __init__(self, hours, protocol: str, chart=True, chain: str = "mainnet"):
+    def __init__(self, hours, protocol: Protocol, chart=True, chain: Chain = Chain.MAINNET):
         self.protocol = protocol
         self.chain = chain
         self.hours = hours

@@ -1,10 +1,11 @@
 from v3data import GammaClient, MasterChefContract
 from v3data.constants import YEAR_SECONDS
 from v3data.pricing import token_price_from_address
+from v3data.enums import Chain, Protocol
 
 
 class MasterchefData:
-    def __init__(self, protocol: str, chain: str = "mainnet"):
+    def __init__(self, protocol: Protocol, chain: Chain = Chain.MAINNET):
         self.chain = chain
         self.gamma_client = GammaClient(protocol, chain)
         self.data = {}
@@ -49,13 +50,13 @@ class MasterchefData:
                         poolId
                         masterChef {
                             id
-                            rewardToken { 
+                            rewardToken {
                                 id
                                 symbol
                                 decimals
                             }
                         }
-                        hypervisor { 
+                        hypervisor {
                             id
                             symbol
                         }
@@ -123,7 +124,7 @@ class MasterchefInfo(MasterchefData):
 
 
 class UserRewards(MasterchefData):
-    def __init__(self, user_address: str, protocol: str, chain: str = "mainnet"):
+    def __init__(self, user_address: str, protocol: Protocol, chain: Chain = Chain.MAINNET):
         super().__init__(protocol, chain)
         self.user_address = user_address.lower()
 

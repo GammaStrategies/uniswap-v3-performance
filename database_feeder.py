@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 
 from v3data import utils
 
-from v3data.constants import PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP
+from v3data.enums import Protocol
 from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS, EXCLUDED_HYPERVISORS
 
 from database.collection_endpoint import (
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 # using gamma subgraph keys to build chain,protocol list
 CHAINS_PROTOCOLS = [
     (chain, protocol)
-    for protocol in [PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP]
+    for protocol in Protocol
     for chain in GAMMA_SUBGRAPH_URLS[protocol].keys()
 ]
 
@@ -81,7 +81,7 @@ async def feed_database_returns(periods: list, process_quickswap=True):
         requests = [
             returns_manager.feed_db(chain=chain, protocol=protocol, periods=periods)
             for chain, protocol in CHAINS_PROTOCOLS
-            if protocol != PROTOCOL_QUICKSWAP
+            if protocol != Protocol.QUICKSWAP
         ]
 
     await asyncio.gather(*requests)

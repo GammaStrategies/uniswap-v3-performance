@@ -6,11 +6,11 @@ import v3data.common.users
 from fastapi import APIRouter, Response
 from fastapi_cache.decorator import cache
 from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT, DB_CACHE_TIMEOUT
-from v3data.constants import PROTOCOL_UNISWAP_V3
+from v3data.enums import Chain, Protocol, QueryType
 
-PROTOCOL = PROTOCOL_UNISWAP_V3
-CHAIN = "optimism"
-RUN_FIRST = v3data.common.QueryType.SUBGRAPH
+PROTOCOL = Protocol.UNISWAP
+CHAIN = Chain.OPTIMISM
+RUN_FIRST = QueryType.SUBGRAPH
 
 router = APIRouter(prefix="/optimism")
 
@@ -182,7 +182,8 @@ async def all_rewards():
 @router.get("/allRewards2")
 @cache(expire=DB_CACHE_TIMEOUT)
 async def all_rewards_2(response: Response):
-    return await v3data.common.masterchef_v2.info(PROTOCOL, CHAIN, response=response)
+    masterchef_v2_info = v3data.common.masterchef_v2.AllRewards2(PROTOCOL, CHAIN, response)
+    return await masterchef_v2_info.run(RUN_FIRST)
 
 
 @router.get("/userRewards/{user_address}")

@@ -1,10 +1,11 @@
 from v3data import GammaClient
 
 from v3data.token_pricing.schema import PricingData
+from v3data.enums import Chain, Protocol
 
 
 class HypervisorPricingData:
-    def __init__(self, protocol: str, chain: str) -> None:
+    def __init__(self, protocol: Protocol, chain: Chain) -> None:
         self.data: {}
         self.protocol = protocol
         self.chain = chain

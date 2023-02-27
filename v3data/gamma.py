@@ -8,11 +8,12 @@ from v3data.config import DEFAULT_TIMEZONE, GROSS_FEES_MAX
 from v3data.pricing import token_price
 from v3data.utils import timestamp_ago
 from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
+from v3data.enums import Chain, Protocol
 
 
 class GammaData:
-    def __init__(self, chain: str, days, timezone=DEFAULT_TIMEZONE):
-        self.gamma_client = GammaClient("uniswap_v3", chain)
+    def __init__(self, chain: Chain, days, timezone=DEFAULT_TIMEZONE):
+        self.gamma_client = GammaClient(Protocol.UNISWAP, chain)
         self.days = days
         self.timezone = timezone
         self.address = GAMMA_ADDRESS
@@ -75,7 +76,7 @@ class GammaData:
 
 
 class GammaCalculations(GammaData):
-    def __init__(self, chain: str, days=30):
+    def __init__(self, chain: Chain, days=30):
         super().__init__(chain=chain, days=days)
 
     async def basic_info(self, get_data=True):
@@ -197,7 +198,7 @@ class GammaCalculations(GammaData):
 
 
 class GammaInfo(GammaCalculations):
-    def __init__(self, chain: str, days=30):
+    def __init__(self, chain: Chain, days=30):
         super().__init__(chain=chain, days=days)
 
     async def output(self):
@@ -211,7 +212,7 @@ class GammaInfo(GammaCalculations):
 
 
 class GammaYield(GammaCalculations):
-    def __init__(self, chain: str, days=30):
+    def __init__(self, chain: Chain, days=30):
         super().__init__(chain=chain, days=days)
 
     async def output(self):
@@ -219,7 +220,7 @@ class GammaYield(GammaCalculations):
 
 
 class GammaDistribution(GammaCalculations):
-    def __init__(self, chain: str, days=60, timezone=DEFAULT_TIMEZONE):
+    def __init__(self, chain: Chain, days=60, timezone=DEFAULT_TIMEZONE):
         super().__init__(chain=chain, days=days)
 
     async def output(self, days):
@@ -229,8 +230,8 @@ class GammaDistribution(GammaCalculations):
 
 
 class ProtocolFeesData:
-    def __init__(self, chain: str = "mainnet"):
-        self.gamma_client = GammaClient("uniswap_v3", chain)
+    def __init__(self, chain: Chain = Chain.MAINNET):
+        self.gamma_client = GammaClient(Protocol.UNISWAP, chain)
 
     def _get_data(self, time_delta):
         query = """

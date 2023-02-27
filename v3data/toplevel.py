@@ -6,20 +6,21 @@ from pandas import DataFrame
 from v3data import GammaClient
 from v3data.hypervisor import HypervisorInfo
 from v3data.pricing import token_price
-from v3data.utils import timestamp_ago, filter_addresses_byChain
+from v3data.utils import timestamp_ago, filter_address_by_chain
 from v3data.config import EXCLUDED_HYPERVISORS, GROSS_FEES_MAX
+from v3data.enums import Chain, Protocol
 
 
 class TopLevelData:
     """Top level stats"""
 
-    def __init__(self, protocol: str, chain: str = "mainnet"):
+    def __init__(self, protocol: Protocol, chain: Chain = Chain.MAINNET):
         self.protocol = protocol
         self.gamma_client = GammaClient(protocol, chain)
         self.all_stats_data = {}
         self.all_returns_data = {}
 
-        self.excluded_hypervisors = filter_addresses_byChain(
+        self.excluded_hypervisors = filter_address_by_chain(
             EXCLUDED_HYPERVISORS, chain
         )
 

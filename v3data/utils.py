@@ -3,6 +3,7 @@ import logging
 
 from v3data.constants import BLOCK_TIME_SECONDS
 from v3data.config import CHAIN_NAME_CONVERSION
+from v3data.enums import Chain
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +94,7 @@ def estimate_block_from_timestamp_diff(
     return initial_block
 
 
-def filter_addresses_byChain(addresses: list[str], chain: str) -> list[str]:
+def filter_address_by_chain(addresses: list[str], chain: Chain) -> list[str]:
     """Return only addresses belonging to the specified chain.
         addresses list must follow EIP-3770 (https://eips.ethereum.org/EIPS/eip-3770)
         and will be converted to local format using config CHAIN_NAME_CONVERSION var
@@ -109,11 +110,11 @@ def filter_addresses_byChain(addresses: list[str], chain: str) -> list[str]:
     for item in addresses:
         try:
             k, address = parse_address_eip(item)
-            if CHAIN_NAME_CONVERSION[k.lower()] == chain.lower():
+            if CHAIN_NAME_CONVERSION[k.lower()] == chain:
                 result.append(address)
         except ValueError as err:
             logger.warning(err)
-        except:
+        except Exception:
             logger.exception(f" Unexpected error parsing address item: {item}")
 
     return result

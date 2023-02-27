@@ -16,7 +16,7 @@ CURRENT_FOLDER = os.path.dirname(os.path.realpath(__file__))
 PARENT_FOLDER = os.path.dirname(CURRENT_FOLDER)
 sys.path.append(PARENT_FOLDER)
 
-from v3data.constants import PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP
+from v3data.enums import Chain, Protocol
 from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS
 
 from database.collection_returns import db_returns_manager
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 async def test_impermanent_divergence(
-    days, protocol: str = PROTOCOL_UNISWAP_V3, chain: str = "mainnet"
+    days, protocol: str = Protocol.UNISWAP, chain: Chain = Chain.MAINNET
 ):
 
     data = await hypervisor.impermanent_divergence(
@@ -52,14 +52,14 @@ async def test_impermanent_divergence(
 
 async def test_impermanent_divergence_all():
     days = [1, 7, 30]
-    protocols = [PROTOCOL_UNISWAP_V3, PROTOCOL_QUICKSWAP]
-    chains = ["mainnet", "polygon", "optimism", "arbitrum", "celo"]
+    protocols = Protocol
+    chains = Chain
 
     for chain in chains:
         for protocol in protocols:
-            if protocol == PROTOCOL_QUICKSWAP and chain != "polygon":
+            if protocol == Protocol.QUICKSWAP and chain != Chain.POLYGON:
                 continue
-            # elif protocol == PROTOCOL_UNISWAP_V3 and chain == "polygon":
+            # elif protocol == Protocol.UNISWAP and chain == Chain.POLYGON:
             #     continue
 
             for day in days:
