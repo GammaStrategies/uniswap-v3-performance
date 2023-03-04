@@ -3,13 +3,12 @@ import asyncio
 import sys
 from datetime import datetime
 
-from dataclasses import dataclass, field, asdict, InitVar
-from v3data.config import MONGO_DB_URL, DEFAULT_TIMEZONE
 from v3data.hypervisor import HypervisorInfo, HypervisorData
-from v3data.masterchef_v2 import MasterchefV2Info, UserRewardsV2
-from v3data.hypes.impermanent_data import ImpermanentDivergence
+from v3data.masterchef_v2 import MasterchefV2Info
+from v3data.hype_fees.data import FeeGrowthSnapshotData
+from v3data.hype_fees.fees_yield import FeesYield
+from v3data.hype_fees.impermanent_divergence import impermanent_divergence_all
 from v3data.toplevel import TopLevelData
-from v3data.hype_fees.fees_yield import fee_returns_all
 from v3data.enums import Chain, Protocol
 
 from database.common.collections_common import db_collections_common
@@ -105,7 +104,9 @@ class db_returns_manager(db_collection_manager):
     db_collection_name = "returns"
 
     # format data to be used with mongo db
-    async def create_data(self, chain: Chain, protocol: Protocol, period_days: int) -> dict:
+    async def create_data(
+        self, chain: Chain, protocol: Protocol, period_days: int
+    ) -> dict:
         """Create a dictionary of hypervisor_return database models
 
         Args:
@@ -119,24 +120,28 @@ class db_returns_manager(db_collection_manager):
         # define result var
         result = dict()
 
-        # define calculation class
-        all_data = ImpermanentDivergence(
-            period_days=period_days, protocol=protocol, chain=chain
-        )
         # calculate return
-        returns_data = await fee_returns_all(
+        fees_data = FeeGrowthSnapshotData(period_days, protocol, chain)
+        await fees_data.get_data()
+
+        returns_data = {}
+        for hypervisor_id, fees_data in fees_data.data.items():
+            fees_yield = FeesYield(fees_data, protocol, chain)
+            returns = fees_yield.calculate_returns()
+            returns_data[hypervisor_id] = returns
+
+        # calculate impermanent divergence
+        imperm_data = await impermanent_divergence_all(
             protocol=protocol, chain=chain, days=period_days
         )
-        # calculate impermanent divergence
-        imperm_data = await all_data.get_impermanent_data(get_data=False)
 
         # get block n timestamp
-        block = all_data.data["current_block"]
-        timestamp = all_data._block_ts_map[block]
+        block = fees_data.data[0].block
+        timestamp = fees_data.data[0].timestamp
 
         # fee yield data process
         for k, v in returns_data.items():
-            if not k in result.keys():
+            if k not in result.keys():
                 # set the database unique id
                 database_id = f"{chain}_{k}_{block}_{period_days}"
 
@@ -145,13 +150,13 @@ class db_returns_manager(db_collection_manager):
                     "chain": chain,
                     "period": period_days,
                     "address": k,
-                    "symbol": v["symbol"],
+                    "symbol": v.symbol,
                     "block": block,
                     "timestamp": timestamp,
                     "fees": {
-                        "feeApr": v["feeApr"],
-                        "feeApy": v["feeApy"],
-                        "status": v["status"],
+                        "feeApr": v.feeApr,
+                        "feeApy": v.feeApy,
+                        "status": v.status,
                     },
                 }
 
@@ -168,7 +173,9 @@ class db_returns_manager(db_collection_manager):
 
         return result
 
-    async def feed_db(self, chain: Chain, protocol: Protocol, periods: list[int] = [1, 7, 30]):
+    async def feed_db(
+        self, chain: Chain, protocol: Protocol, periods: list[int] = [1, 7, 30]
+    ):
 
         try:
             requests = [
@@ -214,7 +221,11 @@ class db_returns_manager(db_collection_manager):
             return {}
 
     async def get_hypervisor_average(
-        self, chain: Chain, hypervisor_address: str, period: int = 0, protocol: Protocol = ""
+        self,
+        chain: Chain,
+        hypervisor_address: str,
+        period: int = 0,
+        protocol: Protocol = "",
     ) -> dict:
         result = await self._get_data(
             query=self.query_hypervisors_average(
@@ -230,7 +241,11 @@ class db_returns_manager(db_collection_manager):
             return {}
 
     async def get_feeReturns(
-        self, chain: Chain, protocol: Protocol, period: int, hypervisor_address: str = ""
+        self,
+        chain: Chain,
+        protocol: Protocol,
+        period: int,
+        hypervisor_address: str = "",
     ) -> dict:
 
         # query database
@@ -298,7 +313,10 @@ class db_returns_manager(db_collection_manager):
     # TODO: return dict item with hypervisor id's as keys and 1 item list only ... to match others
     @staticmethod
     def query_hypervisors_average(
-        chain: Chain, period: int = 0, protocol: Protocol = "", hypervisor_address: str = ""
+        chain: Chain,
+        period: int = 0,
+        protocol: Protocol = "",
+        hypervisor_address: str = "",
     ) -> list[dict]:
         """get all average returns from collection
 
@@ -428,7 +446,10 @@ class db_returns_manager(db_collection_manager):
 
     @staticmethod
     def query_hypervisors_returns_average(
-        chain: Chain, period: int = 0, protocol: Protocol = "", hypervisor_address: str = ""
+        chain: Chain,
+        period: int = 0,
+        protocol: Protocol = "",
+        hypervisor_address: str = "",
     ) -> list[dict]:
         """get all average returns from collection
 
@@ -550,7 +571,10 @@ class db_returns_manager(db_collection_manager):
 
     @staticmethod
     def query_last_returns(
-        chain: Chain, period: int = 0, protocol: Protocol = "", hypervisor_address: str = ""
+        chain: Chain,
+        period: int = 0,
+        protocol: Protocol = "",
+        hypervisor_address: str = "",
     ) -> list[dict]:
         """return the last items found not zero lower than 800% apy apr :
                 daily, weekly and monthly apr apy ( alltime is the monthly figure)

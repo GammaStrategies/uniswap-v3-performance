@@ -1,11 +1,10 @@
+import asyncio
+
 from fastapi import Response, status
 
 from v3data.common import ExecutionOrderWrapper
 from v3data.hypervisor import HypervisorInfo
 from v3data.toplevel import TopLevelData
-from v3data.hypes.impermanent_data import (
-    ImpermanentDivergence as ImpermanentDivergenceOld,
-)
 from v3data.enums import Chain, Protocol
 from v3data.hype_fees.fees import fees_all
 from v3data.hype_fees.fees_yield import fee_returns_all
@@ -73,6 +72,95 @@ class AggregateStats(ExecutionOrderWrapper):
         }
 
 
+class HypervisorsReturnsAllPeriods(ExecutionOrderWrapper):
+    async def _database(self):
+        average_returns_mngr = db_returns_manager(mongo_url=MONGO_DB_URL)
+
+        av_result = await average_returns_mngr.get_hypervisors_returns_average(
+            chain=self.chain, protocol=self.protocol
+        )
+        if len(av_result) < 0:
+            raise Exception
+
+            results_na = {"feeApr": 0, "feeApy": 0, "status": "unavailable on database"}
+
+            result = dict()
+            # CONVERT result so is equal to original
+            for hypervisor in av_result:
+                result[hypervisor["_id"]] = dict()
+                try:
+                    result[hypervisor["_id"]]["daily"] = {
+                        "feeApr": hypervisor["returns"]["1"]["av_feeApr"],
+                        "feeApy": hypervisor["returns"]["1"]["av_feeApy"],
+                        "status": "database",
+                    }
+                except Exception:
+                    result[hypervisor["_id"]]["daily"] = results_na
+                try:
+                    result[hypervisor["_id"]]["weekly"] = {
+                        "feeApr": hypervisor["returns"]["7"]["av_feeApr"],
+                        "feeApy": hypervisor["returns"]["7"]["av_feeApy"],
+                        "status": "database",
+                    }
+                except Exception:
+                    result[hypervisor["_id"]]["weekly"] = results_na
+                try:
+                    result[hypervisor["_id"]]["monthly"] = {
+                        "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
+                        "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
+                        "status": "database",
+                    }
+                except Exception:
+                    result[hypervisor["_id"]]["monthly"] = results_na
+                try:
+                    result[hypervisor["_id"]]["allTime"] = {
+                        "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
+                        "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
+                        "status": "database",
+                    }
+                except Exception:
+                    result[hypervisor["_id"]]["allTime"] = results_na
+
+            return result
+
+    async def _subgraph(self):
+        daily, weekly, monthly = await asyncio.gather(
+            fee_returns_all(self.protocol, self.chain, 1),
+            fee_returns_all(self.protocol, self.chain, 7),
+            fee_returns_all(self.protocol, self.chain, 30),
+        )
+
+        results = {}
+        for hypervisor_id in daily.keys():
+            hypervisor_daily = daily.get(hypervisor_id)
+            hypervisor_weekly = weekly.get(hypervisor_id)
+            hypervisor_monthly = monthly.get(hypervisor_id)
+
+            symbol = hypervisor_daily.pop("symbol")
+            hypervisor_weekly.pop("symbol")
+            hypervisor_monthly.pop("symbol")
+
+            if hypervisor_weekly["feeApr"] == 0:
+                hypervisor_weekly = hypervisor_daily
+
+            if hypervisor_monthly["feeApr"] == 0:
+                hypervisor_monthly = hypervisor_weekly
+
+            results[hypervisor_id] = {"symbol": symbol}
+            results[hypervisor_id]["daily"] = hypervisor_daily
+            results[hypervisor_id]["weekly"] = hypervisor_weekly
+            results[hypervisor_id]["monthly"] = hypervisor_monthly
+            results[hypervisor_id]["allTime"] = hypervisor_monthly
+
+        return results
+
+
+class HypervisorReturnsAllPeriods(HypervisorsReturnsAllPeriods):
+    """Placeholder until single hypervisor queries are implemented"""
+
+    pass
+
+
 class ImpermanentDivergence(ExecutionOrderWrapper):
     def __init__(
         self, protocol: Protocol, chain: Chain, days: int, response: Response = None
@@ -100,112 +188,11 @@ async def hypervisor_basic_stats(
         return "Invalid hypervisor address or not enough data"
 
 
-async def hypervisor_apy(
-    protocol: Protocol, chain: Chain, hypervisor_address, response: Response
-):
-    hypervisor_info = HypervisorInfo(protocol, chain)
-    returns = await hypervisor_info.calculate_returns(hypervisor_address)
-
-    if returns:
-        return {"hypervisor": hypervisor_address, "returns": returns}
-    else:
-        response.status_code = status.HTTP_400_BAD_REQUEST
-        return "Invalid hypervisor address or not enough data"
-
-
 async def recent_fees(protocol: Protocol, chain: Chain, hours: int = 24):
     top_level = TopLevelData(protocol, chain)
     recent_fees = await top_level.recent_fees(hours)
 
     return {"periodHours": hours, "fees": recent_fees}
-
-
-async def hypervisors_return(
-    protocol: Protocol, chain: Chain, response: Response = None
-):
-    average_returns_mngr = db_returns_manager(mongo_url=MONGO_DB_URL)
-
-    av_result = await average_returns_mngr.get_hypervisors_returns_average(
-        chain=chain, protocol=protocol
-    )
-    if len(av_result) > 0:
-        # add request
-        if response:
-            response.headers["X-Database"] = "true"
-
-        result = dict()
-        # CONVERT result so is equal to original
-        for hypervisor in av_result:
-            result[hypervisor["_id"]] = dict()
-            try:
-                result[hypervisor["_id"]]["daily"] = {
-                    "totalPeriodSeconds": hypervisor["returns"]["1"]["max_timestamp"]
-                    - hypervisor["returns"]["1"]["min_timestamp"],
-                    "cumFeeReturn": 0,
-                    "feeApr": hypervisor["returns"]["1"]["av_feeApr"],
-                    "feeApy": hypervisor["returns"]["1"]["av_feeApy"],
-                }
-            except:
-                result[hypervisor["_id"]]["daily"] = {
-                    "totalPeriodSeconds": 0,
-                    "cumFeeReturn": 0,
-                    "feeApr": 0,
-                    "feeApy": 0,
-                }
-            try:
-                result[hypervisor["_id"]]["weekly"] = {
-                    "totalPeriodSeconds": hypervisor["returns"]["7"]["max_timestamp"]
-                    - hypervisor["returns"]["7"]["min_timestamp"],
-                    "cumFeeReturn": 0,
-                    "feeApr": hypervisor["returns"]["7"]["av_feeApr"],
-                    "feeApy": hypervisor["returns"]["7"]["av_feeApy"],
-                }
-            except:
-                result[hypervisor["_id"]]["weekly"] = {
-                    "totalPeriodSeconds": 0,
-                    "cumFeeReturn": 0,
-                    "feeApr": 0,
-                    "feeApy": 0,
-                }
-            try:
-                result[hypervisor["_id"]]["monthly"] = {
-                    "totalPeriodSeconds": hypervisor["returns"]["30"]["max_timestamp"]
-                    - hypervisor["returns"]["30"]["min_timestamp"],
-                    "cumFeeReturn": 0,
-                    "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
-                    "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
-                }
-            except:
-                result[hypervisor["_id"]]["monthly"] = {
-                    "totalPeriodSeconds": 0,
-                    "cumFeeReturn": 0,
-                    "feeApr": 0,
-                    "feeApy": 0,
-                }
-            try:
-                result[hypervisor["_id"]]["allTime"] = {
-                    "totalPeriodSeconds": hypervisor["returns"]["30"]["max_timestamp"]
-                    - hypervisor["returns"]["30"]["min_timestamp"],
-                    "cumFeeReturn": 0,
-                    "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
-                    "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
-                }
-            except:
-                result[hypervisor["_id"]]["allTime"] = {
-                    "totalPeriodSeconds": 0,
-                    "cumFeeReturn": 0,
-                    "feeApr": 0,
-                    "feeApy": 0,
-                }
-        return result
-
-    else:
-        # no database result
-        if response:
-            response.headers["X-Database"] = "false"
-        logger.warning(" falling back to original returns result [using rebalances]")
-        hypervisor_info = HypervisorInfo(protocol, chain)
-        return await hypervisor_info.all_returns()
 
 
 async def hypervisors_average_return(
@@ -236,11 +223,3 @@ async def uncollected_fees(protocol: Protocol, chain: Chain, hypervisor_address:
 
 async def uncollected_fees_all(protocol: Protocol, chain: Chain):
     return await fees_all(protocol, chain)
-
-
-async def impermanent_divergence(protocol: Protocol, chain: Chain, days: int):
-    impermanent_manager = ImpermanentDivergenceOld(
-        period_days=days, protocol=protocol, chain=chain
-    )
-    output = await impermanent_manager.get_impermanent_data()
-    return output

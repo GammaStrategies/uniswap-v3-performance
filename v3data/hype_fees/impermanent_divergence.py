@@ -151,7 +151,7 @@ class ImpermanentDivergence:
             else 0
         )
 
-    def calculate(self):
+    def calculate(self) -> dict:
         valid_total_supply = bool(
             self.data.initial.total_supply.raw > 0 and self.data.latest.total_supply.raw > 0
         )

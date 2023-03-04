@@ -59,10 +59,12 @@ async def hypervisor_basic_stats(hypervisor_address, response: Response):
 
 @router.get("/hypervisor/{hypervisor_address}/returns")
 @cache(expire=APY_CACHE_TIMEOUT)
-async def hypervisor_apy(response: Response, hypervisor_address):
-    return await v3data.common.hypervisor.hypervisor_apy(
-        PROTOCOL, CHAIN, hypervisor_address, response
+async def hypervisor_returns(response: Response, hypervisor_address: str):
+    hypervisor_returns = v3data.common.hypervisor.HypervisorReturnsAllPeriods(
+        PROTOCOL, CHAIN, response
     )
+    results = await hypervisor_returns.run(RUN_FIRST)
+    return results[hypervisor_address]
 
 
 # TODO: implement response
@@ -93,9 +95,10 @@ async def aggregate_stats(response: Response):
 @router.get("/hypervisors/returns")
 @cache(expire=APY_CACHE_TIMEOUT)
 async def hypervisors_return(response: Response):
-    return await v3data.common.hypervisor.hypervisors_return(
-        PROTOCOL, CHAIN, response=response
+    hypervisor_returns = v3data.common.hypervisor.HypervisorsReturnsAllPeriods(
+        PROTOCOL, CHAIN, response
     )
+    return await hypervisor_returns.run(RUN_FIRST)
 
 
 @router.get("/hypervisors/averageReturns")

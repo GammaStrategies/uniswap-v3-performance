@@ -4,11 +4,12 @@ from datetime import timedelta
 from pandas import DataFrame
 
 from v3data import GammaClient
-from v3data.hypervisor import HypervisorInfo
 from v3data.pricing import token_price
 from v3data.utils import timestamp_ago, filter_address_by_chain
+from v3data.constants import DAYS_IN_PERIOD
 from v3data.config import EXCLUDED_HYPERVISORS, GROSS_FEES_MAX
 from v3data.enums import Chain, Protocol
+from v3data.hype_fees.fees_yield import fee_returns_all
 
 
 class TopLevelData:
@@ -16,13 +17,12 @@ class TopLevelData:
 
     def __init__(self, protocol: Protocol, chain: Chain = Chain.MAINNET):
         self.protocol = protocol
+        self.chain = chain
         self.gamma_client = GammaClient(protocol, chain)
         self.all_stats_data = {}
         self.all_returns_data = {}
 
-        self.excluded_hypervisors = filter_address_by_chain(
-            EXCLUDED_HYPERVISORS, chain
-        )
+        self.excluded_hypervisors = filter_address_by_chain(EXCLUDED_HYPERVISORS, chain)
 
     async def get_hypervisor_data(self):
         """Get hypervisor IDs"""
@@ -52,35 +52,6 @@ class TopLevelData:
         """
         response = await self.gamma_client.query(query)
         return response["data"]["uniswapV3Pools"]
-
-    async def _get_all_returns_data(self, time_delta):
-        query = """
-        query allRebalances($timestampStart: Int!){
-            uniswapV3Hypervisors(
-                first: 1000
-            ){
-                id
-                grossFeesClaimedUSD
-                tvlUSD
-                rebalances(
-                    first: 1000
-                    where: { timestamp_gte: $timestampStart }
-                    orderBy: timestamp
-                    orderDirection: desc
-                ) {
-                    id
-                    timestamp
-                    grossFeesUSD
-                    protocolFeesUSD
-                    netFeesUSD
-                    totalAmountUSD
-                }
-            }
-        }
-        """
-        variables = {"timestampStart": timestamp_ago(time_delta)}
-        response = await self.gamma_client.query(query, variables)
-        self.all_returns_data = response["data"]["uniswapV3Hypervisors"]
 
     async def _get_all_stats_data(self):
         query = """
@@ -186,8 +157,11 @@ class TopLevelData:
 
         return df_fees.sum().to_dict()
 
-    async def _calculate_returns(self):
-        hypervisors = self.all_returns_data
+    async def calculate_returns(self, period: str):
+        hypervisors, all_returns = await asyncio.gather(
+            self.get_hypervisor_data(),
+            fee_returns_all(self.protocol, self.chain, DAYS_IN_PERIOD[period]),
+        )
 
         tvl = sum(
             [
@@ -197,16 +171,7 @@ class TopLevelData:
             ]
         )
 
-        hypervisor_info = HypervisorInfo(self.protocol)
-        hypervisor_info.all_rebalance_data = hypervisors
-        all_returns = await hypervisor_info.all_returns()
-
-        returns = {
-            "daily": {"feeApr": 0, "feeApy": 0},
-            "weekly": {"feeApr": 0, "feeApy": 0},
-            "monthly": {"feeApr": 0, "feeApy": 0},
-            "allTime": {"feeApr": 0, "feeApy": 0},
-        }
+        returns = {"feeApr": 0, "feeApy": 0}
         for hypervisor in hypervisors:
             if hypervisor["id"] in self.excluded_hypervisors:
                 continue
@@ -214,14 +179,12 @@ class TopLevelData:
                 tvl_share = float(hypervisor["tvlUSD"]) / tvl
             else:
                 tvl_share = 0
-            hypervisor_returns = all_returns.get(hypervisor["id"])
-            if hypervisor_returns:
-                for period, values in hypervisor_returns.items():
-                    returns[period]["feeApr"] += values["feeApr"] * tvl_share
-                    returns[period]["feeApy"] += values["feeApy"] * tvl_share
+
+            returns["feeApr"] += (
+                all_returns.get(hypervisor["id"], {}).get("feeApr", 0) * tvl_share
+            )
+            returns["feeApy"] += (
+                all_returns.get(hypervisor["id"], {}).get("feeApy", 0) * tvl_share
+            )
 
         return returns
-
-    async def calculate_returns(self):
-        await self._get_all_returns_data(timedelta(days=30))
-        return await self._calculate_returns()

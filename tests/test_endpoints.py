@@ -5,6 +5,14 @@ import logging
 import asyncio
 
 
+from v3data.charts.base_range import BaseLimit
+from v3data.toplevel import TopLevelData
+from v3data.accounts import AccountInfo
+from v3data.common import hypervisor
+from v3data.enums import Chain, Protocol
+from v3data.hypes.fees_yield import FeesYield
+
+
 logging.basicConfig(
     format="[%(asctime)s:%(levelname)s:%(name)s]:%(message)s",
     datefmt="%Y/%m/%d %I:%M:%S",
@@ -16,19 +24,6 @@ CURRENT_FOLDER = os.path.dirname(os.path.realpath(__file__))
 PARENT_FOLDER = os.path.dirname(CURRENT_FOLDER)
 sys.path.append(PARENT_FOLDER)
 
-import v3data
-from v3data.enums import Protocol
-from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS
-
-from v3data.bollingerbands import BollingerBand
-from v3data.charts.base_range import BaseLimit
-from v3data.charts.benchmark import Benchmark
-
-from v3data.toplevel import TopLevelData
-from v3data.accounts import AccountInfo
-
-from v3data.common import hypervisor
-from v3data.enums import Chain, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +62,6 @@ def get_timepassed_string(start_time: dt.datetime) -> str:
         _timelapse_unit = "hours"
         _passed /= 60 * 60
     return "{:,.2f} {}".format(_passed, _timelapse_unit)
-
-
-from v3data.hypes.fees_yield import FeesYield
 
 
 async def test_temporal():
