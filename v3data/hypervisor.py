@@ -1,12 +1,9 @@
 import logging
-import numpy as np
-from datetime import timedelta
-from pandas import DataFrame
 
 from v3data import GammaClient, UniswapV3Client
-from v3data.utils import timestamp_ago, timestamp_to_date, filter_address_by_chain
-from v3data.constants import DAYS_IN_PERIOD, SECONDS_IN_DAYS
-from v3data.config import EXCLUDED_HYPERVISORS, FALLBACK_DAYS, GROSS_FEES_MAX
+from v3data.utils import timestamp_to_date, filter_address_by_chain
+from v3data.constants import DAYS_IN_PERIOD
+from v3data.config import EXCLUDED_HYPERVISORS
 from v3data.hype_fees.fees_yield import fee_returns_all
 from v3data.enums import Chain, Protocol
 
@@ -29,111 +26,6 @@ class HypervisorData:
         self.excluded_hypervisors = filter_address_by_chain(
             EXCLUDED_HYPERVISORS, chain
         )
-
-    async def get_rebalance_data(self, hypervisor_address, time_delta, limit=1000):
-        query = """
-        query rebalances($hypervisor: String!, $timestamp_start: Int!, $limit: Int!){
-            uniswapV3Rebalances(
-                first: $limit
-                where: {
-                    hypervisor: $hypervisor
-                    timestamp_gte: $timestamp_start
-                }
-            ) {
-                id
-                hypervisor {id}
-                timestamp
-                grossFeesUSD
-                protocolFeesUSD
-                netFeesUSD
-                totalAmountUSD
-            }
-        }
-        """
-        timestamp_start = timestamp_ago(time_delta)
-        variables = {
-            "hypervisor": hypervisor_address.lower(),
-            "timestamp_start": timestamp_start,
-            "limit": limit,
-        }
-        response = await self.gamma_client.query(query, variables)
-
-        # TODO: specify chain on hardcoded overrides
-        if hypervisor_address == "0x0ec4a47065bf52e1874d2491d4deeed3c638c75f":
-            for rebalance in response["data"]["uniswapV3Rebalances"]:
-                if (
-                    rebalance["id"]
-                    == "0x9144d5c6a7e8ffd335c837c5877397e96ea3abbc77c9598b07255add6db3fc13-15"
-                ):
-                    rebalance["grossFeesUSD"] = str(
-                        float(rebalance["grossFeesUSD"]) * 0.08
-                    )
-                    rebalance["protocolFeesUSD"] = str(
-                        float(rebalance["protocolFeesUSD"]) * 0.08
-                    )
-                    rebalance["netFeesUSD"] = str(float(rebalance["netFeesUSD"]) * 0.08)
-                    rebalance["totalAmountUSD"] = str(
-                        float(rebalance["totalAmountUSD"]) * 0.08
-                    )
-
-        return response["data"]["uniswapV3Rebalances"]
-
-    async def _get_all_rebalance_data(self, time_delta):
-        query = """
-        query allRebalances($timestamp_start: Int!, $grossFeesMax: Int!){
-            uniswapV3Hypervisors(
-                first: 1000
-            ){
-                id
-                rebalances(
-                    first: 1000
-                    where: {
-                        timestamp_gte: $timestamp_start
-                        grossFeesUSD_lt: $grossFeesMax
-                    }
-                    orderBy: timestamp
-                    orderDirection: desc
-                ) {
-                    id
-                    hypervisor {id}
-                    timestamp
-                    grossFeesUSD
-                    protocolFeesUSD
-                    netFeesUSD
-                    totalAmountUSD
-                }
-            }
-        }
-        """
-        variables = {
-            "timestamp_start": timestamp_ago(time_delta),
-            "grossFeesMax": GROSS_FEES_MAX
-        }
-        response = await self.gamma_client.query(query, variables)
-
-        # TODO: hardcoded hypervisor address matches more than one --> MAINNET(xPSDN-ETH1) and OPTIMISM(xUSDC-DAI05)
-        # TODO: specify chain on hardcoded overrides
-        for hypervisor in response["data"]["uniswapV3Hypervisors"]:
-            if hypervisor["id"] == "0x0ec4a47065bf52e1874d2491d4deeed3c638c75f":
-                for rebalance in hypervisor["rebalances"]:
-                    if (
-                        rebalance["id"]
-                        == "0x9144d5c6a7e8ffd335c837c5877397e96ea3abbc77c9598b07255add6db3fc13-15"
-                    ):
-                        rebalance["grossFeesUSD"] = str(
-                            float(rebalance["grossFeesUSD"]) * 0.08
-                        )
-                        rebalance["protocolFeesUSD"] = str(
-                            float(rebalance["protocolFeesUSD"]) * 0.08
-                        )
-                        rebalance["netFeesUSD"] = str(
-                            float(rebalance["netFeesUSD"]) * 0.08
-                        )
-                        rebalance["totalAmountUSD"] = str(
-                            float(rebalance["totalAmountUSD"]) * 0.08
-                        )
-
-        self.all_rebalance_data = response["data"]["uniswapV3Hypervisors"]
 
     async def _get_hypervisor_data(self, hypervisor_address):
         query = """
@@ -282,137 +174,9 @@ class HypervisorInfo(HypervisorData):
             for period in DAYS_IN_PERIOD
         }
 
-    def _calculate_returns(self, rebalance_data, uncollected_fees_data=None):
-        # Calculations require more than 1 rebalance
-
-        if rebalance_data:
-            data = rebalance_data.copy()
-            if uncollected_fees_data:
-                data.append(uncollected_fees_data)
-        else:
-            data = [uncollected_fees_data]
-
-        if (not data) or (len(data) < 2):
-            return self.empty_returns()
-
-        df_rebalances = DataFrame(data)
-        df_rebalances = df_rebalances[
-            [
-                "timestamp",
-                "grossFeesUSD",
-                "protocolFeesUSD",
-                "netFeesUSD",
-                "totalAmountUSD",
-            ]
-        ].astype(np.float64)
-        df_rebalances = df_rebalances[df_rebalances.totalAmountUSD > 0]
-
-        if df_rebalances.empty:
-            return self.empty_returns()
-
-        df_rebalances.sort_values("timestamp", inplace=True)
-        latest_rebalance_ts = df_rebalances.loc[df_rebalances.index[-1], "timestamp"]
-
-        # Calculate fee return rate for each rebalance event
-        shift = 1 if self.chain == Chain.MAINNET else 0
-
-        df_rebalances[
-            "feeRate"
-        ] = df_rebalances.grossFeesUSD / df_rebalances.totalAmountUSD.shift(shift)
-        df_rebalances["totalRate"] = (
-            df_rebalances.totalAmountUSD / df_rebalances.totalAmountUSD.shift(shift) - 1
-        )
-
-        # Time since last rebalance
-        df_rebalances["periodSeconds"] = df_rebalances.timestamp.diff()
-
-        # Calculate returns for using last 1, 7, and 30 days data
-        results = {}
-        for period, days in DAYS_IN_PERIOD.items():
-            timestamp_start = timestamp_ago(timedelta(days=days))
-            #  If no items for timestamp larger than timestamp_start
-            n_valid_rows = len(df_rebalances[df_rebalances.timestamp > timestamp_start])
-            if n_valid_rows < 2:
-                timestamp_start = latest_rebalance_ts - (
-                    FALLBACK_DAYS * SECONDS_IN_DAYS
-                )
-            df_period = df_rebalances.loc[
-                df_rebalances.timestamp > timestamp_start
-            ].copy()
-
-            if df_period.empty:
-                # if no rebalances in the last 24 hours, calculate using the 24 hours
-                # prior to the last rebalance
-                timestamp_start = df_rebalances.timestamp.max() - DAY_SECONDS
-                df_period = df_rebalances.loc[
-                    df_rebalances.timestamp > timestamp_start
-                ].copy()
-
-            # Time since first reblance
-            df_period["totalPeriodSeconds"] = df_period.periodSeconds.cumsum()
-
-            # Compound fee return rate for each rebalance
-            df_period["cumFeeReturn"] = (1 + df_period.feeRate).cumprod() - 1
-            df_period["cumTotalReturn"] = (1 + df_period.totalRate).cumprod() - 1
-
-            # Last row is the cumulative results
-            returns = df_period[["totalPeriodSeconds", "cumFeeReturn"]].tail(
-                1
-            )  # , 'cumTotalReturn'
-
-            # Extrapolate linearly to annual rate
-            returns["feeApr"] = returns.cumFeeReturn * (
-                YEAR_SECONDS / returns.totalPeriodSeconds
-            )
-
-            # Extrapolate by compounding
-            returns["feeApy"] = (
-                1 + returns.cumFeeReturn * (DAY_SECONDS / returns.totalPeriodSeconds)
-            ) ** 365 - 1
-
-            results[period] = returns.to_dict("records")[0]
-
-        if results["monthly"]["feeApy"] == np.inf:
-            results["monthly"] = results["weekly"]
-
-        return results
-
     async def basic_stats(self, hypervisor_address):
         data = await self._get_hypervisor_data(hypervisor_address)
         return data
-
-    async def calculate_returns(self, hypervisor_address):
-        rebalance_data = await self.get_rebalance_data(
-            hypervisor_address, timedelta(days=360)
-        )
-        # uncollected_fees_data = await UncollectedFees(
-        #     self.chain
-        # ).output_for_returns_calc(hypervisor_address)
-        uncollected_fees_data = None
-        returns = self._calculate_returns(rebalance_data, uncollected_fees_data)
-
-        return self.apply_returns_overrides(hypervisor_address, returns)
-
-    async def all_returns(self, get_data=True):
-
-        if get_data:
-            await self._get_all_rebalance_data(timedelta(days=360))
-
-        results = {}
-        for hypervisor in self.all_rebalance_data:
-            if hypervisor["id"] not in self.excluded_hypervisors:
-                # uncollected_fees_data = await UncollectedFees(
-                #     self.chain
-                # ).output_for_returns_calc(hypervisor["id"])
-                uncollected_fees_data = None
-                returns = self._calculate_returns(
-                    hypervisor["rebalances"], uncollected_fees_data
-                )
-                results[hypervisor["id"]] = self.apply_returns_overrides(
-                    hypervisor["id"], returns
-                )
-
-        return results
 
     async def all_data(self, get_data=True):
 
@@ -454,7 +218,9 @@ class HypervisorInfo(HypervisorData):
         for hypervisor in basics:
             try:
                 hypervisor_id = hypervisor["id"]
-                hypervisor_name = f'{hypervisor["pool"]["token0"]["symbol"]}-{hypervisor["pool"]["token1"]["symbol"]}-{hypervisor["pool"]["fee"]}'
+                symbol0 = hypervisor["pool"]["token0"]["symbol"]
+                symbol1 = hypervisor["pool"]["token1"]["symbol"]
+                hypervisor_name = f'{symbol0}-{symbol1}-{hypervisor["pool"]["fee"]}'
                 pool_id = hypervisor["pool"]["id"]
                 decimals0 = hypervisor["pool"]["token0"]["decimals"]
                 decimals1 = hypervisor["pool"]["token1"]["decimals"]

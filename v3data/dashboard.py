@@ -174,7 +174,7 @@ class Dashboard:
         top_level.all_stats_data = self.top_level_data
         top_level.all_returns_data = self.top_level_returns_data
         top_level_data = top_level._all_stats()
-        top_level_returns = await top_level._calculate_returns()
+        top_level_returns = await top_level.calculate_returns(self.period)
 
         daily_yield = gamma_yield[self.period]["yield"] / DAYS_IN_PERIOD[self.period]
 
@@ -212,7 +212,7 @@ class Dashboard:
             "uniswapPairTotalValueLocked": top_level_data["tvl"],
             "uniswapPairAmountPairs": top_level_data["pool_count"],
             "uniswapFeesGenerated": top_level_data["fees_claimed"],
-            "uniswapFeesBasedApr": f"{top_level_returns[self.period]['feeApr']:.0%}",
+            "uniswapFeesBasedApr": f"{top_level_returns['feeApr']:.0%}",
             "gammaPrice": gamma_price_usd,
             "gammaInEth": gamma_in_eth,
             "gammaPerXgamma": rewards_info["gamma_per_xgamma"],
