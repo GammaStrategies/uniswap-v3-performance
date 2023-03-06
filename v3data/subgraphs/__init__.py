@@ -10,8 +10,27 @@ from v3data.enums import Chain, Protocol
 requests_logger.setLevel(logging.WARNING)
 
 
+def fragment(fragment_function):
+    """
+    Decorator for use with SubgraphClient methods keep track of fragment usage
+    All fragment methods should be decorated with this
+    """
+
+    @wraps(fragment_function)
+    def wrapper(*args):
+        fragment = fragment_function(*args)
+        instance = args[0]  # self
+        if fragment.name not in instance._fragments_used:
+            instance._fragments_used.append(fragment.name)
+            instance._fragment_dependencies.append(fragment)
+        return fragment
+
+    return wrapper
+
+
 class AsyncGqlClient(GqlClient):
     """Subclass of gql Client that defaults to AIOHTTPTransport"""
+
     def __init__(self, url: str, schema):
         self.url = url
         super().__init__(schema=schema, transport=AIOHTTPTransport(url=url))
@@ -19,6 +38,7 @@ class AsyncGqlClient(GqlClient):
 
 class SubgraphClient:
     """Subgraph base client to manage query execution and shared fragments"""
+
     def __init__(
         self, protocol: Protocol, chain: Chain, url: str, schema_path: str
     ) -> None:
@@ -35,19 +55,11 @@ class SubgraphClient:
             result = await session.execute(gql)
             return result
 
-
-def fragment(fragment_function):
-    """
-    Decorator for use with SubgraphClient methods keep track of fragment usage
-    All fragment methods should be decorated with this
-    """
-    @wraps(fragment_function)
-    def wrapper(*args):
-        fragment = fragment_function(*args)
-        instance = args[0]  # self
-        if fragment.name not in instance._fragments_used:
-            instance._fragments_used.append(fragment.name)
-            instance._fragment_dependencies.append(fragment)
+    @fragment
+    def meta_fields_fragment(self):
+        """Meta fragment is common across all subgraphs"""
+        ds = self.data_schema
+        fragment = DSLFragment("MetaFields")
+        fragment.on(ds._Meta_)
+        fragment.select(ds._Meta_.block.select(ds._Block_.number, ds._Block_.timestamp))
         return fragment
-
-    return wrapper

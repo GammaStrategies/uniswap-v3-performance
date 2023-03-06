@@ -15,14 +15,6 @@ class HypePoolClient(SubgraphClient):
         )
 
     @fragment
-    def meta_fields_fragment(self):
-        ds = self.data_schema
-        fragment = DSLFragment("MetaFields")
-        fragment.on(ds._Meta_)
-        fragment.select(ds._Meta_.block.select(ds._Block_.number, ds._Block_.timestamp))
-        return fragment
-
-    @fragment
     def tick_fields_fragment(self):
         fragment = DSLFragment("TickFields")
         ds_tick = self.data_schema.Tick

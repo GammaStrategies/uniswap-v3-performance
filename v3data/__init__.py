@@ -4,7 +4,6 @@ import logging
 
 from v3data.config import (
     ALCHEMY_URLS,
-    VISOR_SUBGRAPH_URL,
     GAMMA_SUBGRAPH_URLS,
     UNI_V2_SUBGRAPH_URL,
     DEX_SUBGRAPH_URLS,
@@ -88,48 +87,6 @@ class SubgraphClient:
                 params["variables"]["paginate"] = data[-1][paginate_variable]
 
         return all_data
-
-
-class VisorClient(SubgraphClient):
-    def __init__(self):
-        super().__init__(VISOR_SUBGRAPH_URL)
-
-    def hypervisors_tvl(self):
-        query_tvl = """
-        {
-            uniswapV3Hypervisors(first:1000) {
-                id
-                pool{
-                    id
-                    token0{
-                        decimals
-                    }
-                    token1{
-                        decimals
-                    }
-                }
-                tvl0
-                tvl1
-                tvlUSD
-                totalSupply
-            }
-        }
-        """
-        tvls = self.query(query_tvl)["data"]["uniswapV3Hypervisors"]
-
-        return {
-            hypervisor["id"]: {
-                "tvl0": hypervisor["tvl0"],
-                "tvl1": hypervisor["tvl1"],
-                "tvlUSD": hypervisor["tvlUSD"],
-                "tvl0Decimal": int(hypervisor["tvl0"])
-                / 10 ** int(hypervisor["pool"]["token0"]["decimals"]),
-                "tvl1Decimal": int(hypervisor["tvl1"])
-                / 10 ** int(hypervisor["pool"]["token1"]["decimals"]),
-                "totalSupply": int(hypervisor["totalSupply"]),
-            }
-            for hypervisor in tvls
-        }
 
 
 class GammaClient(SubgraphClient):

@@ -212,7 +212,6 @@ class HypervisorInfo(HypervisorData):
             }
             for hypervisor, hypervisor_returns in fee_yield_output.items()
         }
-        # returns = await self.all_returns(get_data=get_data)
 
         results = {}
         for hypervisor in basics:
