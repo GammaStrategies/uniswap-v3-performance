@@ -60,11 +60,13 @@ async def hypervisor_basic_stats(hypervisor_address, response: Response):
 @router.get("/hypervisor/{hypervisor_address}/returns")
 @cache(expire=APY_CACHE_TIMEOUT)
 async def hypervisor_returns(response: Response, hypervisor_address: str):
-    hypervisor_returns = v3data.common.hypervisor.HypervisorReturnsAllPeriods(
-        PROTOCOL, CHAIN, response
+    hypervisor_returns = v3data.common.hypervisor.HypervisorsReturnsAllPeriods(
+        protocol=PROTOCOL,
+        chain=CHAIN,
+        hypervisors=[hypervisor_address],
+        response=response,
     )
-    results = await hypervisor_returns.run(RUN_FIRST)
-    return results[hypervisor_address]
+    return await hypervisor_returns.run(RUN_FIRST)
 
 
 # TODO: implement response

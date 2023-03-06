@@ -153,7 +153,8 @@ class ImpermanentDivergence:
 
     def calculate(self) -> dict:
         valid_total_supply = bool(
-            self.data.initial.total_supply.raw > 0 and self.data.latest.total_supply.raw > 0
+            self.data.initial.total_supply.raw > 0
+            and self.data.latest.total_supply.raw > 0
         )
 
         return {
@@ -162,15 +163,23 @@ class ImpermanentDivergence:
             "blocks_passed": self.data.latest.block - self.data.initial.block,
             "seconds_passed": self.data.latest.timestamp - self.data.initial.timestamp,
             "vs_hodl_usd": self.deposit_in_vault_usd() if valid_total_supply else 0,
-            "vs_hodl_deposited": self.hold_initial_tokens_usd() if valid_total_supply else 0,
-            "vs_hodl_token0": self.deposit_in_vault_token0() if valid_total_supply else 0,
-            "vs_hodl_token1": self.deposit_in_vault_token1() if valid_total_supply else 0,
+            "vs_hodl_deposited": self.hold_initial_tokens_usd()
+            if valid_total_supply
+            else 0,
+            "vs_hodl_token0": self.deposit_in_vault_token0()
+            if valid_total_supply
+            else 0,
+            "vs_hodl_token1": self.deposit_in_vault_token1()
+            if valid_total_supply
+            else 0,
         }
 
 
-async def impermanent_divergence_all(protocol: Protocol, chain: Chain, days: int) -> dict:
+async def impermanent_divergence_all(
+    protocol: Protocol, chain: Chain, days: int, hypervisors: list[str] | None = None
+) -> dict:
     divergence_data = ImpermanentDivergenceData(days, protocol, chain)
-    await divergence_data.get_data()
+    await divergence_data.get_data(hypervisors)
 
     results = {}
     for hypervisor_id, hypervisor in divergence_data.data.items():

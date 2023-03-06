@@ -67,11 +67,13 @@ async def hypervisor_basic_stats(hypervisor_address, response: Response):
 @router.get("/hypervisor/{hypervisor_address}/returns")
 @cache(expire=APY_CACHE_TIMEOUT)
 async def hypervisor_returns(response: Response, hypervisor_address: str):
-    hypervisor_returns = v3data.common.hypervisor.HypervisorReturnsAllPeriods(
-        PROTOCOL, CHAIN, response
+    hypervisor_returns = v3data.common.hypervisor.HypervisorsReturnsAllPeriods(
+        protocol=PROTOCOL,
+        chain=CHAIN,
+        hypervisors=[hypervisor_address],
+        response=response,
     )
-    results = await hypervisor_returns.run(RUN_FIRST)
-    return results[hypervisor_address]
+    return await hypervisor_returns.run(RUN_FIRST)
 
 
 # TODO: implement response
@@ -134,7 +136,6 @@ async def fee_returns_daily(response: Response):
     fee_returns = v3data.common.hypervisor.FeeReturns(
         PROTOCOL, CHAIN, 1, response=response
     )
-
     return await fee_returns.run(RUN_FIRST)
 
 
@@ -183,7 +184,9 @@ async def impermanent_divergence_monthly():
 @router.get("/allRewards2")
 @cache(expire=DB_CACHE_TIMEOUT)
 async def all_rewards_2(response: Response):
-    masterchef_v2_info = v3data.common.masterchef_v2.AllRewards2(PROTOCOL, CHAIN, response)
+    masterchef_v2_info = v3data.common.masterchef_v2.AllRewards2(
+        PROTOCOL, CHAIN, response
+    )
     return await masterchef_v2_info.run(RUN_FIRST)
 
 

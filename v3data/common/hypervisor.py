@@ -73,6 +73,18 @@ class AggregateStats(ExecutionOrderWrapper):
 
 
 class HypervisorsReturnsAllPeriods(ExecutionOrderWrapper):
+    def __init__(
+        self,
+        protocol: Protocol,
+        chain: Chain,
+        hypervisors: list[str] | None = None,
+        response: Response = None,
+    ):
+        self.hypervisors = (
+            [hypervisor.lower() for hypervisor in hypervisors] if hypervisors else None
+        )
+        super().__init__(protocol, chain, response)
+
     async def _database(self):
         average_returns_mngr = db_returns_manager(mongo_url=MONGO_DB_URL)
 
@@ -125,9 +137,9 @@ class HypervisorsReturnsAllPeriods(ExecutionOrderWrapper):
 
     async def _subgraph(self):
         daily, weekly, monthly = await asyncio.gather(
-            fee_returns_all(self.protocol, self.chain, 1),
-            fee_returns_all(self.protocol, self.chain, 7),
-            fee_returns_all(self.protocol, self.chain, 30),
+            fee_returns_all(self.protocol, self.chain, 1, self.hypervisors),
+            fee_returns_all(self.protocol, self.chain, 7, self.hypervisors),
+            fee_returns_all(self.protocol, self.chain, 30, self.hypervisors),
         )
 
         results = {}
@@ -153,12 +165,6 @@ class HypervisorsReturnsAllPeriods(ExecutionOrderWrapper):
             results[hypervisor_id]["allTime"] = hypervisor_monthly
 
         return results
-
-
-class HypervisorReturnsAllPeriods(HypervisorsReturnsAllPeriods):
-    """Placeholder until single hypervisor queries are implemented"""
-
-    pass
 
 
 class ImpermanentDivergence(ExecutionOrderWrapper):
@@ -218,7 +224,7 @@ async def hypervisor_average_return(
 
 
 async def uncollected_fees(protocol: Protocol, chain: Chain, hypervisor_address: str):
-    return (await fees_all(protocol, chain))[hypervisor_address]
+    return await fees_all(protocol, chain, [hypervisor_address])
 
 
 async def uncollected_fees_all(protocol: Protocol, chain: Chain):

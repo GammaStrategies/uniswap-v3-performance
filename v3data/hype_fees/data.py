@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from gql.dsl import DSLQuery
 
-from v3data import HypePoolClient, LlamaClient
+from v3data import LlamaClient
 from v3data.constants import BLOCK_TIME_SECONDS, DAY_SECONDS
 from v3data.hype_fees.schema import (
     FeesData,
@@ -10,13 +11,14 @@ from v3data.hype_fees.schema import (
 )
 from v3data.utils import estimate_block_from_timestamp_diff
 from v3data.enums import Chain, Protocol
+from v3data.subgraphs.hype_pool import HypePoolClient
 
 
 class FeeGrowthDataABC(ABC):
     def __init__(self, protocol: Protocol, chain: Chain) -> None:
         self.protocol = protocol
         self.chain = chain
-        self.fee_growth_client = HypePoolClient(protocol, chain)
+        self.hype_pool_client = HypePoolClient(protocol, chain)
         self.data = {}
         self._static_data = {}
 
@@ -150,90 +152,49 @@ class FeeGrowthTemporalData(FeeGrowthDataABC):
             )
 
     async def _query_current_time(self) -> Time:
-        query = """
-        {
-            _meta {
-                block {
-                number
-                timestamp
-                }
-            }
-        }
-        """
+        query = DSLQuery(
+            self.hype_pool_client.data_schema.Query._meta.select(
+                self.hype_pool_client.meta_fields_fragment()
+            )
+        )
 
-        response = await self.fee_growth_client.query(query)
+        response = await self.hype_pool_client.execute(query)
 
         return Time(
-            block=response["data"]["_meta"]["block"]["number"],
-            timestamp=response["data"]["_meta"]["block"]["timestamp"],
+            block=response["_meta"]["block"]["number"],
+            timestamp=response["_meta"]["block"]["timestamp"],
         )
 
 
 class FeeGrowthData(FeeGrowthDataABC):
-    async def get_data(self) -> None:
-        self.data = self._transform_data(await self._query_data())
+    async def get_data(self, hypervisors: list[str] | None = None) -> None:
+        self.data = self._transform_data(await self._query_data(hypervisors))
 
-    async def _query_data(self) -> dict:
-        query = """
-        query feeGrowth {
-            static: hypervisors {
-                id
-                symbol
-                pool {
-                    token0 {
-                        decimals
-                    }
-                    token1 {
-                        decimals
-                    }
-                }
-            }
-            hypervisors {
-                id
-                tvl0
-                tvl1
-                tvlUSD
-                pool {
-                    currentTick
-                    feeGrowthGlobal0X128
-                    feeGrowthGlobal1X128
-                    token0 {
-                        priceUSD
-                    }
-                    token1 {
-                        priceUSD
-                    }
-                }
-                basePosition { ...positionFields }
-                limitPosition {...positionFields }
-            }
-            _meta {
-                block {
-                number
-                timestamp
-                }
-            }
-        }
+    async def _query_data(self, hypervisors: list[str] | None = None) -> dict:
+        ds = self.hype_pool_client.data_schema
+        hypervisor_filter = (
+            {"where": {"id_in": hypervisors}} if hypervisors else {}
+        )
 
-        fragment tickFields on Tick {
-            tickIdx
-            feeGrowthOutside0X128
-            feeGrowthOutside1X128
-        }
+        query = DSLQuery(
+            ds.Query.hypervisors(**hypervisor_filter)
+            .alias("static")
+            .select(
+                ds.Hypervisor.id,
+                ds.Hypervisor.symbol,
+                ds.Hypervisor.pool.select(
+                    ds.Pool.token0.select(ds.Token.decimals),
+                    ds.Pool.token1.select(ds.Token.decimals),
+                ),
+            ),
+            ds.Query.hypervisors(**hypervisor_filter).select(
+                self.hype_pool_client.hypervisor_fields_fragment()
+            ),
+            ds.Query._meta.select(self.hype_pool_client.meta_fields_fragment()),
+        )
 
-        fragment positionFields on HypervisorPosition {
-            liquidity
-            tokensOwed0
-            tokensOwed1
-            feeGrowthInside0X128
-            feeGrowthInside1X128
-            tickLower { ...tickFields }
-            tickUpper { ...tickFields }
-        }
-        """
-
-        response = await self.fee_growth_client.query(query)
-        return response["data"]
+        response = await self.hype_pool_client.execute(query)
+        return response
 
     def _transform_data(self, query_data) -> dict[str, FeesData]:
         self._extract_static_data(query_data["static"])
@@ -256,130 +217,65 @@ class FeeGrowthData(FeeGrowthDataABC):
 class FeeGrowthSnapshotData(FeeGrowthTemporalData):
     """Get fee growth data from fee growth subgraph"""
 
-    async def get_data(self) -> None:
+    async def get_data(self, hypervisors: list[str] | None = None) -> None:
         """Query data and tranfrom to FeesData Class"""
         await self._init_start_time()
-        self.data = self._transform_data(await self._query_data())
+        self.data = self._transform_data(await self._query_data(hypervisors))
 
-    async def _query_data(self) -> dict:
-        query = """
-        query Snapshots(
-            $blockStart: Int!,
-            $timestampStart: Int!,
-            $blockEnd: Int!,
-            $timestampEnd: Int!
-        ) {
-            static: hypervisors(block: {number: $blockEnd}) {
-                id
-                symbol
-                pool {
-                    token0 {
-                        priceUSD
-                        decimals
+    async def _query_data(self, hypervisors: list[str] | None = None) -> dict:
+        ds = self.hype_pool_client.data_schema
+        hypervisor_filter = (
+            {"where": {"id_in": hypervisors}} if hypervisors else {}
+        )
+
+        query = DSLQuery(
+            ds.Query.hypervisors(
+                **({"block": {"number": self.end_time.block}} | hypervisor_filter)
+            )
+            .alias("static")
+            .select(
+                ds.Hypervisor.id,
+                ds.Hypervisor.symbol,
+                ds.Hypervisor.pool.select(
+                    ds.Pool.token0.select(ds.Token.decimals),
+                    ds.Pool.token1.select(ds.Token.decimals),
+                ),
+            ),
+            ds.Query.hypervisors(
+                **({"block": {"number": self.end_time.block}} | hypervisor_filter)
+            )
+            .alias("latest")
+            .select(self.hype_pool_client.hypervisor_fields_fragment()),
+            ds.Query.hypervisors(
+                **({"block": {"number": self.initial_time.block}} | hypervisor_filter)
+            )
+            .alias("initial")
+            .select(self.hype_pool_client.hypervisor_fields_fragment()),
+            ds.Query.hypervisors(**hypervisor_filter)
+            .alias("snapshots")
+            .select(
+                ds.Hypervisor.id,
+                ds.Hypervisor.feeSnapshots(
+                    where={
+                        "timestamp_gte": self.initial_time.timestamp,
+                        "timestamp_lte": self.end_time.timestamp,
                     }
-                    token1 {
-                        priceUSD
-                        decimals
-                    }
-                }
-            }
-            latest: hypervisors(block: {number: $blockEnd}) {
-                ...hypervisorFields
-            }
-            initial: hypervisors(block: {number: $blockStart}) {
-                ...hypervisorFields
-            }
-            snapshots: hypervisors {
-                id
-                feeSnapshots(where: {
-                    timestamp_gte: $timestampStart,
-                    timestamp_lte: $timestampEnd
-                }) {
-                    blockNumber
-                    timestamp
-                    currentBlock { ...blockSnapshotFields }
-                    previousBlock { ...blockSnapshotFields }
-                }
-            }
-            _meta {
-                block {
-                    number
-                    timestamp
-                }
-            }
-        }
+                ).select(
+                    ds.FeeSnapshot.blockNumber,
+                    ds.FeeSnapshot.timestamp,
+                    ds.FeeSnapshot.currentBlock.select(
+                        self.hype_pool_client.block_snapshot_fields_fragment()
+                    ),
+                    ds.FeeSnapshot.previousBlock.select(
+                        self.hype_pool_client.block_snapshot_fields_fragment()
+                    ),
+                ),
+            ),
+            ds.Query._meta.select(self.hype_pool_client.meta_fields_fragment()),
+        )
 
-        fragment tickFields on Tick {
-            tickIdx
-            feeGrowthOutside0X128
-            feeGrowthOutside1X128
-        }
-
-        fragment tickSnapshotFields on TickSnapshot {
-            tickIdx
-            feeGrowthOutside0X128
-            feeGrowthOutside1X128
-        }
-
-        fragment positionFields on HypervisorPosition {
-            liquidity
-            tokensOwed0
-            tokensOwed1
-            feeGrowthInside0X128
-            feeGrowthInside1X128
-            tickLower { ...tickFields }
-            tickUpper { ...tickFields }
-        }
-
-        fragment positionSnapshotFields on PositionSnapshot {
-            liquidity
-            tokensOwed0
-            tokensOwed1
-            feeGrowthInside0X128
-            feeGrowthInside1X128
-            tickLower { ...tickSnapshotFields }
-            tickUpper { ...tickSnapshotFields }
-        }
-
-        fragment hypervisorFields on Hypervisor {
-            id
-            tvl0
-            tvl1
-            tvlUSD
-            pool {
-                currentTick
-                feeGrowthGlobal0X128
-                feeGrowthGlobal1X128
-                token0 { priceUSD }
-                token1 { priceUSD }
-            }
-            basePosition { ...positionFields }
-            limitPosition { ...positionFields }
-        }
-
-        fragment blockSnapshotFields on FeeCollectionSnapshot {
-            tick
-            feeGrowthGlobal0X128
-            feeGrowthGlobal1X128
-            price0
-            price1
-            tvl0
-            tvl1
-            tvlUSD
-            basePosition { ...positionSnapshotFields }
-            limitPosition { ...positionSnapshotFields }
-        }
-        """
-
-        variables = {
-            "blockStart": self.initial_time.block,
-            "timestampStart": self.initial_time.timestamp,
-            "blockEnd": self.end_time.block,
-            "timestampEnd": self.end_time.timestamp,
-        }
-
-        response = await self.fee_growth_client.query(query, variables)
-        return response["data"]
+        response = await self.hype_pool_client.execute(query)
+        return response
 
     def _transform_data(self, query_data: dict) -> dict[str, list[FeesData]]:
         transformed_data = {}
@@ -468,89 +364,43 @@ class FeeGrowthSnapshotData(FeeGrowthTemporalData):
 
 
 class ImpermanentDivergenceData(FeeGrowthTemporalData):
-    async def get_data(self) -> None:
+    async def get_data(self, hypervisors: list[str] | None = None) -> None:
         await self._init_start_time()
-        self.data = self._transform_data(await self._query_data())
+        self.data = self._transform_data(await self._query_data(hypervisors))
 
-    async def _query_data(self) -> dict:
-        query = """
-        query Snapshots(
-            $blockStart: Int!
-            $timestampStart: Int!
-            $blockEnd: Int!
-            $timestampEnd: Int!
-        ) {
-            static: hypervisors(block: {number: $blockEnd}) {
-                id
-                symbol
-                pool {
-                    token0 {
-                        priceUSD
-                        decimals
-                    }
-                    token1 {
-                        priceUSD
-                        decimals
-                    }
-                }
-            }
-            latest: hypervisors(block: {number: $blockEnd}) {
-                ...hypervisorFields
-            }
-            initial: hypervisors(block: {number: $blockStart}) {
-                ...hypervisorFields
-            }
-            _meta {
-                block {
-                number
-                timestamp
-                }
-            }
-        }
+    async def _query_data(self, hypervisors: list[str] | None = None) -> dict:
+        ds = self.hype_pool_client.data_schema
+        hypervisor_filter = (
+            {"where": {"id_in": hypervisors}} if hypervisors else {}
+        )
+        query = DSLQuery(
+            ds.Query.hypervisors(
+                **({"block": {"number": self.end_time.block}} | hypervisor_filter)
+            )
+            .alias("static")
+            .select(
+                ds.Hypervisor.id,
+                ds.Hypervisor.symbol,
+                ds.Hypervisor.pool.select(
+                    ds.Pool.token0.select(ds.Token.decimals),
+                    ds.Pool.token1.select(ds.Token.decimals),
+                ),
+            ),
+            ds.Query.hypervisors(
+                **({"block": {"number": self.end_time.block}} | hypervisor_filter)
+            )
+            .alias("latest")
+            .select(self.hype_pool_client.hypervisor_fields_fragment()),
+            ds.Query.hypervisors(
+                **({"block": {"number": self.initial_time.block}} | hypervisor_filter)
+            )
+            .alias("initial")
+            .select(self.hype_pool_client.hypervisor_fields_fragment()),
+            ds.Query._meta.select(self.hype_pool_client.meta_fields_fragment()),
+        )
 
-        fragment tickFields on Tick {
-            tickIdx
-            feeGrowthOutside0X128
-            feeGrowthOutside1X128
-        }
-
-        fragment positionFields on HypervisorPosition {
-            liquidity
-            tokensOwed0
-            tokensOwed1
-            feeGrowthInside0X128
-            feeGrowthInside1X128
-            tickLower { ...tickFields }
-            tickUpper { ...tickFields }
-        }
-
-        fragment hypervisorFields on Hypervisor {
-            id
-            totalSupply
-            tvl0
-            tvl1
-            tvlUSD
-            pool {
-                currentTick
-                feeGrowthGlobal0X128
-                feeGrowthGlobal1X128
-                token0 { priceUSD }
-                token1 { priceUSD }
-            }
-            basePosition { ...positionFields }
-            limitPosition { ...positionFields }
-        }
-        """
-
-        variables = {
-            "blockStart": self.initial_time.block,
-            "timestampStart": self.initial_time.timestamp,
-            "blockEnd": self.end_time.block,
-            "timestampEnd": self.end_time.timestamp,
-        }
-
-        response = await self.fee_growth_client.query(query, variables)
-        return response["data"]
+        response = await self.hype_pool_client.execute(query)
+        return response
 
     def _transform_data(self, query_data: dict) -> dict[str, FeesDataRange]:
         self._extract_static_data(query_data["static"])
