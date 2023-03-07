@@ -236,8 +236,6 @@ DEX_HYPEPOOL_SUBGRAPH_URLS = {
     },
 }
 
-VISOR_SUBGRAPH_URL = visor_subgraphs[os.environ.get("VISOR_SUBGRAPH", "prod")]
-
 GAMMA_SUBGRAPH_URLS = {
     Protocol.UNISWAP: {
         Chain.MAINNET: gamma_subgraphs[Protocol.UNISWAP][Chain.MAINNET][

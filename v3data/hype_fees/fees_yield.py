@@ -106,9 +106,11 @@ class FeesYield:
         )
 
 
-async def fee_returns_all(protocol: Protocol, chain: Chain, days: int) -> dict[str, dict]:
+async def fee_returns_all(
+    protocol: Protocol, chain: Chain, days: int, hypervisors: list[str] | None = None
+) -> dict[str, dict]:
     fees_data = FeeGrowthSnapshotData(days, protocol, chain)
-    await fees_data.get_data()
+    await fees_data.get_data(hypervisors)
 
     results = {}
     for hypervisor_id, fees_data in fees_data.data.items():
@@ -118,6 +120,6 @@ async def fee_returns_all(protocol: Protocol, chain: Chain, days: int) -> dict[s
             "symbol": fees_data[0].symbol,
             "feeApr": returns.apr,
             "feeApy": returns.apy,
-            "status": returns.status
+            "status": returns.status,
         }
     return results

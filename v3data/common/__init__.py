@@ -1,12 +1,8 @@
 from abc import ABC, abstractmethod
 from fastapi import Response
-from v3data import IndexNodeClient
 from v3data.enums import Chain, Protocol, QueryType
 
-
-async def subgraph_status(protocol: Protocol, chain: Chain):
-    client = IndexNodeClient(protocol, chain)
-    return await client.status()
+from .subgraph_status import SubgraphStatusOutput, subgraph_status
 
 
 class ExecutionOrderWrapper(ABC):
