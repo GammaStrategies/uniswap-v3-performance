@@ -23,9 +23,7 @@ class HypervisorData:
         self.pools_data = {}
         self.fees_data = {}
 
-        self.excluded_hypervisors = filter_address_by_chain(
-            EXCLUDED_HYPERVISORS, chain
-        )
+        self.excluded_hypervisors = filter_address_by_chain(EXCLUDED_HYPERVISORS, chain)
 
     async def _get_hypervisor_data(self, hypervisor_address):
         query = """

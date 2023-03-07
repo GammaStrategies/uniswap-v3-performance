@@ -17,12 +17,12 @@ router = APIRouter(prefix="/polygon")
 
 
 @router.get("/")
-def root():
+def root() -> str:
     return "Gamma Strategies - Polygon"
 
 
 @router.get("/status/subgraph")
-async def subgraph_status():
+async def subgraph_status() -> v3data.common.SubgraphStatusOutput:
     return await v3data.common.subgraph_status(PROTOCOL, CHAIN)
 
 

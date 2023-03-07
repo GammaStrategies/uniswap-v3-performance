@@ -21,7 +21,7 @@ def root():
 
 
 @router.get("/status/subgraph")
-async def subgraph_status():
+async def subgraph_status() -> v3data.common.SubgraphStatusOutput:
     return await v3data.common.subgraph_status(PROTOCOL, CHAIN)
 
 
