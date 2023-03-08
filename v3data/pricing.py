@@ -198,6 +198,21 @@ async def token_price_from_address(chain: Chain, token_address: str):
                 "pool_address": "0xb8d00c66accdc01e78fd7957bf24050162916ae2",  # WMATIC/dQUICK
                 "inverse": True,
             },
+            "0x385eeac5cb85a38a9a07a70c73e0a3271cfb54a7": {  # GHST
+                "protocol": Protocol.QUICKSWAP,
+                "pool_address": "0x80deece4befd9f27d2df88064cf75f080d3ce1b2",  # WMATIC/GHST
+                "inverse": True,
+            },
+            "0x101a023270368c0d50bffb62780f4afd4ea79c35": {  # ANKR
+                "protocol": Protocol.QUICKSWAP,
+                "pool_address": "0x2f2dd65339226df7441097a710aba0f493879579",  # WMATIC/ANKR
+                "inverse": True,
+            },
+            "0xec38621e72d86775a89c7422746de1f52bba5320": {  # DAVOS
+                "protocol": Protocol.QUICKSWAP,
+                "pool_address": "0xfb0bc232cd11dbe804b489860c470b7f9cc80d9f",  # USDC/DAVOS
+                "inverse": True,
+            },
         },
     }
 

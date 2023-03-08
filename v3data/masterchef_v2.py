@@ -129,6 +129,9 @@ class MasterchefV2Info(MasterchefV2Data):
             await self._get_masterchef_data()
 
         info = {}
+
+        pricing = {}
+
         for masterChef in self.data:
             pool_info = {}
             for pool in masterChef["pools"]:
@@ -144,9 +147,12 @@ class MasterchefV2Info(MasterchefV2Data):
                         / 10 ** rewarderPool["rewarder"]["rewardToken"]["decimals"]
                     )
 
-                    reward_token_price = await token_price_from_address(
-                        self.chain, rewarderPool["rewarder"]["rewardToken"]["id"]
-                    )
+                    reward_token_price = pricing.get(rewarderPool["rewarder"]["rewardToken"]["id"])
+                    if not reward_token_price:
+                        reward_token_price = await token_price_from_address(
+                            self.chain, rewarderPool["rewarder"]["rewardToken"]["id"]
+                        )
+                        pricing[rewarderPool["rewarder"]["rewardToken"]["id"]] = reward_token_price
 
                     total_alloc_point = int(rewarderPool["rewarder"]["totalAllocPoint"])
 
