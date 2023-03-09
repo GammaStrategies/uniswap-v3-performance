@@ -1,9 +1,9 @@
 import httpx
 from web3 import Web3
+import logging
 
 from v3data.config import (
     ALCHEMY_URLS,
-    VISOR_SUBGRAPH_URL,
     GAMMA_SUBGRAPH_URLS,
     UNI_V2_SUBGRAPH_URL,
     DEX_SUBGRAPH_URLS,
@@ -16,11 +16,19 @@ from v3data.config import (
 
 from v3data import abi
 
-async_client = httpx.AsyncClient(timeout=180)
+from v3data.enums import Chain, Protocol
+
+logger = logging.getLogger(__name__)
+async_client = httpx.AsyncClient(
+    transport=httpx.AsyncHTTPTransport(
+        retries=1,
+    ),
+    timeout=180,
+)
 
 
 class SubgraphClient:
-    def __init__(self, url: str, chain: str = "mainnet"):
+    def __init__(self, url: str, chain: Chain = Chain.MAINNET):
         self._url = url
         self.chain = chain
 
@@ -30,8 +38,31 @@ class SubgraphClient:
             params = {"query": query, "variables": variables}
         else:
             params = {"query": query}
+        # TODO: error handling -> connection, result and others   httpcore.RemoteProtocolError
+        # ssl.SSLError:   [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure
+        #
         response = await async_client.post(self._url, json=params)
-        return response.json()
+
+        if response.status_code == 200:
+            try:
+                return response.json()
+            except Exception:
+                logger.error(
+                    " Unexpected error while converting response to json. resp.text: {}  ".format(
+                        response.text
+                    )
+                )
+        else:
+            # handle bad status code
+            # Can expand this to handle specific codes once we have specific examples
+            logger.error(
+                " Unexpected response code {} received  resp.text: {} ".format(
+                    response.status_code,
+                    response.text,
+                )
+            )
+        # error return
+        return {}
 
     async def paginate_query(self, query, paginate_variable, variables={}):
 
@@ -58,50 +89,8 @@ class SubgraphClient:
         return all_data
 
 
-class VisorClient(SubgraphClient):
-    def __init__(self):
-        super().__init__(VISOR_SUBGRAPH_URL)
-
-    def hypervisors_tvl(self):
-        query_tvl = """
-        {
-            uniswapV3Hypervisors(first:1000) {
-                id
-                pool{
-                    id
-                    token0{
-                        decimals
-                    }
-                    token1{
-                        decimals
-                    }
-                }
-                tvl0
-                tvl1
-                tvlUSD
-                totalSupply
-            }
-        }
-        """
-        tvls = self.query(query_tvl)["data"]["uniswapV3Hypervisors"]
-
-        return {
-            hypervisor["id"]: {
-                "tvl0": hypervisor["tvl0"],
-                "tvl1": hypervisor["tvl1"],
-                "tvlUSD": hypervisor["tvlUSD"],
-                "tvl0Decimal": int(hypervisor["tvl0"])
-                / 10 ** int(hypervisor["pool"]["token0"]["decimals"]),
-                "tvl1Decimal": int(hypervisor["tvl1"])
-                / 10 ** int(hypervisor["pool"]["token1"]["decimals"]),
-                "totalSupply": int(hypervisor["totalSupply"]),
-            }
-            for hypervisor in tvls
-        }
-
-
 class GammaClient(SubgraphClient):
-    def __init__(self, protocol: str, chain: str):
+    def __init__(self, protocol: Protocol, chain: Chain):
         super().__init__(GAMMA_SUBGRAPH_URLS[protocol][chain], chain)
 
 
@@ -111,17 +100,17 @@ class UniswapV2Client(SubgraphClient):
 
 
 class UniswapV3Client(SubgraphClient):
-    def __init__(self, protocol: str, chain: str):
+    def __init__(self, protocol: Protocol, chain: Chain):
         super().__init__(DEX_SUBGRAPH_URLS[protocol][chain], chain)
 
 
 class DexFeeGrowthClient(SubgraphClient):
-    def __init__(self, protocol: str, chain: str):
+    def __init__(self, protocol: Protocol, chain: Chain):
         super().__init__(DEX_FEEGROWTH_SUBGRAPH_URLS[protocol][chain], chain)
 
 
 class HypePoolClient(SubgraphClient):
-    def __init__(self, protocol: str, chain: str):
+    def __init__(self, protocol: Protocol, chain: Chain):
         super().__init__(DEX_HYPEPOOL_SUBGRAPH_URLS[protocol][chain], chain)
 
 
@@ -152,7 +141,7 @@ class EthBlocksClient(SubgraphClient):
 
 
 class IndexNodeClient(SubgraphClient):
-    def __init__(self, protocol: str, chain: str):
+    def __init__(self, protocol: Protocol, chain: Chain):
         super().__init__(THEGRAPH_INDEX_NODE_URL)
         self.url = GAMMA_SUBGRAPH_URLS[protocol][chain]
         self.set_subgraph_name()
@@ -208,12 +197,12 @@ class CoingeckoClient:
 
 
 class LlamaClient:
-    def __init__(self, chain):
+    def __init__(self, chain: Chain):
         self.base = "https://coins.llama.fi/"
         self.chain = self._translate_chain_name(chain)
 
     def _translate_chain_name(self, chain):
-        mapping = {"mainnet": "ethereum"}
+        mapping = {Chain.MAINNET: "ethereum"}
         return mapping.get(chain, chain)
 
     async def block_from_timestamp(self, timestamp, return_timestamp=False):
@@ -229,7 +218,7 @@ class LlamaClient:
 
 
 class MasterChefContract:
-    def __init__(self, address, chain: str):
+    def __init__(self, address, chain: Chain):
         w3 = Web3(Web3.HTTPProvider(ALCHEMY_URLS[chain]))
         self.contract = w3.eth.contract(
             address=Web3.toChecksumAddress(address), abi=abi.MASTERCHEF_ABI
@@ -242,7 +231,7 @@ class MasterChefContract:
 
 
 class RewarderContract:
-    def __init__(self, address, chain: str):
+    def __init__(self, address, chain: Chain):
         w3 = Web3(Web3.HTTPProvider(ALCHEMY_URLS[chain]))
         self.contract = w3.eth.contract(
             address=Web3.toChecksumAddress(address), abi=abi.REWARDER_ABI

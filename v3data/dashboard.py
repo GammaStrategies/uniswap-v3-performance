@@ -8,13 +8,14 @@ from v3data.toplevel import TopLevelData
 from v3data.rewardshypervisor import RewardsHypervisorInfo
 from v3data.utils import timestamp_ago
 from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
-from v3data.config import legacy_stats
+from v3data.config import legacy_stats, GROSS_FEES_MAX
+from v3data.enums import Chain, Protocol
 
 
 class Dashboard:
     def __init__(self, period: str):
-        self.chain = "mainnet"
-        self.gamma_client = GammaClient("uniswap_v3", self.chain)
+        self.chain = Chain.MAINNET
+        self.gamma_client = GammaClient(Protocol.UNISWAP, self.chain)
         self.period = period
         self.days = 30
         self.visr_data = {}
@@ -31,7 +32,8 @@ class Dashboard:
             $days: Int!,
             $timezone: String!,
             $timestampStart: Int!,
-            $rebalancesStart: Int!
+            $rebalancesStart: Int!,
+            $grossFeesMax: Int!
         ){
             token(id: $gammaAddress){
                 totalSupply
@@ -79,7 +81,10 @@ class Dashboard:
                 tvlUSD
                 rebalances(
                     first: 1000
-                    where: { timestamp_gte: $timestampStart }
+                    where: {
+                        timestamp_gte: $timestampStart
+                        grossFeesUSD_lt: $grossFeesMax
+                    }
                     orderBy: timestamp
                     orderDirection: desc
                 ) {
@@ -90,10 +95,18 @@ class Dashboard:
                     netFeesUSD
                     totalAmountUSD
                 }
+                badRebalances: rebalances(
+                    where: {grossFeesUSD_gte: $grossFeesMax}
+                ) {
+                    grossFeesUSD
+                    protocolFeesUSD
+                    netFeesUSD
+                }
             }
             uniswapV3Rebalances(
                 where: {
                     timestamp_gt: $rebalancesStart
+                    grossFeesUSD_lt: $grossFeesMax
                 }
             ) {
                 timestamp
@@ -114,6 +127,7 @@ class Dashboard:
             "timezone": timezone,
             "timestampStart": timestamp_ago(timedelta(self.days)),
             "rebalancesStart": timestamp_ago(timedelta(7)),
+            "grossFeesMax": GROSS_FEES_MAX
         }
 
         response = await self.gamma_client.query(query, variables)
@@ -156,11 +170,11 @@ class Dashboard:
         protocol_fees_calcs.data = self.protocol_fees_data
         collected_fees = await protocol_fees_calcs.collected_fees(get_data=False)
 
-        top_level = TopLevelData("uniswap_v3", self.chain)
+        top_level = TopLevelData(Protocol.UNISWAP, self.chain)
         top_level.all_stats_data = self.top_level_data
         top_level.all_returns_data = self.top_level_returns_data
         top_level_data = top_level._all_stats()
-        top_level_returns = await top_level._calculate_returns()
+        top_level_returns = await top_level.calculate_returns(self.period)
 
         daily_yield = gamma_yield[self.period]["yield"] / DAYS_IN_PERIOD[self.period]
 
@@ -169,7 +183,6 @@ class Dashboard:
         rewards_info = await rewards.output(get_data=False)
 
         gamma_staked_usd = rewards_info["gamma_staked"] * gamma_price_usd
-
 
         # Use fees for gamma yield
         fees_per_day = collected_fees['weekly']["collected_usd"]
@@ -199,7 +212,7 @@ class Dashboard:
             "uniswapPairTotalValueLocked": top_level_data["tvl"],
             "uniswapPairAmountPairs": top_level_data["pool_count"],
             "uniswapFeesGenerated": top_level_data["fees_claimed"],
-            "uniswapFeesBasedApr": f"{top_level_returns[self.period]['feeApr']:.0%}",
+            "uniswapFeesBasedApr": f"{top_level_returns['feeApr']:.0%}",
             "gammaPrice": gamma_price_usd,
             "gammaInEth": gamma_in_eth,
             "gammaPerXgamma": rewards_info["gamma_per_xgamma"],

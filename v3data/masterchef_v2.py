@@ -1,11 +1,11 @@
 from v3data import GammaClient, RewarderContract
 from v3data.constants import YEAR_SECONDS
 from v3data.pricing import token_price_from_address
-from v3data.config import DISABLE_POOL_APR
+from v3data.enums import Chain, Protocol
 
 
 class MasterchefV2Data:
-    def __init__(self, protocol: str, chain: str = "mainnet"):
+    def __init__(self, protocol: Protocol, chain: Chain = Chain.MAINNET):
         self.protocol = protocol
         self.chain = chain
         self.gamma_client = GammaClient(protocol, chain)
@@ -129,6 +129,9 @@ class MasterchefV2Info(MasterchefV2Data):
             await self._get_masterchef_data()
 
         info = {}
+
+        pricing = {}
+
         for masterChef in self.data:
             pool_info = {}
             for pool in masterChef["pools"]:
@@ -144,9 +147,12 @@ class MasterchefV2Info(MasterchefV2Data):
                         / 10 ** rewarderPool["rewarder"]["rewardToken"]["decimals"]
                     )
 
-                    reward_token_price = await token_price_from_address(
-                        self.chain, rewarderPool["rewarder"]["rewardToken"]["id"]
-                    )
+                    reward_token_price = pricing.get(rewarderPool["rewarder"]["rewardToken"]["id"])
+                    if not reward_token_price:
+                        reward_token_price = await token_price_from_address(
+                            self.chain, rewarderPool["rewarder"]["rewardToken"]["id"]
+                        )
+                        pricing[rewarderPool["rewarder"]["rewardToken"]["id"]] = reward_token_price
 
                     total_alloc_point = int(rewarderPool["rewarder"]["totalAllocPoint"])
 
@@ -157,9 +163,6 @@ class MasterchefV2Info(MasterchefV2Data):
                             / int(rewarderPool["rewarder"]["totalAllocPoint"])
                         )
                     else:
-                        weighted_reward_per_second = 0
-
-                    if DISABLE_POOL_APR and pool["poolId"] in ["16", "17"]:
                         weighted_reward_per_second = 0
 
                     rewarder_info[rewarderPool["rewarder"]["id"]] = {
@@ -186,9 +189,6 @@ class MasterchefV2Info(MasterchefV2Data):
                 except ZeroDivisionError:
                     apr = 0
 
-                if DISABLE_POOL_APR and pool["poolId"] in ["16", "17"]:
-                    apr = 0
-
                 pool_info[pool["hypervisor"]["id"]] = {
                     "stakeTokenSymbol": pool["stakeToken"]["symbol"],
                     "apr": apr,
@@ -202,13 +202,13 @@ class MasterchefV2Info(MasterchefV2Data):
 
 
 class UserRewardsV2(MasterchefV2Data):
-    def __init__(self, user_address: str, protocol: str, chain: str = "mainnet"):
+    def __init__(self, user_address: str, protocol: Protocol, chain: Chain = Chain.MAINNET):
         super().__init__(protocol, chain)
         self.user_address = user_address.lower()
 
     async def output(self, get_data=True):
         if get_data:
-            if self.protocol == "quickswap":
+            if self.protocol == Protocol.QUICKSWAP:
                 await self._get_user_data_pool(self.user_address)
             else:
                 await self._get_user_data(self.user_address)
@@ -218,7 +218,7 @@ class UserRewardsV2(MasterchefV2Data):
 
         info = []
 
-        if self.protocol == "quickswap":
+        if self.protocol == Protocol.QUICKSWAP:
             for account in self.data["mcv2PoolAccounts"]:
                 pool = account["pool"]
                 masterchef_id = pool["masterChef"]["id"]

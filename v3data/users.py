@@ -2,14 +2,15 @@ import asyncio
 from v3data import GammaClient
 from v3data.accounts import AccountInfo
 from v3data.constants import XGAMMA_ADDRESS
+from v3data.enums import Chain, Protocol
 
 
 class UserData:
-    def __init__(self, protocol: str, chain: str, user_address: str):
+    def __init__(self, protocol: Protocol, chain: Chain, user_address: str):
         self.protocol = protocol
         self.chain = chain
         self.gamma_client = GammaClient(protocol, chain)
-        self.gamma_client_mainnet = GammaClient("uniswap_v3", "mainnet")
+        self.gamma_client_mainnet = GammaClient(Protocol.UNISWAP, Chain.MAINNET)
         self.address = user_address.lower()
         self.decimal_factor = 10**18
         self.data = {}

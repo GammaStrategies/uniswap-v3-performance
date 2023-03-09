@@ -3,6 +3,7 @@ import asyncio
 import numpy as np
 import pandas as pd
 from v3data.data import UniV3Data
+from v3data.enums import Chain, Protocol
 
 
 class BollingerBand:
@@ -10,9 +11,9 @@ class BollingerBand:
         self,
         pool_address: str,
         total_period_hours,
-        protocol: str,
+        protocol: Protocol,
         n_intervals=20,
-        chain: str = "mainnet",
+        chain: Chain = Chain.MAINNET,
     ):
         self.pool_address = pool_address.lower()
         self.total_period_hours = total_period_hours  # how long to average over

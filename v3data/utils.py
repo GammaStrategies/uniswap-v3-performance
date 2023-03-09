@@ -1,5 +1,24 @@
 import datetime
+import logging
+
 from v3data.constants import BLOCK_TIME_SECONDS
+from v3data.config import CHAIN_NAME_CONVERSION
+from v3data.enums import Chain
+
+logger = logging.getLogger(__name__)
+
+
+# historic used var
+STATIC_DATETIME_UTCNOW = None
+
+
+def __datetime_utcnow() -> datetime.datetime:
+    if STATIC_DATETIME_UTCNOW:
+        # return defined datetime
+        return STATIC_DATETIME_UTCNOW
+
+    # return current datetime
+    return datetime.datetime.utcnow()
 
 
 def timestamp_to_date(timestamp, format=None):
@@ -33,7 +52,7 @@ def date_to_timestamp(date):
 def timestamp_ago(time_delta):
     """Returns timestamp of time_delta ago from now in UTC"""
     return int(
-        (datetime.datetime.utcnow() - time_delta)
+        (__datetime_utcnow() - time_delta)
         .replace(tzinfo=datetime.timezone.utc)
         .timestamp()
     )
@@ -60,14 +79,61 @@ def tick_to_priceDecimal(tick, token0_decimal, token1_decimal):
 def sub_in_256(x, y):
     difference = x - y
     if difference < 0:
-        difference += 2 ** 256
+        difference += 2**256
 
     return difference
 
 
-def estimate_block_from_timestamp_diff(chain, current_block, current_timestamp, initial_timestamp):
+def estimate_block_from_timestamp_diff(
+    chain, current_block, current_timestamp, initial_timestamp
+):
     ts_diff = current_timestamp - initial_timestamp
     block_diff = ts_diff // BLOCK_TIME_SECONDS[chain]
 
     initial_block = current_block - block_diff
     return initial_block
+
+
+def filter_address_by_chain(addresses: list[str], chain: Chain) -> list[str]:
+    """Return only addresses belonging to the specified chain.
+        addresses list must follow EIP-3770 (https://eips.ethereum.org/EIPS/eip-3770)
+        and will be converted to local format using config CHAIN_NAME_CONVERSION var
+
+    Args:
+        addresses (list): EIP-3770 formatted addresses list
+        chain (str):
+
+    Returns:
+        list: of addresses
+    """
+    result = list()
+    for item in addresses:
+        try:
+            k, address = parse_address_eip(item)
+            if CHAIN_NAME_CONVERSION[k.lower()] == chain:
+                result.append(address)
+        except ValueError as err:
+            logger.warning(err)
+        except Exception:
+            logger.exception(f" Unexpected error parsing address item: {item}")
+
+    return result
+
+
+def parse_address_eip(address: str) -> tuple[str, str]:
+    """convert EIP 3770 address format to chain,address values
+
+    Args:
+        address (str): in EIP 3770 address format
+
+    Raises:
+        ValueError:
+
+    Returns:
+        tuple[str,str]: <chain>, <address>
+    """
+    base = address.split(":")
+    if len(base) == 2:
+        return base[0], base[1]
+    else:
+        raise ValueError(f" Address does not follow standard  {address}")

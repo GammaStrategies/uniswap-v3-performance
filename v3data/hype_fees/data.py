@@ -1,24 +1,24 @@
 from abc import ABC, abstractmethod
+from gql.dsl import DSLQuery
 
-from v3data import HypePoolClient, LlamaClient
+from v3data import LlamaClient
 from v3data.constants import BLOCK_TIME_SECONDS, DAY_SECONDS
 from v3data.hype_fees.schema import (
     FeesData,
+    FeesDataRange,
     HypervisorStaticInfo,
     Time,
-    _PositionData,
-    _TickData,
-    _TokenPair,
-    _TokenPairDecimals,
 )
 from v3data.utils import estimate_block_from_timestamp_diff
+from v3data.enums import Chain, Protocol
+from v3data.subgraphs.hype_pool import HypePoolClient
 
 
 class FeeGrowthDataABC(ABC):
-    def __init__(self, protocol: str, chain: str) -> None:
+    def __init__(self, protocol: Protocol, chain: Chain) -> None:
         self.protocol = protocol
         self.chain = chain
-        self.fee_growth_client = HypePoolClient(protocol, chain)
+        self.hype_pool_client = HypePoolClient(protocol, chain)
         self.data = {}
         self._static_data = {}
 
@@ -39,185 +39,92 @@ class FeeGrowthDataABC(ABC):
         fee_growth_global_1: int,
     ) -> FeesData:
         return FeesData(
+            block=block,
+            timestamp=timestamp,
             hypervisor=hypervisor_id,
             symbol=self._static_data[hypervisor_id].symbol,
-            block=block,  # set to block
-            timestamp=timestamp,  # set to timestamp
             currentTick=current_tick,
-            price=_TokenPairDecimals(price_0, price_1),
-            decimals=_TokenPair(
-                self._static_data[hypervisor_id].decimals.value0,
-                self._static_data[hypervisor_id].decimals.value1,
-            ),
-            tvl=_TokenPair(hypervisor["tvl0"], hypervisor["tvl1"]),
+            price0=price_0,
+            price1=price_1,
+            decimals0=self._static_data[hypervisor_id].decimals.value0,
+            decimals1=self._static_data[hypervisor_id].decimals.value1,
+            tvl0=hypervisor["tvl0"],
+            tvl1=hypervisor["tvl1"],
             tvl_usd=hypervisor["tvlUSD"],
-            fee_growth_global=_TokenPair(fee_growth_global_0, fee_growth_global_1),
-            base_position=self._init_position_data(hypervisor, "basePosition"),
-            limit_position=self._init_position_data(hypervisor, "limitPosition"),
-        )
-
-    def _init_position_data(
-        self, hypervisor: dict, position_type: str
-    ) -> _PositionData:
-        return _PositionData(
-            liquidity=hypervisor[position_type]["liquidity"],
-            tokens_owed=_TokenPair(
-                hypervisor[position_type]["tokensOwed0"],
-                hypervisor[position_type]["tokensOwed1"],
-            ),
-            fee_growth_inside=_TokenPair(
-                hypervisor[position_type]["feeGrowthInside0X128"],
-                hypervisor[position_type]["feeGrowthInside1X128"],
-            ),
-            tick_lower=self._init_tick_data(hypervisor, position_type, "tickLower"),
-            tick_upper=self._init_tick_data(hypervisor, position_type, "tickUpper"),
-        )
-
-    def _init_tick_data(
-        self, hypervisor: dict, position_type: str, tick_type: str
-    ) -> _TickData:
-        return _TickData(
-            tick_index=hypervisor[position_type][tick_type]["tickIdx"],
-            fee_growth_outside=_TokenPair(
-                hypervisor[position_type][tick_type]["feeGrowthOutside0X128"],
-                hypervisor[position_type][tick_type]["feeGrowthOutside1X128"],
-            ),
+            fee_growth_global0=fee_growth_global_0,
+            fee_growth_global1=fee_growth_global_1,
+            liquidity_base=hypervisor["basePosition"]["liquidity"],
+            tokens_owed_base0=hypervisor["basePosition"]["tokensOwed0"],
+            tokens_owed_base1=hypervisor["basePosition"]["tokensOwed1"],
+            fee_growth_inside_base0=hypervisor["basePosition"]["feeGrowthInside0X128"],
+            fee_growth_inside_base1=hypervisor["basePosition"]["feeGrowthInside1X128"],
+            tick_index_lower_base=hypervisor["basePosition"]["tickLower"]["tickIdx"],
+            fee_growth_outside_lower_base0=hypervisor["basePosition"]["tickLower"][
+                "feeGrowthOutside0X128"
+            ],
+            fee_growth_outside_lower_base1=hypervisor["basePosition"]["tickLower"][
+                "feeGrowthOutside1X128"
+            ],
+            tick_index_upper_base=hypervisor["basePosition"]["tickUpper"]["tickIdx"],
+            fee_growth_outside_upper_base0=hypervisor["basePosition"]["tickUpper"][
+                "feeGrowthOutside0X128"
+            ],
+            fee_growth_outside_upper_base1=hypervisor["basePosition"]["tickUpper"][
+                "feeGrowthOutside1X128"
+            ],
+            liquidity_limit=hypervisor["limitPosition"]["liquidity"],
+            tokens_owed_limit0=hypervisor["limitPosition"]["tokensOwed0"],
+            tokens_owed_limit1=hypervisor["limitPosition"]["tokensOwed1"],
+            fee_growth_inside_limit0=hypervisor["limitPosition"][
+                "feeGrowthInside0X128"
+            ],
+            fee_growth_inside_limit1=hypervisor["limitPosition"][
+                "feeGrowthInside1X128"
+            ],
+            tick_index_lower_limit=hypervisor["limitPosition"]["tickLower"]["tickIdx"],
+            fee_growth_outside_lower_limit0=hypervisor["limitPosition"]["tickLower"][
+                "feeGrowthOutside0X128"
+            ],
+            fee_growth_outside_lower_limit1=hypervisor["limitPosition"]["tickLower"][
+                "feeGrowthOutside1X128"
+            ],
+            tick_index_upper_limit=hypervisor["limitPosition"]["tickUpper"]["tickIdx"],
+            fee_growth_outside_upper_limit0=hypervisor["limitPosition"]["tickUpper"][
+                "feeGrowthOutside0X128"
+            ],
+            fee_growth_outside_upper_limit1=hypervisor["limitPosition"]["tickUpper"][
+                "feeGrowthOutside1X128"
+            ],
+            total_supply=hypervisor.get("totalSupply"),
+            total_supply_decimals=18 if hypervisor.get("totalSupply") else 0,
         )
 
     def _extract_static_data(self, hypervisor_static_data: dict) -> None:
         self._static_data = {
             hypervisor["id"]: HypervisorStaticInfo(
                 symbol=hypervisor["symbol"],
-                decimals=_TokenPair(
-                    hypervisor["pool"]["token0"]["decimals"],
-                    hypervisor["pool"]["token1"]["decimals"],
-                ),
+                decimals0=hypervisor["pool"]["token0"]["decimals"],
+                decimals1=hypervisor["pool"]["token1"]["decimals"],
             )
             for hypervisor in hypervisor_static_data
         }
 
 
-class FeeGrowthData(FeeGrowthDataABC):
-    async def get_data(self) -> None:
-        self.data = self._transform_data(await self._query_data())
-
-    async def _query_data(self) -> dict:
-        query = """
-        query feeGrowth {
-            static: hypervisors {
-                id
-                symbol
-                pool {
-                    token0 {
-                        decimals
-                    }
-                    token1 {
-                        decimals
-                    }
-                }
-            }
-            hypervisors {
-                id
-                tvl0
-                tvl1
-                tvlUSD
-                pool {
-                    currentTick
-                    feeGrowthGlobal0X128
-                    feeGrowthGlobal1X128
-                    token0 {
-                        priceUSD
-                    }
-                    token1 {
-                        priceUSD
-                    }
-                }
-                basePosition {
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
-                limitPosition {
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
-            }
-            _meta {
-                block {
-                number
-                timestamp
-                }
-            }
-        }
-        """
-
-        response = await self.fee_growth_client.query(query)
-        return response["data"]
-
-    def _transform_data(self, query_data) -> dict[str, FeesData]:
-        self._extract_static_data(query_data["static"])
-        return {
-            hypervisor["id"]: self._init_fees_data(
-                hypervisor=hypervisor,
-                hypervisor_id=hypervisor["id"],
-                block=query_data["_meta"]["block"]["number"],
-                timestamp=query_data["_meta"]["block"]["timestamp"],
-                current_tick=hypervisor["pool"]["currentTick"],
-                price_0=hypervisor["pool"]["token0"]["priceUSD"],
-                price_1=hypervisor["pool"]["token1"]["priceUSD"],
-                fee_growth_global_0=hypervisor["pool"]["feeGrowthGlobal0X128"],
-                fee_growth_global_1=hypervisor["pool"]["feeGrowthGlobal1X128"],
-            )
-            for hypervisor in query_data["hypervisors"]
-        }
-
-
-class FeeGrowthSnapshotData(FeeGrowthDataABC):
-    """Get fee growth data from fee growth subgraph"""
+class FeeGrowthTemporalData(FeeGrowthDataABC):
+    """Additional methods to manage time ranges"""
 
     def __init__(
         self,
         period_days,
-        protocol: str,
-        chain: str,
+        protocol: Protocol,
+        chain: Chain,
     ) -> None:
         self.period_days = period_days
         self.llama_client = LlamaClient(chain)
         super().__init__(protocol, chain)
 
-    async def get_data(self) -> None:
-        """Query data and tranfrom to FeesData Class"""
-        await self._init_start_time()
-        self.data = self._transform_data(await self._query_data())
-
     async def _init_start_time(self) -> None:
         self.end_time = await self._query_current_time()
-
         timestamp_start = self.end_time.timestamp - (self.period_days * DAY_SECONDS)
         response = await self.llama_client.block_from_timestamp(timestamp_start, True)
 
@@ -245,266 +152,130 @@ class FeeGrowthSnapshotData(FeeGrowthDataABC):
             )
 
     async def _query_current_time(self) -> Time:
-        query = """
-        {
-            _meta {
-                block {
-                number
-                timestamp
-                }
-            }
-        }
-        """
-
-        response = await self.fee_growth_client.query(query)
-
-        return Time(
-            block=response["data"]["_meta"]["block"]["number"],
-            timestamp=response["data"]["_meta"]["block"]["timestamp"],
+        query = DSLQuery(
+            self.hype_pool_client.data_schema.Query._meta.select(
+                self.hype_pool_client.meta_fields_fragment()
+            )
         )
 
-    async def _query_data(self) -> dict:
-        query = """
-        query Snapshots(
-            $blockStart: Int!
-            $timestampStart: Int!
-            $blockEnd: Int!
-            $timestampEnd: Int!
-        ) {
-            static: hypervisors(block: {number: $blockEnd}) {
-                id
-                symbol
-                pool {
-                    token0 {
-                        priceUSD
-                        decimals
-                    }
-                    token1 {
-                        priceUSD
-                        decimals
-                    }
-                }
-            }
-            latest: hypervisors(block: {number: $blockEnd}) {
-                id
-                tvl0
-                tvl1
-                tvlUSD
-                pool {
-                    currentTick
-                    feeGrowthGlobal0X128
-                    feeGrowthGlobal1X128
-                    token0 {
-                        priceUSD
-                    }
-                    token1 {
-                        priceUSD
-                    }
-                }
-                basePosition {
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
-                limitPosition {
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
-            }
-            initial: hypervisors(block: {number: $blockStart}) {
-                id
-                tvl0
-                tvl1
-                tvlUSD
-                pool {
-                    currentTick
-                    feeGrowthGlobal0X128
-                    feeGrowthGlobal1X128
-                    token0 {
-                        priceUSD
-                    }
-                    token1 {
-                        priceUSD
-                    }
-                }
-                basePosition{
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
-                limitPosition {
-                    liquidity
-                    tokensOwed0
-                    tokensOwed1
-                    feeGrowthInside0X128
-                    feeGrowthInside1X128
-                    tickLower {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                    tickUpper {
-                        tickIdx
-                        feeGrowthOutside0X128
-                        feeGrowthOutside1X128
-                    }
-                }
-            }
-            snapshots: hypervisors {
-                id
-                feeSnapshots(
-                    where: {
-                        timestamp_gte: $timestampStart
-                        timestamp_lte: $timestampEnd
-                    }
-                ) {
-                    blockNumber
-                    timestamp
-                    currentBlock {
-                        tick
-                        feeGrowthGlobal0X128
-                        feeGrowthGlobal1X128
-                        price0
-                        price1
-                        tvl0
-                        tvl1
-                        tvlUSD
-                        basePosition {
-                            liquidity
-                            tokensOwed0
-                            tokensOwed1
-                            feeGrowthInside0X128
-                            feeGrowthInside1X128
-                            tickLower {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                            tickUpper {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                        }
-                        limitPosition {
-                            liquidity
-                            tokensOwed0
-                            tokensOwed1
-                            feeGrowthInside0X128
-                            feeGrowthInside1X128
-                            tickLower {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                            tickUpper {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                        }
-                    }
-                    previousBlock {
-                        tick
-                        feeGrowthGlobal0X128
-                        feeGrowthGlobal1X128
-                        price0
-                        price1
-                        tvl0
-                        tvl1
-                        tvlUSD
-                        basePosition {
-                            liquidity
-                            tokensOwed0
-                            tokensOwed1
-                            feeGrowthInside0X128
-                            feeGrowthInside1X128
-                            tickLower {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                            tickUpper {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                        }
-                        limitPosition {
-                            liquidity
-                            tokensOwed0
-                            tokensOwed1
-                            feeGrowthInside0X128
-                            feeGrowthInside1X128
-                            tickLower {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                            tickUpper {
-                                tickIdx
-                                feeGrowthOutside0X128
-                                feeGrowthOutside1X128
-                            }
-                        }
-                    }
-                }
-            }
-            _meta {
-                block {
-                number
-                timestamp
-                }
-            }
-        }
-        """
+        response = await self.hype_pool_client.execute(query)
 
-        variables = {
-            "blockStart": self.initial_time.block,
-            "timestampStart": self.initial_time.timestamp,
-            "blockEnd": self.end_time.block,
-            "timestampEnd": self.end_time.timestamp,
+        return Time(
+            block=response["_meta"]["block"]["number"],
+            timestamp=response["_meta"]["block"]["timestamp"],
+        )
+
+
+class FeeGrowthData(FeeGrowthDataABC):
+    async def get_data(self, hypervisors: list[str] | None = None) -> None:
+        self.data = self._transform_data(await self._query_data(hypervisors))
+
+    async def _query_data(self, hypervisors: list[str] | None = None) -> dict:
+        ds = self.hype_pool_client.data_schema
+        hypervisor_filter = (
+            {"where": {"id_in": hypervisors}} if hypervisors else {}
+        )
+
+        query = DSLQuery(
+            ds.Query.hypervisors(**hypervisor_filter)
+            .alias("static")
+            .select(
+                ds.Hypervisor.id,
+                ds.Hypervisor.symbol,
+                ds.Hypervisor.pool.select(
+                    ds.Pool.token0.select(ds.Token.decimals),
+                    ds.Pool.token1.select(ds.Token.decimals),
+                ),
+            ),
+            ds.Query.hypervisors(**hypervisor_filter).select(
+                self.hype_pool_client.hypervisor_fields_fragment()
+            ),
+            ds.Query._meta.select(self.hype_pool_client.meta_fields_fragment()),
+        )
+
+        response = await self.hype_pool_client.execute(query)
+        return response
+
+    def _transform_data(self, query_data) -> dict[str, FeesData]:
+        self._extract_static_data(query_data["static"])
+        return {
+            hypervisor["id"]: self._init_fees_data(
+                hypervisor=hypervisor,
+                hypervisor_id=hypervisor["id"],
+                block=query_data["_meta"]["block"]["number"],
+                timestamp=query_data["_meta"]["block"]["timestamp"],
+                current_tick=hypervisor["pool"]["currentTick"],
+                price_0=hypervisor["pool"]["token0"]["priceUSD"],
+                price_1=hypervisor["pool"]["token1"]["priceUSD"],
+                fee_growth_global_0=hypervisor["pool"]["feeGrowthGlobal0X128"],
+                fee_growth_global_1=hypervisor["pool"]["feeGrowthGlobal1X128"],
+            )
+            for hypervisor in query_data["hypervisors"]
         }
 
-        response = await self.fee_growth_client.query(query, variables)
-        return response["data"]
+
+class FeeGrowthSnapshotData(FeeGrowthTemporalData):
+    """Get fee growth data from fee growth subgraph"""
+
+    async def get_data(self, hypervisors: list[str] | None = None) -> None:
+        """Query data and tranfrom to FeesData Class"""
+        await self._init_start_time()
+        self.data = self._transform_data(await self._query_data(hypervisors))
+
+    async def _query_data(self, hypervisors: list[str] | None = None) -> dict:
+        ds = self.hype_pool_client.data_schema
+        hypervisor_filter = (
+            {"where": {"id_in": hypervisors}} if hypervisors else {}
+        )
+
+        query = DSLQuery(
+            ds.Query.hypervisors(
+                **({"block": {"number": self.end_time.block}} | hypervisor_filter)
+            )
+            .alias("static")
+            .select(
+                ds.Hypervisor.id,
+                ds.Hypervisor.symbol,
+                ds.Hypervisor.pool.select(
+                    ds.Pool.token0.select(ds.Token.decimals),
+                    ds.Pool.token1.select(ds.Token.decimals),
+                ),
+            ),
+            ds.Query.hypervisors(
+                **({"block": {"number": self.end_time.block}} | hypervisor_filter)
+            )
+            .alias("latest")
+            .select(self.hype_pool_client.hypervisor_fields_fragment()),
+            ds.Query.hypervisors(
+                **({"block": {"number": self.initial_time.block}} | hypervisor_filter)
+            )
+            .alias("initial")
+            .select(self.hype_pool_client.hypervisor_fields_fragment()),
+            ds.Query.hypervisors(**hypervisor_filter)
+            .alias("snapshots")
+            .select(
+                ds.Hypervisor.id,
+                ds.Hypervisor.feeSnapshots(
+                    where={
+                        "timestamp_gte": self.initial_time.timestamp,
+                        "timestamp_lte": self.end_time.timestamp,
+                    }
+                ).select(
+                    ds.FeeSnapshot.blockNumber,
+                    ds.FeeSnapshot.timestamp,
+                    ds.FeeSnapshot.currentBlock.select(
+                        self.hype_pool_client.block_snapshot_fields_fragment()
+                    ),
+                    ds.FeeSnapshot.previousBlock.select(
+                        self.hype_pool_client.block_snapshot_fields_fragment()
+                    ),
+                ),
+            ),
+            ds.Query._meta.select(self.hype_pool_client.meta_fields_fragment()),
+        )
+
+        response = await self.hype_pool_client.execute(query)
+        return response
 
     def _transform_data(self, query_data: dict) -> dict[str, list[FeesData]]:
         transformed_data = {}
@@ -589,4 +360,95 @@ class FeeGrowthSnapshotData(FeeGrowthDataABC):
                         fee_growth_global_1=previous_block["feeGrowthGlobal1X128"],
                     )
                 )
+        return transformed_data
+
+
+class ImpermanentDivergenceData(FeeGrowthTemporalData):
+    async def get_data(self, hypervisors: list[str] | None = None) -> None:
+        await self._init_start_time()
+        self.data = self._transform_data(await self._query_data(hypervisors))
+
+    async def _query_data(self, hypervisors: list[str] | None = None) -> dict:
+        ds = self.hype_pool_client.data_schema
+        hypervisor_filter = (
+            {"where": {"id_in": hypervisors}} if hypervisors else {}
+        )
+        query = DSLQuery(
+            ds.Query.hypervisors(
+                **({"block": {"number": self.end_time.block}} | hypervisor_filter)
+            )
+            .alias("static")
+            .select(
+                ds.Hypervisor.id,
+                ds.Hypervisor.symbol,
+                ds.Hypervisor.pool.select(
+                    ds.Pool.token0.select(ds.Token.decimals),
+                    ds.Pool.token1.select(ds.Token.decimals),
+                ),
+            ),
+            ds.Query.hypervisors(
+                **({"block": {"number": self.end_time.block}} | hypervisor_filter)
+            )
+            .alias("latest")
+            .select(self.hype_pool_client.hypervisor_fields_fragment()),
+            ds.Query.hypervisors(
+                **({"block": {"number": self.initial_time.block}} | hypervisor_filter)
+            )
+            .alias("initial")
+            .select(self.hype_pool_client.hypervisor_fields_fragment()),
+            ds.Query._meta.select(self.hype_pool_client.meta_fields_fragment()),
+        )
+
+        response = await self.hype_pool_client.execute(query)
+        return response
+
+    def _transform_data(self, query_data: dict) -> dict[str, FeesDataRange]:
+        self._extract_static_data(query_data["static"])
+
+        # Transform list to dict for easier lookup in the next step
+        initial_data = {hype["id"]: hype for hype in query_data["initial"]}
+
+        transformed_data = {
+            hypervisor_latest["id"]: FeesDataRange(
+                initial=self._init_fees_data(
+                    hypervisor=initial_data[hypervisor_latest["id"]],
+                    hypervisor_id=initial_data[hypervisor_latest["id"]]["id"],
+                    block=self.initial_time.block,
+                    timestamp=self.initial_time.timestamp,
+                    current_tick=initial_data[hypervisor_latest["id"]]["pool"][
+                        "currentTick"
+                    ],
+                    price_0=initial_data[hypervisor_latest["id"]]["pool"]["token0"][
+                        "priceUSD"
+                    ],
+                    price_1=initial_data[hypervisor_latest["id"]]["pool"]["token1"][
+                        "priceUSD"
+                    ],
+                    fee_growth_global_0=initial_data[hypervisor_latest["id"]]["pool"][
+                        "feeGrowthGlobal0X128"
+                    ],
+                    fee_growth_global_1=initial_data[hypervisor_latest["id"]]["pool"][
+                        "feeGrowthGlobal1X128"
+                    ],
+                ),
+                latest=self._init_fees_data(
+                    hypervisor=hypervisor_latest,
+                    hypervisor_id=hypervisor_latest["id"],
+                    block=query_data["_meta"]["block"]["number"],
+                    timestamp=query_data["_meta"]["block"]["timestamp"],
+                    current_tick=hypervisor_latest["pool"]["currentTick"],
+                    price_0=hypervisor_latest["pool"]["token0"]["priceUSD"],
+                    price_1=hypervisor_latest["pool"]["token1"]["priceUSD"],
+                    fee_growth_global_0=hypervisor_latest["pool"][
+                        "feeGrowthGlobal0X128"
+                    ],
+                    fee_growth_global_1=hypervisor_latest["pool"][
+                        "feeGrowthGlobal1X128"
+                    ],
+                ),
+            )
+            for hypervisor_latest in query_data["latest"]
+            if initial_data.get(hypervisor_latest["id"])
+        }
+
         return transformed_data

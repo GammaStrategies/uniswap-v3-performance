@@ -1,9 +1,9 @@
-from xmlrpc.client import Boolean
 from v3data import UniswapV3Client
+from v3data.enums import Chain, Protocol
 
 
 class SimulatorData:
-    def __init__(self, protocol: str, chain: str) -> None:
+    def __init__(self, protocol: Protocol, chain: Chain) -> None:
         self.uniswap_client = UniswapV3Client(protocol, chain)
 
     async def _get_token_list(self, page: int = 0):
@@ -124,4 +124,3 @@ class SimulatorInfo(SimulatorData):
             await self._get_pool_24hr_volume(poolAddress)
 
         return self.volume_data
-

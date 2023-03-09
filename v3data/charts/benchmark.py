@@ -6,10 +6,11 @@ from v3data import GammaClient, UniswapV2Client, UniswapV3Client
 from v3data.utils import date_to_timestamp
 from v3data.constants import WETH_ADDRESS
 from v3data.charts.config import BASE_POOLS_CONFIG, WETH_USDC_POOL
+from v3data.enums import Chain, Protocol
 
 
 class Benchmark:
-    def __init__(self, protocol: str, chain: str, address, start_date, end_date):
+    def __init__(self, protocol: Protocol, chain: Chain, address, start_date, end_date):
         self.chain = chain
         self.gamma_client = GammaClient(protocol, chain)
         self.v3_client = UniswapV3Client(protocol, chain)
@@ -259,14 +260,13 @@ class Benchmark:
             )
             df_lp["v2lpPrice"] = df_lp.reserveUSD / df_lp.totalSupply
 
-        #. Dataframe for token prices
+        # Dataframe for token prices
         df_lp = pd.DataFrame(data["v3"]["lpDayData"], dtype=np.float64).set_index("date")
 
         if self.base_token_index == 0:
             df_lp["tokenPriceInBase"] = df_lp.token0Price
         elif self.base_token_index == 1:
             df_lp["tokenPriceInBase"] = df_lp.token1Price
-
 
         # Load Base token pricing
         df_base = pd.DataFrame(data["v3"]["baseDayData"], dtype=np.float64).set_index(
@@ -291,7 +291,7 @@ class Benchmark:
             [df_lp[["tokenPriceInBase"]], df_base[["basePriceUsdc"]]]
         )
 
-        #. Convert prices to USDC
+        # Convert prices to USDC
         df_all["tokenPriceUsdc"] = df_all.tokenPriceInBase * df_all.basePriceUsdc
 
         df_all = df_all[["close", "tokenPriceUsdc", "basePriceUsdc"]]

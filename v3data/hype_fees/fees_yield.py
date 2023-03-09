@@ -6,7 +6,8 @@ from pandas import DataFrame
 from v3data.hype_fees.data import FeeGrowthSnapshotData
 from v3data.hype_fees.fees import Fees
 from v3data.hype_fees.schema import FeesData, FeesSnapshot, FeeYield
-from v3data.constants import X128, DAY_SECONDS, YEAR_SECONDS
+from v3data.constants import DAY_SECONDS, YEAR_SECONDS
+from v3data.enums import Chain, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ YIELD_PER_DAY_MAX = 300
 
 
 class FeesYield:
-    def __init__(self, data: [FeesData], protocol: str, chain: str) -> None:
+    def __init__(self, data: [FeesData], protocol: Protocol, chain: Chain) -> None:
         self.data = data
         self.protocol = protocol
         self.chain = chain
@@ -92,44 +93,24 @@ class FeesYield:
 
     def get_fees(self, fees_data: FeesData) -> FeesSnapshot:
         fees = Fees(fees_data, self.protocol, self.chain)
-        fee_amounts_x128 = fees.fee_amounts()
-
-        total_fees_0 = (
-            (
-                fee_amounts_x128.base.value0
-                + fee_amounts_x128.limit.value0
-                + fees_data.base_position.tokens_owed.value0
-                + fees_data.limit_position.tokens_owed.value0
-            )
-            / 10**fees_data.decimals.value0
-            / X128
-        )
-
-        total_fees_1 = (
-            (
-                fee_amounts_x128.base.value1
-                + fee_amounts_x128.limit.value1
-                + fees_data.base_position.tokens_owed.value1
-                + fees_data.limit_position.tokens_owed.value1
-            )
-            / 10**fees_data.decimals.value1
-            / X128
-        )
+        fee_amounts = fees.fee_amounts()
 
         return FeesSnapshot(
             block=fees_data.block,
             timestamp=fees_data.timestamp,
             tvl_usd=fees_data.tvl_usd,
-            total_fees_0=total_fees_0,
-            total_fees_1=total_fees_1,
+            total_fees_0=fee_amounts.total.amount.value0,
+            total_fees_1=fee_amounts.total.amount.value1,
             price_0=fees_data.price.value0,
             price_1=fees_data.price.value1,
         )
 
 
-async def fee_returns_all(protocol: str, chain: str, days: int):
+async def fee_returns_all(
+    protocol: Protocol, chain: Chain, days: int, hypervisors: list[str] | None = None
+) -> dict[str, dict]:
     fees_data = FeeGrowthSnapshotData(days, protocol, chain)
-    await fees_data.get_data()
+    await fees_data.get_data(hypervisors)
 
     results = {}
     for hypervisor_id, fees_data in fees_data.data.items():
@@ -139,6 +120,6 @@ async def fee_returns_all(protocol: str, chain: str, days: int):
             "symbol": fees_data[0].symbol,
             "feeApr": returns.apr,
             "feeApy": returns.apy,
-            "status": returns.status
+            "status": returns.status,
         }
     return results
