@@ -256,6 +256,7 @@ class FeeGrowthSnapshotData(FeeGrowthTemporalData):
             .select(
                 ds.Hypervisor.id,
                 ds.Hypervisor.feeSnapshots(
+                    first=1000,
                     where={
                         "timestamp_gte": self.initial_time.timestamp,
                         "timestamp_lte": self.end_time.timestamp,
