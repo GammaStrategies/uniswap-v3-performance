@@ -136,8 +136,8 @@ class db_returns_manager(db_collection_manager):
         )
 
         # get block n timestamp
-        block = fees_data.data[0].block
-        timestamp = fees_data.data[0].timestamp
+        block = fees_data[0].block
+        timestamp = fees_data[0].timestamp
 
         # fee yield data process
         for k, v in returns_data.items():
@@ -150,12 +150,11 @@ class db_returns_manager(db_collection_manager):
                     "chain": chain,
                     "period": period_days,
                     "address": k,
-                    "symbol": v.symbol,
                     "block": block,
                     "timestamp": timestamp,
                     "fees": {
-                        "feeApr": v.feeApr,
-                        "feeApy": v.feeApy,
+                        "feeApr": v.apr,
+                        "feeApy": v.apy,
                         "status": v.status,
                     },
                 }
@@ -164,11 +163,15 @@ class db_returns_manager(db_collection_manager):
         for k, v in imperm_data.items():
             # only hypervisors with FeeYield data
             if k in result.keys():
+                # add symbol
+                result[k]["symbol"] = v["symbol"]
+                # add impermanent
                 result[k]["impermanent"] = {
-                    "vs_hodl_usd": v["vs_hodl_usd"],
-                    "vs_hodl_deposited": v["vs_hodl_deposited"],
-                    "vs_hodl_token0": v["vs_hodl_token0"],
-                    "vs_hodl_token1": v["vs_hodl_token1"],
+                    "lping": v["lping"],
+                    "hodl_deposited": v["hodl_deposited"],
+                    "hodl_fifty": v["hodl_fifty"],
+                    "hodl_token0": v["hodl_token0"],
+                    "hodl_token1": v["hodl_token1"],
                 }
 
         return result
@@ -189,7 +192,8 @@ class db_returns_manager(db_collection_manager):
             ]
 
             await asyncio.gather(*requests)
-        except:
+
+        except Exception:
             logger.warning(
                 f" Unexpected error feeding {chain}'s {protocol} returns to db   err:{sys.exc_info()[0]}"
             )
@@ -967,6 +971,28 @@ class db_allRewards2_manager(db_collection_manager):
         except:
             return {}
 
+    async def get_hypervisor_rewards(
+        self,
+        chain: Chain,
+        protocol: Protocol,
+        address: str,
+        ini_date: datetime = None,
+        end_date: datetime = None,
+    ) -> list[dict]:
+        result = await self._get_data(
+            query=self.query_hype_rewards(
+                chain=chain,
+                protocol=protocol,
+                hypervisor_address=address,
+                ini_date=ini_date,
+                end_date=end_date,
+            )
+        )
+        try:
+            return result
+        except:
+            return list({})
+
     @staticmethod
     def query_all(chain: Chain, protocol: Protocol = "") -> list[dict]:
         """
@@ -994,6 +1020,54 @@ class db_allRewards2_manager(db_collection_manager):
             {"$sort": {"datetime": -1}},
             {"$limit": 3},
             {"$unset": ["_id", "id", "chain", "protocol"]},
+        ]
+
+    @staticmethod
+    def query_hype_rewards(
+        chain: Chain,
+        protocol: Protocol,
+        hypervisor_address: str,
+        ini_date: datetime = None,
+        end_date: datetime = None,
+    ) -> list[str]:
+        """Get hypervisor's rewards2
+            sorted by datetime newest first
+
+        Args:
+            chain (Chain):
+            protocol (Protocol):
+            hypervisor_address (str):
+            ini_date (datetime, optional): . Defaults to None.
+            end_date (datetime, optional): . Defaults to None.
+
+        Returns:
+            list[str]: _description_
+        """
+        _match = {"protocol": protocol}
+        if ini_date:
+            _match["datetime"] = {"$gte": ini_date}
+        if end_date:
+            _match["datetime"] = {"$lte": end_date}
+
+        return [
+            {" $match": _match},
+            {"$sort": {"datetime": -1}},
+            {"$addFields": {"obj_as_arr": {"$objectToArray": "$$ROOT"}}},
+            {"$unwind": "$obj_as_arr"},
+            {
+                "$match": {
+                    "obj_as_arr.v.pools.{}".format(hypervisor_address): {"$exists": 1}
+                }
+            },
+            {
+                "$project": {
+                    "_id": 0,
+                    "chain": "$chain",
+                    "datetime": "$datetime",
+                    "protocol": "$protocol",
+                    "rewards2": "$obj_as_arr.v.pools.{}".format(hypervisor_address),
+                }
+            },
         ]
 
 
