@@ -5,14 +5,6 @@ import logging
 import asyncio
 
 
-from v3data.charts.base_range import BaseLimit
-from v3data.toplevel import TopLevelData
-from v3data.accounts import AccountInfo
-from v3data.common import hypervisor
-from v3data.enums import Chain, Protocol
-from v3data.hypes.fees_yield import FeesYield
-
-
 logging.basicConfig(
     format="[%(asctime)s:%(levelname)s:%(name)s]:%(message)s",
     datefmt="%Y/%m/%d %I:%M:%S",
@@ -24,6 +16,13 @@ CURRENT_FOLDER = os.path.dirname(os.path.realpath(__file__))
 PARENT_FOLDER = os.path.dirname(CURRENT_FOLDER)
 sys.path.append(PARENT_FOLDER)
 
+
+from v3data.charts.base_range import BaseLimit
+from v3data.toplevel import TopLevelData
+from v3data.accounts import AccountInfo
+from v3data.common import hypervisor
+from v3data.enums import Chain, Protocol
+from v3data.hype_fees.fees_yield import fee_returns_all
 
 logger = logging.getLogger(__name__)
 
@@ -65,12 +64,11 @@ def get_timepassed_string(start_time: dt.datetime) -> str:
 
 
 async def test_temporal():
-    terst_var = await hypervisor.hypervisors_return(
-        protocol=Protocol.UNISWAP, chain=Chain.POLYGON
-    )
+    # terst_var = await hypervisor.hypervisors_return(
+    #     protocol=Protocol.UNISWAP, chain=Chain.POLYGON
+    # )
 
-    fees_yield = FeesYield(1, Protocol.QUICKSWAP, Chain.POLYGON)
-    output = await fees_yield.get_fees_yield()
+    fees_yield = await fee_returns_all(Protocol.QUICKSWAP, Chain.POLYGON, 1)
     return output
 
 
