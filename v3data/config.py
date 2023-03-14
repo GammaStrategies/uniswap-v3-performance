@@ -321,3 +321,5 @@ CHAIN_NAME_CONVERSION = {
 
 # Max fees per rebalance to remove outliers
 GROSS_FEES_MAX = 10**6
+
+GQL_CLIENT_TIMEOUT = 120
