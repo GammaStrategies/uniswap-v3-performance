@@ -175,7 +175,11 @@ class ImpermanentDivergence(ExecutionOrderWrapper):
         super().__init__(protocol, chain, response)
 
     async def _database(self):
-        pass
+        # check days in database
+        if not self.days in [1, 7, 30]:
+            raise NotImplementedError(
+                " Only a limited quantity of periods reside in database. Chosen one is not among them"
+            )
 
     async def _subgraph(self):
         return await impermanent_divergence_all(self.protocol, self.chain, self.days)

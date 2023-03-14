@@ -35,9 +35,17 @@ class db_collections_common:
             collection_name (str): collection name to save data to
         """
         # add item by item to database
-        for key, item in data.items():
-            # add to mongodb
-            await self.save_item_to_database(data=item, collection_name=collection_name)
+        requests = [
+            self.save_item_to_database(data=item, collection_name=collection_name)
+            for key, item in data.items()
+        ]
+
+        await asyncio.gather(*requests)
+
+        # add item by item to database
+        # for key, item in data.items():
+        #     # add to mongodb
+        #     await self.save_item_to_database(data=item, collection_name=collection_name)
 
     async def save_item_to_database(
         self,

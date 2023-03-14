@@ -179,7 +179,9 @@ class db_returns_manager(db_collection_manager):
     async def feed_db(
         self, chain: Chain, protocol: Protocol, periods: list[int] = [1, 7, 30]
     ):
-
+        # error control
+        errors: list[tuple] = list()
+        # create data
         try:
             requests = [
                 self.save_items_to_database(
@@ -197,6 +199,12 @@ class db_returns_manager(db_collection_manager):
             logger.warning(
                 f" Unexpected error feeding {chain}'s {protocol} returns to db   err:{sys.exc_info()[0]}"
             )
+            errors.append((chain, protocol, periods))
+
+        # if errors:
+        #     # TODO: try again once?
+        #     for err in errors:
+        #         await self.feed_db(*err)
 
     async def get_hypervisors_average(
         self, chain: Chain, period: int = 0, protocol: Protocol = ""
@@ -825,6 +833,44 @@ class db_returns_manager(db_collection_manager):
             return returns_by_period
         else:
             return returns_all_periods
+
+    def query_impermanent(
+        chain: Chain,
+        period: int = 0,
+        protocol: Protocol = None,
+        hypervisor_address: str = None,
+    ) -> list[dict]:
+
+        _query = list()
+
+        # build first main match part of the query
+        _match = {"chain": chain, "period": period}
+        if hypervisor_address:
+            _match["address"] = hypervisor_address
+        _query.append(_match)
+
+        # build protocol part as needed
+        if protocol:
+            _query.append(
+                {
+                    "$lookup": {
+                        "from": "static",
+                        "localField": "hypervisor_id",
+                        "foreignField": "id",
+                        "as": "hypervisor",
+                    }
+                }
+            )
+            _query.append(
+                {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}}
+            )
+            _query.append({"$match": {"hypervisor.protocol": protocol}})
+
+        # sort query
+        _query.append({"$sort": {"block": -1}})
+
+        # return result
+        return _query
 
 
 class db_allData_manager(db_collection_manager):

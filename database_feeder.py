@@ -67,15 +67,14 @@ EXPR_ARGS = {
 
 # feed jobs
 async def feed_database_returns(periods: list):
-    logger.info(" Starting database feeding process for results data")
+    logger.info(" Starting database feeding process for returns data")
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
-    # all
+
+    # all request at once
     requests = [
         returns_manager.feed_db(chain=chain, protocol=protocol, periods=periods)
         for chain, protocol in CHAINS_PROTOCOLS
-        if protocol == Protocol.QUICKSWAP
     ]
-
     await asyncio.gather(*requests)
 
 
