@@ -19,8 +19,6 @@ sys.path.append(PARENT_FOLDER)
 from v3data.enums import Chain, Protocol
 from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS
 
-from database.collection_returns import db_returns_manager
-from database.collection_static import db_static_manager
 from v3data.common import hypervisor
 
 from v3data.routers import mainnet, optimism, arbitrum, celo, polygon
@@ -33,21 +31,24 @@ async def test_impermanent_divergence(
     days, protocol: str = Protocol.UNISWAP, chain: Chain = Chain.MAINNET
 ):
 
-    data = await hypervisor.impermanent_divergence(
+    data = await hypervisor.impermanent_divergence_all(
         protocol=protocol, chain=chain, days=days
     )
 
     # log weird data
     logger.info("[{}-{}] weird data:".format(chain, protocol))
-    for hypervisor_id, data in data.items():
+    for hypervisor_id, hype_data in data.items():
         for key in [
-            "vs_hodl_usd",
-            "vs_hodl_deposited",
-            "vs_hodl_token0",
-            "vs_hodl_token1",
+            "lping",
+            "hodl_deposited",
+            "hodl_fifty",
+            "hodl_token0",
+            "hodl_token1",
         ]:
-            if data[key] > 6:
-                logger.warning("data: {} \r".format(data))
+            if hype_data[key] > 6:
+                logger.warning("data: {} \r".format(hype_data))
+
+    return data
 
 
 async def test_impermanent_divergence_all():
@@ -57,15 +58,16 @@ async def test_impermanent_divergence_all():
 
     for chain in chains:
         for protocol in protocols:
-            if protocol == Protocol.QUICKSWAP and chain != Chain.POLYGON:
-                continue
+            # if protocol == Protocol.QUICKSWAP and chain != Chain.POLYGON:
+            #     continue
             # elif protocol == Protocol.UNISWAP and chain == Chain.POLYGON:
             #     continue
 
             for day in days:
-                await test_impermanent_divergence(
+                result = await test_impermanent_divergence(
                     days=day, protocol=protocol, chain=chain
                 )
+                po = "stop"
 
 
 async def test_all_endpoints():

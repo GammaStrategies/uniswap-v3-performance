@@ -66,23 +66,15 @@ EXPR_ARGS = {
 }
 
 # feed jobs
-async def feed_database_returns(periods: list, process_quickswap=True):
-    logger.info(" Starting database feeding process for average results data")
+async def feed_database_returns(periods: list):
+    logger.info(" Starting database feeding process for results data")
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
-    if process_quickswap:
-        # all
-        requests = [
-            returns_manager.feed_db(chain=chain, protocol=protocol, periods=periods)
-            for chain, protocol in CHAINS_PROTOCOLS
-        ]
-    else:
-        # not processing quickswap
-        logger.info("   ... discarding quickswap hypervisors")
-        requests = [
-            returns_manager.feed_db(chain=chain, protocol=protocol, periods=periods)
-            for chain, protocol in CHAINS_PROTOCOLS
-            if protocol != Protocol.QUICKSWAP
-        ]
+    # all
+    requests = [
+        returns_manager.feed_db(chain=chain, protocol=protocol, periods=periods)
+        for chain, protocol in CHAINS_PROTOCOLS
+        if protocol == Protocol.QUICKSWAP
+    ]
 
     await asyncio.gather(*requests)
 
@@ -206,9 +198,7 @@ async def feed_all():
 
 
 # Manual script execution
-async def feed_database_with_historic_data(
-    from_datetime: datetime, process_quickswap=True, periods=[]
-):
+async def feed_database_with_historic_data(from_datetime: datetime, periods=[]):
     """Fill database with historic
 
     Args:
@@ -216,6 +206,7 @@ async def feed_database_with_historic_data(
         process_quickswap (bool): should quickswap protocol be included ?
         periods (list): list of periods as ["daily", "weekly", "monthly"]
     """
+    raise NotImplementedError(" Scraping historic data method has been removed")
     # final log var
     processed_datetime_strings = list()
 
@@ -244,10 +235,7 @@ async def feed_database_with_historic_data(
             logger.info(" Feeding {} database at  {}".format(period, txt_timestamp))
 
             # database feed
-            await feed_database_returns(
-                periods=EXPR_ARGS["returns"][period][0],
-                process_quickswap=process_quickswap,
-            )
+            await feed_database_returns(periods=EXPR_ARGS["returns"][period][0])
 
             # set next timestamp
             current_timestamp = c_iter.get_next(start_time=current_timestamp)
@@ -358,11 +346,7 @@ if __name__ == "__main__":
         _startime = datetime.utcnow()
 
         # TODO: add quickswap command line args
-        asyncio.run(
-            feed_database_with_historic_data(
-                from_datetime=from_datetime, process_quickswap=False
-            )
-        )
+        asyncio.run(feed_database_with_historic_data(from_datetime=from_datetime))
 
         # end time log
         logger.info(
