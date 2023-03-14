@@ -121,7 +121,7 @@ async def recent_fees(hours: int = 24):
 @cache(expire=APY_CACHE_TIMEOUT)
 async def hypervisors_return(response: Response):
     hypervisor_returns = v3data.common.hypervisor.HypervisorsReturnsAllPeriods(
-        PROTOCOL, CHAIN, response
+        protocol=PROTOCOL, chain=CHAIN, hypervisors=None, response=response
     )
     return await hypervisor_returns.run(RUN_FIRST)
 

@@ -6,6 +6,7 @@ from gql.dsl import DSLFragment, DSLQuery, DSLSchema, dsl_gql
 from gql.transport.aiohttp import AIOHTTPTransport, log as requests_logger
 
 from v3data.enums import Chain, Protocol
+from v3data.config import GQL_CLIENT_TIMEOUT
 
 requests_logger.setLevel(logging.WARNING)
 
@@ -31,9 +32,13 @@ def fragment(fragment_function):
 class AsyncGqlClient(GqlClient):
     """Subclass of gql Client that defaults to AIOHTTPTransport"""
 
-    def __init__(self, url: str, schema):
+    def __init__(self, url: str, schema, execute_timeout: int):
         self.url = url
-        super().__init__(schema=schema, transport=AIOHTTPTransport(url=url))
+        super().__init__(
+            schema=schema,
+            transport=AIOHTTPTransport(url=url),
+            execute_timeout=execute_timeout,
+        )
 
 
 class SubgraphClient:
@@ -44,7 +49,9 @@ class SubgraphClient:
     ) -> None:
         with open(schema_path) as f:
             schema = f.read()
-        self.client = AsyncGqlClient(url=url, schema=schema)
+        self.client = AsyncGqlClient(
+            url=url, schema=schema, execute_timeout=GQL_CLIENT_TIMEOUT
+        )
         self.data_schema = DSLSchema(self.client.schema)
         self._fragment_dependencies: list[DSLFragment] = []
         self._fragments_used: list[str] = []
