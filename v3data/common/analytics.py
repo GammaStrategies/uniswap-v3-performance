@@ -5,7 +5,7 @@ from database.collection_endpoint import db_returns_manager, db_allRewards2_mana
 from v3data.config import MONGO_DB_URL
 
 
-class hypervisor_analytics:
+class HypervisorAnalytics:
     def __init__(self, chain: Chain, hypervisor_address: str):
         self.chain = chain
         self.address = hypervisor_address
