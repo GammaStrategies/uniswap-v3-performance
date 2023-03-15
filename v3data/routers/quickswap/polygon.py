@@ -95,6 +95,44 @@ async def hypervisor_uncollected_fees(hypervisor_address: str):
     )
 
 
+@router.get("/hypervisor/{hypervisor_address}/analytics/basic/daily")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def hypervisor_analytics_basic_daily(hypervisor_address: str, response: Response):
+    return await v3data.common.analytics.get_hype_data(
+        chain=CHAIN, hypervisor_address=hypervisor_address, period=1
+    )
+
+
+@router.get("/hypervisor/{hypervisor_address}/analytics/basic/weekly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def hypervisor_analytics_basic_weekly(
+    hypervisor_address: str, response: Response
+):
+    return await v3data.common.analytics.get_hype_data(
+        chain=CHAIN, hypervisor_address=hypervisor_address, period=7
+    )
+
+
+@router.get("/hypervisor/{hypervisor_address}/analytics/basic/biweekly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def hypervisor_analytics_basic_biweekly(
+    hypervisor_address: str, response: Response
+):
+    return await v3data.common.analytics.get_hype_data(
+        chain=CHAIN, hypervisor_address=hypervisor_address, period=14
+    )
+
+
+@router.get("/hypervisor/{hypervisor_address}/analytics/basic/monthly")
+@cache(expire=APY_CACHE_TIMEOUT)
+async def hypervisor_analytics_basic_monthly(
+    hypervisor_address: str, response: Response
+):
+    return await v3data.common.analytics.get_hype_data(
+        chain=CHAIN, hypervisor_address=hypervisor_address, period=30
+    )
+
+
 @router.get("/hypervisors/aggregateStats")
 async def aggregate_stats(response: Response):
     aggregate_stats = v3data.common.hypervisor.AggregateStats(PROTOCOL, CHAIN, response)
@@ -209,9 +247,9 @@ async def account_data(address: str):
     return await v3data.common.users.account_data(PROTOCOL, CHAIN, address)
 
 
-@router.get("/divergence")
-async def divergence(response: Response, days: int = 1):
-    divergence = v3data.common.hypervisor.ImpermanentDivergence(
-        PROTOCOL, CHAIN, days, response
-    )
-    return await divergence.run(RUN_FIRST)
+# @router.get("/divergence")
+# async def divergence(response: Response, days: int = 1):
+#     divergence = v3data.common.hypervisor.ImpermanentDivergence(
+#         PROTOCOL, CHAIN, days, response
+#     )
+#     return await divergence.run(RUN_FIRST)

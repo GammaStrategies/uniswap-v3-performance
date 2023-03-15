@@ -11,6 +11,8 @@ from v3data.hype_fees.impermanent_divergence import impermanent_divergence_all
 from v3data.toplevel import TopLevelData
 from v3data.enums import Chain, Protocol
 
+from v3data.config import GQL_CLIENT_TIMEOUT
+
 from database.common.collections_common import db_collections_common
 
 logger = logging.getLogger(__name__)
@@ -25,7 +27,7 @@ class db_collection_manager(db_collections_common):
                 data=await self.create_data(chain=chain, protocol=protocol),
                 collection_name=self.db_collection_name,
             )
-        except:
+        except Exception:
             logger.warning(
                 f" Unexpected error feeding {chain}'s {protocol} database  err:{sys.exc_info()[0]}"
             )
@@ -92,6 +94,35 @@ class db_static_manager(db_collection_manager):
 
         return result
 
+    async def get_hypervisors_address_list(
+        self, chain: Chain, protocol: Protocol = None
+    ) -> list:
+        _find = {"chain": chain}
+        if protocol:
+            _find["protocol"] = protocol
+
+        try:
+            return await self.get_distinct_items_from_database(
+                field="address",
+                collection_name=self.db_collection_name,
+                condition=_find,
+            )
+        except Exception:
+            return []
+
+    async def get_hypervisors(self, chain: Chain, protocol: Protocol = None) -> list:
+        _find = {"chain": chain}
+        if protocol:
+            _find["protocol"] = protocol
+
+        try:
+            return await self.get_items_from_database(
+                collection_name=self.db_collection_name,
+                find=_find,
+            )
+        except Exception:
+            return []
+
 
 class db_returns_manager(db_collection_manager):
     """This is managing database with fee Return and Impermanent divergence data
@@ -102,6 +133,7 @@ class db_returns_manager(db_collection_manager):
     """
 
     db_collection_name = "returns"
+    _max_retry = 1
 
     # format data to be used with mongo db
     async def create_data(
@@ -177,10 +209,23 @@ class db_returns_manager(db_collection_manager):
         return result
 
     async def feed_db(
-        self, chain: Chain, protocol: Protocol, periods: list[int] = [1, 7, 30]
+        self,
+        chain: Chain,
+        protocol: Protocol,
+        periods: list[int] = None,
+        retried: int = 0,
     ):
-        # error control
-        errors: list[tuple] = list()
+        """
+        Args:
+            chain (Chain):
+            protocol (Protocol):
+            periods (list[int], optional): . Defaults to [1, 7, 14, 30].
+            retried (int, optional): current number of retries . Defaults to 0.
+        """
+        # set default periods
+        if not periods:
+            periods = [1, 7, 14, 30]
+
         # create data
         try:
             requests = [
@@ -196,15 +241,19 @@ class db_returns_manager(db_collection_manager):
             await asyncio.gather(*requests)
 
         except Exception:
-            logger.warning(
-                f" Unexpected error feeding {chain}'s {protocol} returns to db   err:{sys.exc_info()[0]}"
-            )
-            errors.append((chain, protocol, periods))
-
-        # if errors:
-        #     # TODO: try again once?
-        #     for err in errors:
-        #         await self.feed_db(*err)
+            # retry when possible
+            if retried < self._max_retry:
+                # wait jic
+                await asyncio.sleep(2)
+                logger.info(
+                    f" Retrying the feeding of {chain}'s {protocol} returns to db for the {retried+1} time."
+                )
+                # retry
+                await self.feed_db(chain, protocol, periods, retried + 1)
+            else:
+                logger.exception(
+                    f" Unexpected error feeding {chain}'s {protocol} returns to db  err:{sys.exc_info()[0]}. Retries: {retried}."
+                )
 
     async def get_hypervisors_average(
         self, chain: Chain, period: int = 0, protocol: Protocol = ""
@@ -216,7 +265,7 @@ class db_returns_manager(db_collection_manager):
         )
         try:
             return result
-        except:
+        except Exception:
             return {}
 
     async def get_hypervisors_returns_average(
@@ -229,7 +278,7 @@ class db_returns_manager(db_collection_manager):
         )
         try:
             return result
-        except:
+        except Exception:
             return {}
 
     async def get_hypervisor_average(
@@ -249,7 +298,7 @@ class db_returns_manager(db_collection_manager):
         )
         try:
             return result
-        except:
+        except Exception:
             return {}
 
     async def get_feeReturns(
@@ -272,7 +321,7 @@ class db_returns_manager(db_collection_manager):
         # set database last update field as the maximum date found within the items returned
         try:
             db_lastUpdate = max([x["timestamp"] for x in dbdata])
-        except:
+        except Exception:
             # TODO: log error
             db_lastUpdate = datetime.utcnow().timestamp()
 
@@ -303,7 +352,7 @@ class db_returns_manager(db_collection_manager):
         # set database last update field as the maximum date found within the items returned
         try:
             db_lastUpdate = max([x["timestamp"] for x in result])
-        except:
+        except Exception:
             # TODO: log error
             db_lastUpdate = datetime.utcnow().timestamp()
 
@@ -834,11 +883,14 @@ class db_returns_manager(db_collection_manager):
         else:
             return returns_all_periods
 
-    def query_impermanent(
+    @staticmethod
+    def query_return_impermanent(
         chain: Chain,
         period: int = 0,
         protocol: Protocol = None,
         hypervisor_address: str = None,
+        ini_date: datetime = None,
+        end_date: datetime = None,
     ) -> list[dict]:
 
         _query = list()
@@ -847,7 +899,18 @@ class db_returns_manager(db_collection_manager):
         _match = {"chain": chain, "period": period}
         if hypervisor_address:
             _match["address"] = hypervisor_address
-        _query.append(_match)
+        if ini_date and end_date:
+            _match["$and"] = [
+                {"timestamp": {"$gte": int(ini_date.timestamp())}},
+                {"timestamp": {"$lte": int(end_date.timestamp())}},
+            ]
+        elif ini_date:
+            _match["timestamp"] = {"$gte": int(ini_date.timestamp())}
+        elif end_date:
+            _match["timestamp"] = {"$lte": int(end_date.timestamp())}
+
+        # add matches to query
+        _query.append({"$match": _match})
 
         # build protocol part as needed
         if protocol:
@@ -867,8 +930,160 @@ class db_returns_manager(db_collection_manager):
             _query.append({"$match": {"hypervisor.protocol": protocol}})
 
         # sort query
-        _query.append({"$sort": {"block": -1}})
+        _query.append({"$sort": {"timestamp": -1}})
 
+        # remove non usefull fields
+        _query.append({"$unset": ["_id", "hypervisor_id", "hypervisor", "id"]})
+
+        # debug_query = f"{_query}"
+
+        # return result
+        return _query
+
+    @staticmethod
+    def query_return_imperm_rewards2_flat(
+        chain: Chain,
+        period: int = 0,
+        protocol: Protocol = None,
+        hypervisor_address: str = None,
+        ini_date: datetime = None,
+        end_date: datetime = None,
+    ) -> list[dict]:
+        """
+            matches the first lte return timestamp rewards2 measure and adds it
+
+        Args:
+            chain (Chain):
+            period (int, optional): . Defaults to 0.
+            protocol (Protocol, optional): . Defaults to None.
+            hypervisor_address (str, optional): . Defaults to None.
+            ini_date (datetime, optional): . Defaults to None.
+            end_date (datetime, optional): . Defaults to None.
+
+        Returns:
+            list[dict]: query
+        """
+        _query = list()
+
+        # build first main match part of the query
+        _match = {"chain": chain, "period": period}
+        if hypervisor_address:
+            _match["address"] = hypervisor_address
+        if ini_date and end_date:
+            _match["$and"] = [
+                {"timestamp": {"$gte": int(ini_date.timestamp())}},
+                {"timestamp": {"$lte": int(end_date.timestamp())}},
+            ]
+        elif ini_date:
+            _match["timestamp"] = {"$gte": int(ini_date.timestamp())}
+        elif end_date:
+            _match["timestamp"] = {"$lte": int(end_date.timestamp())}
+
+        # add matches to query
+        _query.append({"$match": _match})
+
+        # build protocol part as needed
+        if protocol and not hypervisor_address:
+            _query.append(
+                {
+                    "$lookup": {
+                        "from": "static",
+                        "localField": "hypervisor_id",
+                        "foreignField": "id",
+                        "as": "hypervisor",
+                    }
+                }
+            )
+            _query.append(
+                {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}}
+            )
+            _query.append({"$match": {"hypervisor.protocol": protocol}})
+
+        # add rewards2
+        if hypervisor_address:
+            _query.append(
+                {
+                    "$lookup": {
+                        "from": "allRewards2",
+                        "let": {
+                            "returns_chain": "$chain",
+                            "returns_datetime": {
+                                "$toDate": {"$multiply": ["$timestamp", 1000]}
+                            },
+                        },
+                        "pipeline": [
+                            {
+                                "$match": {
+                                    "$expr": {
+                                        "$and": [
+                                            {"$eq": ["$chain", "$$returns_chain"]},
+                                            {
+                                                "$lte": [
+                                                    "$datetime",
+                                                    "$$returns_datetime",
+                                                ]
+                                            },
+                                        ],
+                                    }
+                                }
+                            },
+                            {"$sort": {"datetime": -1}},
+                            {"$limit": 1},
+                        ],
+                        "as": "allRewards2",
+                    }
+                }
+            )
+
+            _query.append(
+                {
+                    "$addFields": {
+                        "obj_as_arr": {"$objectToArray": {"$first": "$allRewards2"}}
+                    }
+                }
+            )
+
+            _query.append({"$unwind": "$obj_as_arr"})
+
+            _query.append(
+                {
+                    "$match": {
+                        "obj_as_arr.v.pools.{}".format(hypervisor_address): {
+                            "$exists": 1
+                        }
+                    }
+                }
+            )
+
+        # sort query
+        _query.append({"$sort": {"timestamp": -1}})
+
+        # remove non usefull fields
+        _query.append({"$unset": ["_id", "hypervisor_id", "hypervisor", "id"]})
+
+        # flatten
+        _query.append(
+            {
+                "$project": {
+                    "chain": "$chain",
+                    "address": "$address",
+                    "symbol": "$symbol",
+                    "block": "$block",
+                    "timestamp": "$timestamp",
+                    "period": "$period",
+                    "feeApr": "$fees.feeApr",
+                    "feeApy": "$fees.feeApy",
+                    "imp_lping": "$impermanent.lping",
+                    "imp_hodl_deposited": "$impermanent.hodl_deposited",
+                    "imp_hodl_fifty": "$impermanent.hodl_fifty",
+                    "imp_hodl_token0": "$impermanent.hodl_token0",
+                    "imp_hodl_token1": "$impermanent.hodl_token1",
+                    "rewards_apr": "$obj_as_arr.v.pools.0xadc7b4096c3059ec578585df36e6e1286d345367.apr",
+                }
+            }
+        )
+
+        # debug_query = f"{_query}"
         # return result
         return _query
 
@@ -910,7 +1125,7 @@ class db_allData_manager(db_collection_manager):
                 data=await self.create_data(chain=chain, protocol=protocol),
                 collection_name=self.db_collection_name,
             )
-        except:
+        except Exception:
             logger.warning(
                 f" Unexpected error feeding  {chain}'s {protocol} allData to db   err:{sys.exc_info()[0]}"
             )
@@ -921,7 +1136,7 @@ class db_allData_manager(db_collection_manager):
         )
         try:
             return result[0]
-        except:
+        except Exception:
             return {}
 
     @staticmethod
@@ -960,9 +1175,9 @@ class db_allRewards2_manager(db_collection_manager):
         try:
             masterchef_info = MasterchefV2Info(protocol=protocol, chain=chain)
             data = await masterchef_info.output(get_data=True)
-        except:
+        except Exception:
             # some pools do not have Masterchef info
-            pass
+            raise ValueError(f" {chain}'s {protocol} has no Masterchef v2 implemented ")
 
         # add id and datetime to data
         data["datetime"] = datetime.utcnow()
@@ -978,13 +1193,14 @@ class db_allRewards2_manager(db_collection_manager):
 
     async def feed_db(self, chain: Chain, protocol: Protocol):
         try:
-
             # save as 1 item ( not separated)
             await self.save_item_to_database(
                 data=await self.create_data(chain=chain, protocol=protocol),
                 collection_name=self.db_collection_name,
             )
-        except:
+        except ValueError:
+            pass
+        except Exception:
             logger.warning(
                 f" Unexpected error feeding  {chain}'s {protocol} allRewards2 to db   err:{sys.exc_info()[0]}"
             )
@@ -995,7 +1211,7 @@ class db_allRewards2_manager(db_collection_manager):
         )
         try:
             return result[0]
-        except:
+        except Exception:
             return {}
 
     async def get_last_data(self, chain: Chain, protocol: Protocol) -> dict:
@@ -1014,29 +1230,26 @@ class db_allRewards2_manager(db_collection_manager):
 
         try:
             return result[0]
-        except:
+        except Exception:
             return {}
 
     async def get_hypervisor_rewards(
         self,
         chain: Chain,
-        protocol: Protocol,
         address: str,
         ini_date: datetime = None,
         end_date: datetime = None,
     ) -> list[dict]:
-        result = await self._get_data(
-            query=self.query_hype_rewards(
-                chain=chain,
-                protocol=protocol,
-                hypervisor_address=address,
-                ini_date=ini_date,
-                end_date=end_date,
-            )
-        )
         try:
-            return result
-        except:
+            return await self._get_data(
+                query=self.query_hype_rewards(
+                    chain=chain,
+                    hypervisor_address=address,
+                    ini_date=ini_date,
+                    end_date=end_date,
+                )
+            )
+        except Exception:
             return list({})
 
     @staticmethod
@@ -1057,7 +1270,7 @@ class db_allRewards2_manager(db_collection_manager):
         return [{"$match": _match}, {"$unset": ["_id", "id"]}]
 
     @staticmethod
-    def query_last(chain: Chain, protocol: Protocol) -> list[str]:
+    def query_last(chain: Chain, protocol: Protocol) -> list[dict]:
         # set return match vars
         _match = {"chain": chain, "protocol": protocol}
 
@@ -1071,32 +1284,35 @@ class db_allRewards2_manager(db_collection_manager):
     @staticmethod
     def query_hype_rewards(
         chain: Chain,
-        protocol: Protocol,
         hypervisor_address: str,
         ini_date: datetime = None,
         end_date: datetime = None,
-    ) -> list[str]:
+    ) -> list[dict]:
         """Get hypervisor's rewards2
             sorted by datetime newest first
 
         Args:
             chain (Chain):
-            protocol (Protocol):
             hypervisor_address (str):
             ini_date (datetime, optional): . Defaults to None.
             end_date (datetime, optional): . Defaults to None.
 
         Returns:
-            list[str]: _description_
+            list[str]:
         """
-        _match = {"protocol": protocol}
-        if ini_date:
+        _match = {"chain": chain}
+        if ini_date and end_date:
+            _match["$and"] = [
+                {"datetime": {"$gte": ini_date}},
+                {"datetime": {"$lte": end_date}},
+            ]
+        elif ini_date:
             _match["datetime"] = {"$gte": ini_date}
-        if end_date:
+        elif end_date:
             _match["datetime"] = {"$lte": end_date}
 
         return [
-            {" $match": _match},
+            {"$match": _match},
             {"$sort": {"datetime": -1}},
             {"$addFields": {"obj_as_arr": {"$objectToArray": "$$ROOT"}}},
             {"$unwind": "$obj_as_arr"},
@@ -1152,7 +1368,7 @@ class db_aggregateStats_manager(db_collection_manager):
                 data=await self.create_data(chain=chain, protocol=protocol),
                 collection_name=self.db_collection_name,
             )
-        except:
+        except Exception:
             logger.warning(
                 f" Unexpected error feeding  {chain}'s {protocol} aggregateStats to db   err:{sys.exc_info()[0]}"
             )
@@ -1163,7 +1379,7 @@ class db_aggregateStats_manager(db_collection_manager):
         )
         try:
             return result[0]
-        except:
+        except Exception:
             return {}
 
     @staticmethod

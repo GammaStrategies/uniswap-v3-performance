@@ -17,7 +17,7 @@ PARENT_FOLDER = os.path.dirname(CURRENT_FOLDER)
 sys.path.append(PARENT_FOLDER)
 
 from v3data.enums import Chain, Protocol
-from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS
+from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS, DEX_HYPEPOOL_SUBGRAPH_URLS
 
 from v3data.common import hypervisor
 
@@ -52,22 +52,15 @@ async def test_impermanent_divergence(
 
 
 async def test_impermanent_divergence_all():
-    days = [1, 7, 30]
-    protocols = Protocol
-    chains = Chain
+    days = [1, 7, 15, 30]
 
-    for chain in chains:
-        for protocol in protocols:
-            # if protocol == Protocol.QUICKSWAP and chain != Chain.POLYGON:
-            #     continue
-            # elif protocol == Protocol.UNISWAP and chain == Chain.POLYGON:
-            #     continue
+    for protocol, chain_data in DEX_HYPEPOOL_SUBGRAPH_URLS.items():
+        for chain in chain_data:
 
             for day in days:
                 result = await test_impermanent_divergence(
                     days=day, protocol=protocol, chain=chain
                 )
-                po = "stop"
 
 
 async def test_all_endpoints():

@@ -17,8 +17,13 @@ PARENT_FOLDER = os.path.dirname(CURRENT_FOLDER)
 sys.path.append(PARENT_FOLDER)
 
 
-from v3data.enums import Protocol
-from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS, DEFAULT_TIMEZONE
+from v3data.enums import Protocol, Chain
+from v3data.config import (
+    MONGO_DB_URL,
+    GAMMA_SUBGRAPH_URLS,
+    DEFAULT_TIMEZONE,
+    DEX_HYPEPOOL_SUBGRAPH_URLS,
+)
 
 from database.collection_endpoint import (
     db_returns_manager,
@@ -27,6 +32,8 @@ from database.collection_endpoint import (
     db_allRewards2_manager,
     db_aggregateStats_manager,
 )
+
+from v3data.common.analytics import hypervisor_analytics, get_hype_data
 
 from v3data.common import hypervisor
 import database_feeder
@@ -106,9 +113,7 @@ async def test_put_historicData_to_Mongodb_vExpert(
 
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     requests = [
-        returns_manager.feed_db(
-            chain=chain, protocol=Protocol.UNISWAP, periods=periods
-        )
+        returns_manager.feed_db(chain=chain, protocol=Protocol.UNISWAP, periods=periods)
     ]
 
     if process_quickswap:
@@ -203,12 +208,32 @@ def get_timepassed_string(start_time: dt.datetime) -> str:
     return "{:,.2f} {}".format(_passed, _timelapse_unit)
 
 
+async def test_analytics():
+    periods = [1, 7, 14, 30]
+
+    static_manager = db_static_manager(mongo_url=MONGO_DB_URL)
+
+    for chain in Chain:
+        hypervisor_list = await static_manager.get_hypervisors_address_list(chain=chain)
+        # hypervisor_list = ["0xadc7b4096c3059ec578585df36e6e1286d345367"]
+        requests = [
+            get_hype_data(
+                chain=chain, hypervisor_address=hypervisor_address, period=period
+            )
+            for hypervisor_address in hypervisor_list
+            for period in periods
+        ]
+
+        # execute feed
+        results = await asyncio.gather(*requests)
+
+
 # TESTING
 if __name__ == "__main__":
     # start time log
     _startime = dt.datetime.utcnow()
 
-    asyncio.run(test_get_data_from_Mongodb_v1())
+    asyncio.run(test_analytics())
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))
