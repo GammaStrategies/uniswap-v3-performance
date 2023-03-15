@@ -7,6 +7,7 @@ class Chain(str, Enum):
     MAINNET = "mainnet"
     OPTIMISM = "optimism"
     POLYGON = "polygon"
+    BSC = "bsc"
 
 
 class PositionType(str, Enum):
@@ -18,6 +19,7 @@ class Protocol(str, Enum):
     QUICKSWAP = "quickswap"
     UNISWAP = "uniswap"
     ZYBERSWAP = "zyberswap"
+    THENA = "thena"
 
 
 class QueryType(str, Enum):
