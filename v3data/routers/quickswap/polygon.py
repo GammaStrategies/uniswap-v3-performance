@@ -4,6 +4,7 @@ import v3data.common.hypervisor
 import v3data.common.users
 import v3data.common.masterchef
 import v3data.common.masterchef_v2
+import v3data.common.analytics
 
 from fastapi import APIRouter, Response
 from fastapi_cache.decorator import cache

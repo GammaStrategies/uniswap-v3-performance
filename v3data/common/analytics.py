@@ -45,5 +45,5 @@ class HypervisorAnalytics:
 
 
 async def get_hype_data(chain: Chain, hypervisor_address: str, period: int):
-    atest = hypervisor_analytics(chain=chain, hypervisor_address=hypervisor_address)
+    atest = HypervisorAnalytics(chain=chain, hypervisor_address=hypervisor_address)
     return await atest.get_data(period=period)
