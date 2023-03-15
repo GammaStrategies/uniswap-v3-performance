@@ -158,26 +158,29 @@ async def fee_returns_monthly(response: Response):
 
 @router.get("/hypervisors/impermanentDivergence/daily")
 @cache(expire=APY_CACHE_TIMEOUT)
-async def impermanent_divergence_daily():
-    return await v3data.common.hypervisor.impermanent_divergence(
-        protocol=PROTOCOL, chain=CHAIN, days=1
+async def impermanent_divergence_daily(response: Response):
+    impermanent = v3data.common.hypervisor.ImpermanentDivergence(
+        protocol=PROTOCOL, chain=CHAIN, days=1, response=response
     )
+    return await impermanent.run(first=RUN_FIRST)
 
 
 @router.get("/hypervisors/impermanentDivergence/weekly")
 @cache(expire=APY_CACHE_TIMEOUT)
-async def impermanent_divergence_weekly():
-    return await v3data.common.hypervisor.impermanent_divergence(
-        protocol=PROTOCOL, chain=CHAIN, days=7
+async def impermanent_divergence_weekly(response: Response):
+    impermanent = v3data.common.hypervisor.ImpermanentDivergence(
+        protocol=PROTOCOL, chain=CHAIN, days=7, response=response
     )
+    return await impermanent.run(first=RUN_FIRST)
 
 
 @router.get("/hypervisors/impermanentDivergence/monthly")
 @cache(expire=APY_CACHE_TIMEOUT)
-async def impermanent_divergence_monthly():
-    return await v3data.common.hypervisor.impermanent_divergence(
-        protocol=PROTOCOL, chain=CHAIN, days=30
+async def impermanent_divergence_monthly(response: Response):
+    impermanent = v3data.common.hypervisor.ImpermanentDivergence(
+        protocol=PROTOCOL, chain=CHAIN, days=30, response=response
     )
+    return await impermanent.run(first=RUN_FIRST)
 
 
 @router.get("/allRewards")

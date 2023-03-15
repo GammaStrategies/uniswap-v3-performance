@@ -43,9 +43,10 @@ CHAINS_PROTOCOLS = [
 # set cron vars
 EXPR_FORMATS = {
     "returns": {
-        "daily": "0 0 * * *",
-        "weekly": "2 0 * * mon",
-        "monthly": "5 0 * * mon#1",
+        "daily": "*/60 */2 * * *",  # (At every 60th minute past every 2nd hour. )
+        "weekly": "*/60 */12 * * *",  # (At every 60th minute past every 12th hour. )  # can't do every 14 hours
+        "biweekly": "0 6 */1 * * ",  # ( At 06:00 on every day-of-month.)
+        "monthly": "0 12 */2 * *",  # ( At 12:00 on every 2nd day-of-month.)
     },
     "inSecuence": {  # allData + static hypervisor info
         "mins": "*/30 * * * *",
@@ -61,29 +62,29 @@ EXPR_ARGS = {
     "returns": {
         "daily": [[1], True],
         "weekly": [[7], True],
+        "biweekly": [[14], True],
         "monthly": [[30], True],
     }
 }
 
 # feed jobs
 async def feed_database_returns(periods: list):
-    logger.info(" Starting database feeding process for results data")
+    logger.info(" Starting database feeding process for returns data")
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
-    # all
+
+    # all request at once
     requests = [
         returns_manager.feed_db(chain=chain, protocol=protocol, periods=periods)
         for chain, protocol in CHAINS_PROTOCOLS
-        if protocol == Protocol.QUICKSWAP
     ]
-
     await asyncio.gather(*requests)
 
 
 async def feed_database_static():
     name = "static"
     logger.info(f" Starting database feeding process for {name} data")
-    logger.info(f"     chains prot.: {CHAINS_PROTOCOLS}")
-    logger.info(f"     excluded_hyp: {EXCLUDED_HYPERVISORS}")
+    logger.debug(f"     chains prot.: {CHAINS_PROTOCOLS}")
+    logger.debug(f"     excluded_hyp: {EXCLUDED_HYPERVISORS}")
 
     # start time log
     _startime = datetime.utcnow()
@@ -105,8 +106,8 @@ async def feed_database_static():
 async def feed_database_allData():
     name = "allData"
     logger.info(f" Starting database feeding process for {name} data")
-    logger.info(f"     chains prot.: {CHAINS_PROTOCOLS}")
-    logger.info(f"     excluded_hyp: {EXCLUDED_HYPERVISORS}")
+    logger.debug(f"     chains prot.: {CHAINS_PROTOCOLS}")
+    logger.debug(f"     excluded_hyp: {EXCLUDED_HYPERVISORS}")
 
     # start time log
     _startime = datetime.utcnow()
@@ -178,7 +179,6 @@ async def feed_database_inSecuence():
 
     await feed_database_static()
     await feed_database_allData()
-    # await feed_database_allRewards2()
 
     _endtime = datetime.utcnow()
     if (_endtime - _startime).total_seconds() > (60 * 2):

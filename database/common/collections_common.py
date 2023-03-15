@@ -35,9 +35,17 @@ class db_collections_common:
             collection_name (str): collection name to save data to
         """
         # add item by item to database
-        for key, item in data.items():
-            # add to mongodb
-            await self.save_item_to_database(data=item, collection_name=collection_name)
+        requests = [
+            self.save_item_to_database(data=item, collection_name=collection_name)
+            for key, item in data.items()
+        ]
+
+        await asyncio.gather(*requests)
+
+        # add item by item to database
+        # for key, item in data.items():
+        #     # add to mongodb
+        #     await self.save_item_to_database(data=item, collection_name=collection_name)
 
     async def save_item_to_database(
         self,
@@ -105,7 +113,7 @@ class db_collections_common:
             )
         return result
 
-    def get_items_from_database(self, collection_name: str, **kwargs) -> list:
+    async def get_items_from_database(self, collection_name: str, **kwargs) -> list:
         with MongoDbManager(
             url=self._db_mongo_url,
             db_name=self._db_name,
@@ -113,6 +121,23 @@ class db_collections_common:
         ) as _db_manager:
             result = _db_manager.get_items(coll_name=collection_name, **kwargs)
             result = list(result)
+        return result
+
+    async def get_distinct_items_from_database(
+        self, field: str, collection_name: str, condition: dict = None
+    ) -> list:
+        with MongoDbManager(
+            url=self._db_mongo_url,
+            db_name=self._db_name,
+            collections=self._db_collections,
+        ) as _db_manager:
+            result = list(
+                _db_manager.get_distinct(
+                    coll_name=collection_name,
+                    field=field,
+                    condition=condition if condition else {},
+                )
+            )
         return result
 
     # TOOLING
