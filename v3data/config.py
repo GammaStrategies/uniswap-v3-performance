@@ -32,40 +32,13 @@ dex_subgraphs = {
             "prod": "https://api.thegraph.com/subgraphs/name/iliaazhel/zyberswap-info"
         }
     },
+    Protocol.THENA: {
+        Chain.BSC : {
+            "prod": "https://api.thegraph.com/subgraphs/name/iliaazhel/thena-info"
+        }
+    }
 }
 
-
-dex_feegrowth_subgraphs = {
-    Protocol.UNISWAP: {
-        Chain.MAINNET: {
-            "prod": "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3",
-            "alt": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt",
-            "test": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-testing",
-        },
-        Chain.POLYGON: {
-            "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-polygon"
-        },
-        Chain.ARBITRUM: {
-            "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/arbitrum-dev"
-        },
-        Chain.OPTIMISM: {
-            "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/optimism-post-regenesis"
-        },
-        Chain.CELO: {
-            "prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"
-        },
-    },
-    Protocol.QUICKSWAP: {
-        Chain.POLYGON: {
-            "prod": "https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3"
-        }
-    },
-    Protocol.ZYBERSWAP: {
-        Chain.ARBITRUM: {
-            "prod": "https://api.thegraph.com/subgraphs/name/iliaazhel/zyberswap-info"
-        }
-    },
-}
 
 hype_pool_subgraphs = {
     Protocol.UNISWAP: {
@@ -95,6 +68,11 @@ hype_pool_subgraphs = {
             "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-zyberswap-arbitrum"
         }
     },
+    Protocol.THENA: {
+        Chain.BSC : {
+            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-thena-bsc"
+        }
+    }
 }
 
 visor_subgraphs = {
@@ -138,6 +116,11 @@ gamma_subgraphs = {
             "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/zyberswap-arbitrum",
         }
     },
+    Protocol.THENA: {
+        Chain.BSC : {
+            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/thena"
+        }
+    }
 }
 
 THEGRAPH_INDEX_NODE_URL = "https://api.thegraph.com/index-node/graphql"
@@ -174,34 +157,9 @@ DEX_SUBGRAPH_URLS = {
             os.environ.get("ZYBERSWAP_SUBGRAPH_ARBITRUM", "prod")
         ],
     },
-}
-
-DEX_FEEGROWTH_SUBGRAPH_URLS = {
-    Protocol.UNISWAP: {
-        Chain.MAINNET: dex_feegrowth_subgraphs[Protocol.UNISWAP][Chain.MAINNET][
-            os.environ.get("UNISWAP_FG_SUBGRAPH_MAINNET", "prod")
-        ],
-        Chain.POLYGON: dex_feegrowth_subgraphs[Protocol.UNISWAP][Chain.POLYGON][
-            os.environ.get("UNISWAP_FG_SUBGRAPH_POLYGON", "prod")
-        ],
-        Chain.ARBITRUM: dex_feegrowth_subgraphs[Protocol.UNISWAP][Chain.ARBITRUM][
-            os.environ.get("UNISWAP_FG_SUBGRAPH_ARBITRUM", "prod")
-        ],
-        Chain.OPTIMISM: dex_feegrowth_subgraphs[Protocol.UNISWAP][Chain.OPTIMISM][
-            os.environ.get("UNISWAP_FG_SUBGRAPH_OPTIMISM", "prod")
-        ],
-        Chain.CELO: dex_feegrowth_subgraphs[Protocol.UNISWAP][Chain.CELO][
-            os.environ.get("UNISWAP_FG_SUBGRAPH_CELO", "prod")
-        ],
-    },
-    Protocol.QUICKSWAP: {
-        Chain.POLYGON: dex_feegrowth_subgraphs[Protocol.QUICKSWAP][Chain.POLYGON][
-            os.environ.get("QUICKSWAP_FG_SUBGRAPH_POLYGON", "prod")
-        ],
-    },
-    Protocol.ZYBERSWAP: {
-        Chain.ARBITRUM: dex_feegrowth_subgraphs[Protocol.ZYBERSWAP][Chain.ARBITRUM][
-            os.environ.get("QUICKSWAP_FG_SUBGRAPH_POLYGON", "prod")
+    Protocol.THENA: {
+        Chain.BSC: dex_subgraphs[Protocol.THENA][Chain.BSC][
+            os.environ.get("THENA_SUBGRAPH_BSC", "prod")
         ],
     },
 }
@@ -234,6 +192,11 @@ DEX_HYPEPOOL_SUBGRAPH_URLS = {
             os.environ.get("ZYBERSWAP_HP_SUBGRAPH_ARBITRUM", "prod")
         ],
     },
+    Protocol.THENA: {
+        Chain.BSC: hype_pool_subgraphs[Protocol.THENA][Chain.BSC][
+            os.environ.get("THENA_HP_SUBGRAPH_BSC", "prod")
+        ],
+    },
 }
 
 GAMMA_SUBGRAPH_URLS = {
@@ -262,6 +225,11 @@ GAMMA_SUBGRAPH_URLS = {
     Protocol.ZYBERSWAP: {
         Chain.ARBITRUM: gamma_subgraphs[Protocol.ZYBERSWAP][Chain.ARBITRUM][
             os.environ.get("GAMMA_ZYBERSWAP_ARBITRUM_SUBGRAPH", "prod")
+        ],
+    },
+    Protocol.THENA: {
+        Chain.BSC: gamma_subgraphs[Protocol.THENA][Chain.BSC][
+            os.environ.get("GAMMA_THENA_BSC_SUBGRAPH", "prod")
         ],
     },
 }
