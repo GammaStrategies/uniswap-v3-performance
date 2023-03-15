@@ -1,7 +1,8 @@
 from datetime import datetime, timedelta
+from fastapi import Response, status
+
 from v3data.enums import Chain, Protocol
 from database.collection_endpoint import db_returns_manager, db_allRewards2_manager
-
 from v3data.config import MONGO_DB_URL
 
 
@@ -44,6 +45,12 @@ class HypervisorAnalytics:
         # return returns_il_data
 
 
-async def get_hype_data(chain: Chain, hypervisor_address: str, period: int):
+async def get_hype_data(
+    chain: Chain, hypervisor_address: str, period: int, response: Response = None
+):
+
+    if response:
+        # this is a database query only
+        response.headers["X-Database"] = "true"
     atest = HypervisorAnalytics(chain=chain, hypervisor_address=hypervisor_address)
     return await atest.get_data(period=period)

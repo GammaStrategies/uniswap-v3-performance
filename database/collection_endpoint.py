@@ -943,9 +943,8 @@ class db_returns_manager(db_collection_manager):
     @staticmethod
     def query_return_imperm_rewards2_flat(
         chain: Chain,
-        period: int = 0,
-        protocol: Protocol = None,
-        hypervisor_address: str = None,
+        period: int,
+        hypervisor_address: str,
         ini_date: datetime = None,
         end_date: datetime = None,
     ) -> list[dict]:
@@ -954,9 +953,8 @@ class db_returns_manager(db_collection_manager):
 
         Args:
             chain (Chain):
-            period (int, optional): . Defaults to 0.
-            protocol (Protocol, optional): . Defaults to None.
-            hypervisor_address (str, optional): . Defaults to None.
+            period (int):
+            hypervisor_address (str):
             ini_date (datetime, optional): . Defaults to None.
             end_date (datetime, optional): . Defaults to None.
 
@@ -966,9 +964,8 @@ class db_returns_manager(db_collection_manager):
         _query = list()
 
         # build first main match part of the query
-        _match = {"chain": chain, "period": period}
-        if hypervisor_address:
-            _match["address"] = hypervisor_address
+        _match = {"chain": chain, "period": period, "address": hypervisor_address}
+
         if ini_date and end_date:
             _match["$and"] = [
                 {"timestamp": {"$gte": int(ini_date.timestamp())}},
@@ -982,84 +979,51 @@ class db_returns_manager(db_collection_manager):
         # add matches to query
         _query.append({"$match": _match})
 
-        # build protocol part as needed
-        if protocol and not hypervisor_address:
-            _query.append(
-                {
-                    "$lookup": {
-                        "from": "static",
-                        "localField": "hypervisor_id",
-                        "foreignField": "id",
-                        "as": "hypervisor",
-                    }
-                }
-            )
-            _query.append(
-                {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}}
-            )
-            _query.append({"$match": {"hypervisor.protocol": protocol}})
-
         # add rewards2
-        if hypervisor_address:
-            _query.append(
-                {
-                    "$lookup": {
-                        "from": "allRewards2",
-                        "let": {
-                            "returns_chain": "$chain",
-                            "returns_datetime": {
-                                "$toDate": {"$multiply": ["$timestamp", 1000]}
-                            },
+        _query.append(
+            {
+                "$lookup": {
+                    "from": "allRewards2",
+                    "let": {
+                        "returns_chain": "$chain",
+                        "returns_datetime": {
+                            "$toDate": {"$multiply": ["$timestamp", 1000]}
                         },
-                        "pipeline": [
-                            {
-                                "$match": {
-                                    "$expr": {
-                                        "$and": [
-                                            {"$eq": ["$chain", "$$returns_chain"]},
-                                            {
-                                                "$lte": [
-                                                    "$datetime",
-                                                    "$$returns_datetime",
-                                                ]
-                                            },
-                                        ],
-                                    }
+                    },
+                    "pipeline": [
+                        {
+                            "$match": {
+                                "$expr": {
+                                    "$and": [
+                                        {"$eq": ["$chain", "$$returns_chain"]},
+                                        {
+                                            "$lte": [
+                                                "$datetime",
+                                                "$$returns_datetime",
+                                            ]
+                                        },
+                                    ],
                                 }
-                            },
-                            {"$sort": {"datetime": -1}},
-                            {"$limit": 1},
-                        ],
-                        "as": "allRewards2",
-                    }
+                            }
+                        },
+                        {"$sort": {"datetime": -1}},
+                        {"$limit": 1},
+                        {"$addFields": {"obj_as_arr": {"$objectToArray": "$$ROOT"}}},
+                        {"$unwind": "$obj_as_arr"},
+                        {
+                            "$match": {
+                                "obj_as_arr.v.pools.{}".format(hypervisor_address): {
+                                    "$exists": 1
+                                }
+                            }
+                        },
+                    ],
+                    "as": "allRewards2",
                 }
-            )
-
-            _query.append(
-                {
-                    "$addFields": {
-                        "obj_as_arr": {"$objectToArray": {"$first": "$allRewards2"}}
-                    }
-                }
-            )
-
-            _query.append({"$unwind": "$obj_as_arr"})
-
-            _query.append(
-                {
-                    "$match": {
-                        "obj_as_arr.v.pools.{}".format(hypervisor_address): {
-                            "$exists": 1
-                        }
-                    }
-                }
-            )
-
+            }
+        )
         # sort query
         _query.append({"$sort": {"timestamp": -1}})
-
-        # remove non usefull fields
-        _query.append({"$unset": ["_id", "hypervisor_id", "hypervisor", "id"]})
 
         # flatten
         _query.append(
@@ -1078,12 +1042,20 @@ class db_returns_manager(db_collection_manager):
                     "imp_hodl_fifty": "$impermanent.hodl_fifty",
                     "imp_hodl_token0": "$impermanent.hodl_token0",
                     "imp_hodl_token1": "$impermanent.hodl_token1",
-                    "rewards_apr": "$obj_as_arr.v.pools.0xadc7b4096c3059ec578585df36e6e1286d345367.apr",
+                    "rewards_apr": {
+                        "$ifNull": [
+                            {
+                                "$first": "$allRewards2.obj_as_arr.v.pools.{}.apr".format(
+                                    hypervisor_address
+                                )
+                            },
+                            0,
+                        ]
+                    },
                 }
             }
         )
 
-        # debug_query = f"{_query}"
         # return result
         return _query
 
