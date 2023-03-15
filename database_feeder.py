@@ -60,10 +60,10 @@ EXPR_FORMATS = {
 }
 EXPR_ARGS = {
     "returns": {
-        "daily": [[1], True],
-        "weekly": [[7], True],
-        "biweekly": [[14], True],
-        "monthly": [[30], True],
+        "daily": [[1]],
+        "weekly": [[7]],
+        "biweekly": [[14]],
+        "monthly": [[30]],
     }
 }
 
@@ -198,7 +198,7 @@ async def feed_all():
 
 
 # Manual script execution
-async def feed_database_with_historic_data(from_datetime: datetime, periods=[]):
+async def feed_database_with_historic_data(from_datetime: datetime, periods=None):
     """Fill database with historic
 
     Args:
@@ -213,7 +213,7 @@ async def feed_database_with_historic_data(from_datetime: datetime, periods=[]):
     last_time = datetime.utcnow()
 
     # define periods when empty
-    if len(periods) == 0:
+    if not periods:
         periods = EXPR_ARGS["returns"].keys()
 
     for period in periods:
