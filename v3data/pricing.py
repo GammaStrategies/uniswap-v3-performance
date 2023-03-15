@@ -213,6 +213,11 @@ async def token_price_from_address(chain: Chain, token_address: str):
                 "pool_address": "0xfb0bc232cd11dbe804b489860c470b7f9cc80d9f",  # USDC/DAVOS
                 "inverse": True,
             },
+            "0x67eb41a14c0fe5cd701fc9d5a3d6597a72f641a6": {  # GIDDY
+                "protocol": Protocol.QUICKSWAP,
+                "pool_address": "0x65c30f39b880bdd9616280450c4b41cc74b438b7",  # USDC/GIDDY
+                "inverse": True,
+            }
         },
     }
 
