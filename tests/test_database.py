@@ -33,7 +33,7 @@ from database.collection_endpoint import (
     db_aggregateStats_manager,
 )
 
-from v3data.common.analytics import hypervisor_analytics, get_hype_data
+from v3data.common.analytics import get_hype_data
 
 from v3data.common import hypervisor
 import database_feeder
@@ -215,7 +215,6 @@ async def test_analytics():
 
     for chain in Chain:
         hypervisor_list = await static_manager.get_hypervisors_address_list(chain=chain)
-        # hypervisor_list = ["0xadc7b4096c3059ec578585df36e6e1286d345367"]
         requests = [
             get_hype_data(
                 chain=chain, hypervisor_address=hypervisor_address, period=period
