@@ -16,6 +16,7 @@ CURRENT_FOLDER = os.path.dirname(os.path.realpath(__file__))
 PARENT_FOLDER = os.path.dirname(CURRENT_FOLDER)
 sys.path.append(PARENT_FOLDER)
 
+import v3data.common.analytics
 
 from v3data.charts.base_range import BaseLimit
 from v3data.toplevel import TopLevelData
@@ -64,9 +65,10 @@ def get_timepassed_string(start_time: dt.datetime) -> str:
 
 
 async def test_temporal():
-    # terst_var = await hypervisor.hypervisors_return(
-    #     protocol=Protocol.UNISWAP, chain=Chain.POLYGON
-    # )
+    hypervisor_address = "0xadc7b4096c3059ec578585df36e6e1286d345367"
+    result = await v3data.common.analytics.get_hype_data(
+        chain=Chain.POLYGON, hypervisor_address=hypervisor_address, period=1
+    )
 
     fees_yield = await fee_returns_all(Protocol.QUICKSWAP, Chain.POLYGON, 1)
     return output
