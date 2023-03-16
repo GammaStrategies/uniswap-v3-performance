@@ -1055,6 +1055,8 @@ class db_returns_manager(db_collection_manager):
                 }
             }
         )
+        # fastapi pydantic throws error on ObjectID
+        _query.append({"$unset": ["_id"]})
 
         # return result
         return _query
