@@ -157,10 +157,18 @@ class TopLevelData:
 
         return df_fees.sum().to_dict()
 
-    async def calculate_returns(self, period: str):
+    async def calculate_returns(
+        self, period: str, current_timestamp: int | None = None
+    ):
         hypervisors, all_returns = await asyncio.gather(
             self.get_hypervisor_data(),
-            fee_returns_all(self.protocol, self.chain, DAYS_IN_PERIOD[period]),
+            fee_returns_all(
+                protocol=self.protocol,
+                chain=self.chain,
+                days=DAYS_IN_PERIOD[period],
+                hypervisors=None,
+                current_timestamp=current_timestamp,
+            ),
         )
 
         tvl = sum(

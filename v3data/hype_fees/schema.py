@@ -8,6 +8,10 @@ class Time:
     block: int
     timestamp: int
 
+    def __post_init__(self):
+        self.block = int(self.block)
+        self.timestamp = int(self.timestamp)
+
 
 @dataclass
 class ValueWithDecimal:

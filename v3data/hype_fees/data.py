@@ -12,6 +12,7 @@ from v3data.hype_fees.schema import (
 from v3data.utils import estimate_block_from_timestamp_diff
 from v3data.enums import Chain, Protocol
 from v3data.subgraphs.hype_pool import HypePoolClient
+from v3data.data import BlockRange
 
 
 class FeeGrowthDataABC(ABC):
@@ -19,8 +20,14 @@ class FeeGrowthDataABC(ABC):
         self.protocol = protocol
         self.chain = chain
         self.hype_pool_client = HypePoolClient(protocol, chain)
+        self.time_range = BlockRange(chain, self.hype_pool_client)
         self.data = {}
         self._static_data = {}
+
+    @abstractmethod
+    def init_time(self, *args, **kwargs) -> None:
+        # Required to initialise initial and end times
+        pass
 
     @abstractmethod
     def get_data(self) -> None:
@@ -110,71 +117,16 @@ class FeeGrowthDataABC(ABC):
         }
 
 
-class FeeGrowthTemporalData(FeeGrowthDataABC):
-    """Additional methods to manage time ranges"""
-
-    def __init__(
-        self,
-        period_days,
-        protocol: Protocol,
-        chain: Chain,
-    ) -> None:
-        self.period_days = period_days
-        self.llama_client = LlamaClient(chain)
-        super().__init__(protocol, chain)
-
-    async def _init_start_time(self) -> None:
-        self.end_time = await self._query_current_time()
-        timestamp_start = self.end_time.timestamp - (self.period_days * DAY_SECONDS)
-        response = await self.llama_client.block_from_timestamp(timestamp_start, True)
-
-        if response:
-            self.initial_time = Time(
-                block=response["height"], timestamp=response["timestamp"]
-            )
-        else:
-            # Estimate start time if not found
-            self.initial_time = Time(
-                block=estimate_block_from_timestamp_diff(
-                    self.chain,
-                    self.end_time.block,
-                    self.end_time.timestamp,
-                    timestamp_start,
-                ),
-                timestamp=timestamp_start,
-            )
-
-            self.initial_block = estimate_block_from_timestamp_diff(
-                self.chain,
-                self.end_time.block,
-                self.end_time.timestamp,
-                timestamp_start,
-            )
-
-    async def _query_current_time(self) -> Time:
-        query = DSLQuery(
-            self.hype_pool_client.data_schema.Query._meta.select(
-                self.hype_pool_client.meta_fields_fragment()
-            )
-        )
-
-        response = await self.hype_pool_client.execute(query)
-
-        return Time(
-            block=response["_meta"]["block"]["number"],
-            timestamp=response["_meta"]["block"]["timestamp"],
-        )
-
-
 class FeeGrowthData(FeeGrowthDataABC):
+    async def init_time(self, timestamp: int | None = None):
+        await self.time_range.set_end(timestamp)
+
     async def get_data(self, hypervisors: list[str] | None = None) -> None:
         self.data = self._transform_data(await self._query_data(hypervisors))
 
     async def _query_data(self, hypervisors: list[str] | None = None) -> dict:
         ds = self.hype_pool_client.data_schema
-        hypervisor_filter = (
-            {"where": {"id_in": hypervisors}} if hypervisors else {}
-        )
+        hypervisor_filter = {"where": {"id_in": hypervisors}} if hypervisors else {}
 
         query = DSLQuery(
             ds.Query.hypervisors(**hypervisor_filter)
@@ -187,9 +139,9 @@ class FeeGrowthData(FeeGrowthDataABC):
                     ds.Pool.token1.select(ds.Token.decimals),
                 ),
             ),
-            ds.Query.hypervisors(**hypervisor_filter).select(
-                self.hype_pool_client.hypervisor_fields_fragment()
-            ),
+            ds.Query.hypervisors(
+                **({"block": {"number": self.time_range.end.block}} | hypervisor_filter)
+            ).select(self.hype_pool_client.hypervisor_fields_fragment()),
             ds.Query._meta.select(self.hype_pool_client.meta_fields_fragment()),
         )
 
@@ -214,24 +166,23 @@ class FeeGrowthData(FeeGrowthDataABC):
         }
 
 
-class FeeGrowthSnapshotData(FeeGrowthTemporalData):
+class FeeGrowthSnapshotData(FeeGrowthDataABC):
     """Get fee growth data from fee growth subgraph"""
+
+    async def init_time(self, days_ago: int, end_timestamp: int | None = None):
+        await self.time_range.set_end(end_timestamp)
+        await self.time_range.set_initial_with_days_ago(days_ago)
 
     async def get_data(self, hypervisors: list[str] | None = None) -> None:
         """Query data and tranfrom to FeesData Class"""
-        await self._init_start_time()
         self.data = self._transform_data(await self._query_data(hypervisors))
 
     async def _query_data(self, hypervisors: list[str] | None = None) -> dict:
         ds = self.hype_pool_client.data_schema
-        hypervisor_filter = (
-            {"where": {"id_in": hypervisors}} if hypervisors else {}
-        )
+        hypervisor_filter = {"where": {"id_in": hypervisors}} if hypervisors else {}
 
         query = DSLQuery(
-            ds.Query.hypervisors(
-                **({"block": {"number": self.end_time.block}} | hypervisor_filter)
-            )
+            ds.Query.hypervisors(**hypervisor_filter)
             .alias("static")
             .select(
                 ds.Hypervisor.id,
@@ -242,12 +193,15 @@ class FeeGrowthSnapshotData(FeeGrowthTemporalData):
                 ),
             ),
             ds.Query.hypervisors(
-                **({"block": {"number": self.end_time.block}} | hypervisor_filter)
+                **({"block": {"number": self.time_range.end.block}} | hypervisor_filter)
             )
             .alias("latest")
             .select(self.hype_pool_client.hypervisor_fields_fragment()),
             ds.Query.hypervisors(
-                **({"block": {"number": self.initial_time.block}} | hypervisor_filter)
+                **(
+                    {"block": {"number": self.time_range.initial.block}}
+                    | hypervisor_filter
+                )
             )
             .alias("initial")
             .select(self.hype_pool_client.hypervisor_fields_fragment()),
@@ -258,9 +212,9 @@ class FeeGrowthSnapshotData(FeeGrowthTemporalData):
                 ds.Hypervisor.feeSnapshots(
                     first=1000,
                     where={
-                        "timestamp_gte": self.initial_time.timestamp,
-                        "timestamp_lte": self.end_time.timestamp,
-                    }
+                        "timestamp_gte": self.time_range.initial.timestamp,
+                        "timestamp_lte": self.time_range.end.timestamp,
+                    },
                 ).select(
                     ds.FeeSnapshot.blockNumber,
                     ds.FeeSnapshot.timestamp,
@@ -310,8 +264,8 @@ class FeeGrowthSnapshotData(FeeGrowthTemporalData):
                 self._init_fees_data(
                     hypervisor=hypervisor_initial,
                     hypervisor_id=hypervisor_initial["id"],
-                    block=self.initial_time.block,
-                    timestamp=self.initial_time.timestamp,
+                    block=self.time_range.initial.block,
+                    timestamp=self.time_range.initial.timestamp,
                     current_tick=hypervisor_initial["pool"]["currentTick"],
                     price_0=hypervisor_initial["pool"]["token0"]["priceUSD"],
                     price_1=hypervisor_initial["pool"]["token1"]["priceUSD"],
@@ -364,20 +318,19 @@ class FeeGrowthSnapshotData(FeeGrowthTemporalData):
         return transformed_data
 
 
-class ImpermanentDivergenceData(FeeGrowthTemporalData):
+class ImpermanentDivergenceData(FeeGrowthDataABC):
+    async def init_time(self, days_ago: int, end_timestamp: int | None = None):
+        await self.time_range.set_end(end_timestamp)
+        await self.time_range.set_initial_with_days_ago(days_ago)
+
     async def get_data(self, hypervisors: list[str] | None = None) -> None:
-        await self._init_start_time()
         self.data = self._transform_data(await self._query_data(hypervisors))
 
     async def _query_data(self, hypervisors: list[str] | None = None) -> dict:
         ds = self.hype_pool_client.data_schema
-        hypervisor_filter = (
-            {"where": {"id_in": hypervisors}} if hypervisors else {}
-        )
+        hypervisor_filter = {"where": {"id_in": hypervisors}} if hypervisors else {}
         query = DSLQuery(
-            ds.Query.hypervisors(
-                **({"block": {"number": self.end_time.block}} | hypervisor_filter)
-            )
+            ds.Query.hypervisors(**hypervisor_filter)
             .alias("static")
             .select(
                 ds.Hypervisor.id,
@@ -388,12 +341,15 @@ class ImpermanentDivergenceData(FeeGrowthTemporalData):
                 ),
             ),
             ds.Query.hypervisors(
-                **({"block": {"number": self.end_time.block}} | hypervisor_filter)
+                **({"block": {"number": self.time_range.end.block}} | hypervisor_filter)
             )
             .alias("latest")
             .select(self.hype_pool_client.hypervisor_fields_fragment()),
             ds.Query.hypervisors(
-                **({"block": {"number": self.initial_time.block}} | hypervisor_filter)
+                **(
+                    {"block": {"number": self.time_range.initial.block}}
+                    | hypervisor_filter
+                )
             )
             .alias("initial")
             .select(self.hype_pool_client.hypervisor_fields_fragment()),
@@ -414,8 +370,8 @@ class ImpermanentDivergenceData(FeeGrowthTemporalData):
                 initial=self._init_fees_data(
                     hypervisor=initial_data[hypervisor_latest["id"]],
                     hypervisor_id=initial_data[hypervisor_latest["id"]]["id"],
-                    block=self.initial_time.block,
-                    timestamp=self.initial_time.timestamp,
+                    block=self.time_range.initial.block,
+                    timestamp=self.time_range.initial.timestamp,
                     current_tick=initial_data[hypervisor_latest["id"]]["pool"][
                         "currentTick"
                     ],

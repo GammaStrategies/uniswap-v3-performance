@@ -59,7 +59,7 @@ class FeesYield:
 
         # This is a failsafe for if there are outliers
         if df_returns.empty:
-            logger.info("Empty returns")
+            logger.debug("Empty returns")
             return FeeYield(
                 apr=0,
                 apy=0,
@@ -107,9 +107,14 @@ class FeesYield:
 
 
 async def fee_returns_all(
-    protocol: Protocol, chain: Chain, days: int, hypervisors: list[str] | None = None
+    protocol: Protocol,
+    chain: Chain,
+    days: int,
+    hypervisors: list[str] | None = None,
+    current_timestamp: int | None = None,
 ) -> dict[str, dict]:
-    fees_data = FeeGrowthSnapshotData(days, protocol, chain)
+    fees_data = FeeGrowthSnapshotData(protocol, chain)
+    await fees_data.init_time(days_ago=days, end_timestamp=current_timestamp)
     await fees_data.get_data(hypervisors)
 
     results = {}

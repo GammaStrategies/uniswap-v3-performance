@@ -275,9 +275,14 @@ class ImpermanentDivergence:
 
 
 async def impermanent_divergence_all(
-    protocol: Protocol, chain: Chain, days: int, hypervisors: list[str] | None = None
+    protocol: Protocol,
+    chain: Chain,
+    days: int,
+    hypervisors: list[str] | None = None,
+    current_timestamp: int | None = None,
 ) -> dict:
-    divergence_data = ImpermanentDivergenceData(days, protocol, chain)
+    divergence_data = ImpermanentDivergenceData(protocol, chain)
+    await divergence_data.init_time(days_ago=days, end_timestamp=current_timestamp)
     await divergence_data.get_data(hypervisors)
 
     results = {}

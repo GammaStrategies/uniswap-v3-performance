@@ -177,14 +177,19 @@ class HypervisorInfo(HypervisorData):
         return data
 
     async def all_data(self, get_data=True):
-
         if get_data:
             await self._get_all_data()
 
         basics = self.basics_data
         pools = self.pools_data
 
-        fee_yield_output = await fee_returns_all(self.protocol, self.chain, 1)
+        fee_yield_output = await fee_returns_all(
+            protocol=self.protocol,
+            chain=self.chain,
+            days=1,
+            hypervisors=None,
+            current_timestamp=None,
+        )
 
         returns = {
             hypervisor: {
