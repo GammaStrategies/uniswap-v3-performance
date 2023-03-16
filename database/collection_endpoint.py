@@ -137,7 +137,11 @@ class db_returns_manager(db_collection_manager):
 
     # format data to be used with mongo db
     async def create_data(
-        self, chain: Chain, protocol: Protocol, period_days: int
+        self,
+        chain: Chain,
+        protocol: Protocol,
+        period_days: int,
+        current_timestamp: int = None,
     ) -> dict:
         """Create a dictionary of hypervisor_return database models
 
@@ -153,24 +157,27 @@ class db_returns_manager(db_collection_manager):
         result = dict()
 
         # calculate return
-        fees_data = FeeGrowthSnapshotData(period_days, protocol, chain)
-        await fees_data.init_time(days_ago=period_days, end_timestamp=None)
+        fees_data = FeeGrowthSnapshotData(protocol, chain)
+        await fees_data.init_time(days_ago=period_days, end_timestamp=current_timestamp)
         await fees_data.get_data()
 
         returns_data = {}
-        for hypervisor_id, fees_data in fees_data.data.items():
-            fees_yield = FeesYield(fees_data, protocol, chain)
+        for hypervisor_id, fees_data_item in fees_data.data.items():
+            fees_yield = FeesYield(fees_data_item, protocol, chain)
             returns = fees_yield.calculate_returns()
             returns_data[hypervisor_id] = returns
 
         # calculate impermanent divergence
         imperm_data = await impermanent_divergence_all(
-            protocol=protocol, chain=chain, days=period_days, current_timestamp=None
+            protocol=protocol,
+            chain=chain,
+            days=period_days,
+            current_timestamp=fees_data.time_range.end.timestamp,
         )
 
         # get block n timestamp
-        block = fees_data[0].block
-        timestamp = fees_data[0].timestamp
+        block = fees_data.time_range.end.block
+        timestamp = fees_data.time_range.end.timestamp
 
         # fee yield data process
         for k, v in returns_data.items():
@@ -215,6 +222,7 @@ class db_returns_manager(db_collection_manager):
         protocol: Protocol,
         periods: list[int] = None,
         retried: int = 0,
+        current_timestamp: int = None,
     ):
         """
         Args:
@@ -232,7 +240,10 @@ class db_returns_manager(db_collection_manager):
             requests = [
                 self.save_items_to_database(
                     data=await self.create_data(
-                        chain=chain, protocol=protocol, period_days=days
+                        chain=chain,
+                        protocol=protocol,
+                        period_days=days,
+                        current_timestamp=current_timestamp,
                     ),
                     collection_name=self.db_collection_name,
                 )
@@ -241,7 +252,7 @@ class db_returns_manager(db_collection_manager):
 
             await asyncio.gather(*requests)
 
-        except Exception:
+        except Exception as err:
             # retry when possible
             if retried < self._max_retry:
                 # wait jic
@@ -250,11 +261,23 @@ class db_returns_manager(db_collection_manager):
                     f" Retrying the feeding of {chain}'s {protocol} returns to db for the {retried+1} time."
                 )
                 # retry
-                await self.feed_db(chain, protocol, periods, retried + 1)
-            else:
-                logger.exception(
-                    f" Unexpected error feeding {chain}'s {protocol} returns to db  err:{sys.exc_info()[0]}. Retries: {retried}."
+                await self.feed_db(
+                    chain=chain,
+                    protocol=protocol,
+                    periods=periods,
+                    retried=retried + 1,
+                    current_timestamp=current_timestamp,
                 )
+            else:
+                if err:
+                    # {'message': 'Failed to decode `block.number` value: `subgraph QmXUphAvAEiGcTzdopmaEt8YDxZ2uEmLJcCQGcfaDvRhp2 only has data starting at block number 63562887 and data for block number 50084142 is therefore not available`'}
+                    logger.debug(
+                        f" Can't feed database {chain}'s {protocol} returns to db  err:{err.args[0]}. Retries: {retried}."
+                    )
+                else:
+                    logger.exception(
+                        f" Unexpected error feeding {chain}'s {protocol} returns to db  err:{sys.exc_info()[0]}. Retries: {retried}."
+                    )
 
     async def get_hypervisors_average(
         self, chain: Chain, period: int = 0, protocol: Protocol = ""
