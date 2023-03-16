@@ -154,6 +154,7 @@ class db_returns_manager(db_collection_manager):
 
         # calculate return
         fees_data = FeeGrowthSnapshotData(period_days, protocol, chain)
+        await fees_data.init_time(days_ago=period_days, end_timestamp=None)
         await fees_data.get_data()
 
         returns_data = {}
@@ -164,7 +165,7 @@ class db_returns_manager(db_collection_manager):
 
         # calculate impermanent divergence
         imperm_data = await impermanent_divergence_all(
-            protocol=protocol, chain=chain, days=period_days
+            protocol=protocol, chain=chain, days=period_days, current_timestamp=None
         )
 
         # get block n timestamp
@@ -308,7 +309,6 @@ class db_returns_manager(db_collection_manager):
         period: int,
         hypervisor_address: str = "",
     ) -> dict:
-
         # query database
         dbdata = await self._get_data(
             query=self.query_last_returns(
@@ -340,7 +340,6 @@ class db_returns_manager(db_collection_manager):
     async def get_returns(
         self, chain: Chain, protocol: Protocol, hypervisor_address: str = ""
     ) -> dict:
-
         # query database
         result = await self._get_data(
             query=self.query_last_returns(

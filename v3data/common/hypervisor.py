@@ -37,9 +37,15 @@ class AllData(ExecutionOrderWrapper):
 
 class FeeReturns(ExecutionOrderWrapper):
     def __init__(
-        self, protocol: Protocol, chain: Chain, days: int, response: Response = None
+        self,
+        protocol: Protocol,
+        chain: Chain,
+        days: int,
+        current_timestamp: int | None = None,
+        response: Response = None,
     ):
         self.days = days
+        self.current_timestamp = current_timestamp
         super().__init__(protocol, chain, response)
 
     async def _database(self):
@@ -51,7 +57,12 @@ class FeeReturns(ExecutionOrderWrapper):
         return result
 
     async def _subgraph(self):
-        return await fee_returns_all(self.protocol, self.chain, self.days)
+        return await fee_returns_all(
+            protocol=self.protocol,
+            chain=self.chain,
+            days=self.days,
+            current_timestamp=self.current_timestamp,
+        )
 
 
 class AggregateStats(ExecutionOrderWrapper):
@@ -78,11 +89,13 @@ class HypervisorsReturnsAllPeriods(ExecutionOrderWrapper):
         protocol: Protocol,
         chain: Chain,
         hypervisors: list[str] | None = None,
+        current_timestamp: int | None = None,
         response: Response = None,
     ):
         self.hypervisors = (
             [hypervisor.lower() for hypervisor in hypervisors] if hypervisors else None
         )
+        self.current_timestamp = current_timestamp
         super().__init__(protocol, chain, response)
 
     async def _database(self):
@@ -137,9 +150,9 @@ class HypervisorsReturnsAllPeriods(ExecutionOrderWrapper):
 
     async def _subgraph(self):
         daily, weekly, monthly = await asyncio.gather(
-            fee_returns_all(self.protocol, self.chain, 1, self.hypervisors),
-            fee_returns_all(self.protocol, self.chain, 7, self.hypervisors),
-            fee_returns_all(self.protocol, self.chain, 30, self.hypervisors),
+            fee_returns_all(self.protocol, self.chain, 1, self.hypervisors, self.current_timestamp),
+            fee_returns_all(self.protocol, self.chain, 7, self.hypervisors, self.current_timestamp),
+            fee_returns_all(self.protocol, self.chain, 30, self.hypervisors, self.current_timestamp),
         )
 
         results = {}
@@ -169,9 +182,15 @@ class HypervisorsReturnsAllPeriods(ExecutionOrderWrapper):
 
 class ImpermanentDivergence(ExecutionOrderWrapper):
     def __init__(
-        self, protocol: Protocol, chain: Chain, days: int, response: Response = None
+        self,
+        protocol: Protocol,
+        chain: Chain,
+        days: int,
+        current_timestamp: int | None = None,
+        response: Response = None,
     ):
         self.days = days
+        self.current_timestamp = current_timestamp
         super().__init__(protocol, chain, response)
 
     async def _database(self):
@@ -182,7 +201,12 @@ class ImpermanentDivergence(ExecutionOrderWrapper):
             )
 
     async def _subgraph(self):
-        return await impermanent_divergence_all(self.protocol, self.chain, self.days)
+        return await impermanent_divergence_all(
+            protocol=self.protocol,
+            chain=self.chain,
+            days=self.days,
+            current_timestamp=self.current_timestamp,
+        )
 
 
 async def hypervisor_basic_stats(
@@ -227,9 +251,23 @@ async def hypervisor_average_return(
     )
 
 
-async def uncollected_fees(protocol: Protocol, chain: Chain, hypervisor_address: str):
-    return await fees_all(protocol, chain, [hypervisor_address])
+async def uncollected_fees(
+    protocol: Protocol,
+    chain: Chain,
+    hypervisor_address: str,
+    current_timestamp: int | None = None,
+):
+    return await fees_all(
+        protocol=protocol,
+        chain=chain,
+        hypervisors=[hypervisor_address],
+        current_timestamp=current_timestamp,
+    )
 
 
-async def uncollected_fees_all(protocol: Protocol, chain: Chain):
-    return await fees_all(protocol, chain)
+async def uncollected_fees_all(
+    protocol: Protocol, chain: Chain, current_timestamp: int | None = None
+):
+    return await fees_all(
+        protocol=protocol, chain=chain, current_timestamp=current_timestamp
+    )

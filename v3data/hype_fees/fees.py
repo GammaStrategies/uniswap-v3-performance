@@ -116,9 +116,13 @@ class Fees:
 
 
 async def fees_all(
-    protocol: Protocol, chain: Chain, hypervisors: list[str] | None = None
+    protocol: Protocol,
+    chain: Chain,
+    hypervisors: list[str] | None = None,
+    current_timestamp: int | None = None,
 ) -> dict[str, UncollectedFees]:
     fees_data = FeeGrowthData(protocol, chain)
+    await fees_data.init_time(current_timestamp)
     await fees_data.get_data(hypervisors)
 
     results = {}
