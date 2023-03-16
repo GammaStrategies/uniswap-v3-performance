@@ -32,7 +32,7 @@ async def test_impermanent_divergence(
 ):
 
     data = await hypervisor.impermanent_divergence_all(
-        protocol=protocol, chain=chain, days=days
+        protocol=protocol, chain=chain, days=days, current_timestamp=None
     )
 
     # log weird data

@@ -70,7 +70,13 @@ async def test_temporal():
         chain=Chain.POLYGON, hypervisor_address=hypervisor_address, period=1
     )
 
-    fees_yield = await fee_returns_all(Protocol.QUICKSWAP, Chain.POLYGON, 1)
+    fees_yield = await fee_returns_all(
+        protocol=Protocol.QUICKSWAP,
+        chain=Chain.POLYGON,
+        days=1,
+        hypervisors=None,
+        current_timestamp=None,
+    )
     return output
 
 

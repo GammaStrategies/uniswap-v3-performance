@@ -20,7 +20,7 @@ from v3data.enums import Chain, Protocol
 logger = logging.getLogger(__name__)
 async_client = httpx.AsyncClient(
     transport=httpx.AsyncHTTPTransport(
-        retries=1,
+        retries=3,
     ),
     timeout=180,
 )
@@ -64,7 +64,6 @@ class SubgraphClient:
         return {}
 
     async def paginate_query(self, query, paginate_variable, variables={}):
-
         # if not variables:
         #     variables = {}
 
@@ -203,12 +202,17 @@ class LlamaClient:
         endpoint = f"{self.base}/block/{self.chain}/{timestamp}"
 
         response = await async_client.get(endpoint)
-        if response.status_code == 200:
-            if return_timestamp:
-                return response.json()
-            return response.json()["height"]
 
-        return None
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            logger.error(
+                f"Error response {e.response.status_code} while querying time for {self.chain} at {timestamp}"
+            )
+
+        if return_timestamp:
+            return response.json()
+        return response.json()["height"]
 
 
 class MasterChefContract:
