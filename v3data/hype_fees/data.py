@@ -142,6 +142,7 @@ class FeeGrowthData(FeeGrowthDataABC):
             ds.Query.hypervisors(
                 **({"block": {"number": self.time_range.end.block}} | hypervisor_filter)
             ).select(self.hype_pool_client.hypervisor_fields_fragment()),
+            ds.Query._meta.select(self.hype_pool_client.meta_fields_fragment()),
         )
 
         response = await self.hype_pool_client.execute(query)
@@ -225,6 +226,7 @@ class FeeGrowthSnapshotData(FeeGrowthDataABC):
                     ),
                 ),
             ),
+            ds.Query._meta.select(self.hype_pool_client.meta_fields_fragment()),
         )
 
         response = await self.hype_pool_client.execute(query)
@@ -351,6 +353,7 @@ class ImpermanentDivergenceData(FeeGrowthDataABC):
             )
             .alias("initial")
             .select(self.hype_pool_client.hypervisor_fields_fragment()),
+            ds.Query._meta.select(self.hype_pool_client.meta_fields_fragment()),
         )
 
         response = await self.hype_pool_client.execute(query)
