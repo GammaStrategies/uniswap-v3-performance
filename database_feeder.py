@@ -68,13 +68,21 @@ EXPR_ARGS = {
 }
 
 # feed jobs
-async def feed_database_returns(periods: list):
+async def feed_database_returns(
+    periods: list, current_timestamp: int = None, max_retries: int = 1
+):
     logger.info(" Starting database feeding process for returns data")
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
+    returns_manager._max_retry = max_retries
 
     # all request at once
     requests = [
-        returns_manager.feed_db(chain=chain, protocol=protocol, periods=periods)
+        returns_manager.feed_db(
+            chain=chain,
+            protocol=protocol,
+            periods=periods,
+            current_timestamp=current_timestamp,
+        )
         for chain, protocol in CHAINS_PROTOCOLS
     ]
     await asyncio.gather(*requests)
@@ -206,7 +214,6 @@ async def feed_database_with_historic_data(from_datetime: datetime, periods=None
         process_quickswap (bool): should quickswap protocol be included ?
         periods (list): list of periods as ["daily", "weekly", "monthly"]
     """
-    raise NotImplementedError(" Scraping historic data method has been removed")
     # final log var
     processed_datetime_strings = list()
 
@@ -214,7 +221,7 @@ async def feed_database_with_historic_data(from_datetime: datetime, periods=None
 
     # define periods when empty
     if not periods:
-        periods = EXPR_ARGS["returns"].keys()
+        periods = list(EXPR_ARGS["returns"].keys())
 
     for period in periods:
         cron_ex_format = EXPR_FORMATS["returns"][period]
@@ -224,7 +231,6 @@ async def feed_database_with_historic_data(from_datetime: datetime, periods=None
         current_timestamp = c_iter.get_next(start_time=from_datetime.timestamp())
 
         # set utils now
-        utils.STATIC_DATETIME_UTCNOW = datetime.utcfromtimestamp(current_timestamp)
         last_timestamp = last_time.timestamp()
         while last_timestamp > current_timestamp:
 
@@ -235,16 +241,14 @@ async def feed_database_with_historic_data(from_datetime: datetime, periods=None
             logger.info(" Feeding {} database at  {}".format(period, txt_timestamp))
 
             # database feed
-            await feed_database_returns(periods=EXPR_ARGS["returns"][period][0])
+            await feed_database_returns(
+                periods=EXPR_ARGS["returns"][period][0],
+                current_timestamp=int(current_timestamp),
+                max_retries=0,
+            )
 
             # set next timestamp
             current_timestamp = c_iter.get_next(start_time=current_timestamp)
-
-            # set utils now
-            utils.STATIC_DATETIME_UTCNOW = datetime.utcfromtimestamp(current_timestamp)
-
-    # reset utils now
-    utils.STATIC_DATETIME_UTCNOW = None
 
     logger.info(" Processed dates: {} ".format(processed_datetime_strings))
 

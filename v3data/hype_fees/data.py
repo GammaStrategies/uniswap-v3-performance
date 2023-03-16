@@ -142,7 +142,6 @@ class FeeGrowthData(FeeGrowthDataABC):
             ds.Query.hypervisors(
                 **({"block": {"number": self.time_range.end.block}} | hypervisor_filter)
             ).select(self.hype_pool_client.hypervisor_fields_fragment()),
-            ds.Query._meta.select(self.hype_pool_client.meta_fields_fragment()),
         )
 
         response = await self.hype_pool_client.execute(query)
@@ -154,8 +153,8 @@ class FeeGrowthData(FeeGrowthDataABC):
             hypervisor["id"]: self._init_fees_data(
                 hypervisor=hypervisor,
                 hypervisor_id=hypervisor["id"],
-                block=query_data["_meta"]["block"]["number"],
-                timestamp=query_data["_meta"]["block"]["timestamp"],
+                block=self.time_range.end.block,
+                timestamp=self.time_range.end.timestamp,
                 current_tick=hypervisor["pool"]["currentTick"],
                 price_0=hypervisor["pool"]["token0"]["priceUSD"],
                 price_1=hypervisor["pool"]["token1"]["priceUSD"],
@@ -226,7 +225,6 @@ class FeeGrowthSnapshotData(FeeGrowthDataABC):
                     ),
                 ),
             ),
-            ds.Query._meta.select(self.hype_pool_client.meta_fields_fragment()),
         )
 
         response = await self.hype_pool_client.execute(query)
@@ -241,8 +239,8 @@ class FeeGrowthSnapshotData(FeeGrowthDataABC):
                 self._init_fees_data(
                     hypervisor=hypervisor_latest,
                     hypervisor_id=hypervisor_latest["id"],
-                    block=query_data["_meta"]["block"]["number"],
-                    timestamp=query_data["_meta"]["block"]["timestamp"],
+                    block=self.time_range.end.block,
+                    timestamp=self.time_range.end.timestamp,
                     current_tick=hypervisor_latest["pool"]["currentTick"],
                     price_0=hypervisor_latest["pool"]["token0"]["priceUSD"],
                     price_1=hypervisor_latest["pool"]["token1"]["priceUSD"],
@@ -353,7 +351,6 @@ class ImpermanentDivergenceData(FeeGrowthDataABC):
             )
             .alias("initial")
             .select(self.hype_pool_client.hypervisor_fields_fragment()),
-            ds.Query._meta.select(self.hype_pool_client.meta_fields_fragment()),
         )
 
         response = await self.hype_pool_client.execute(query)
@@ -391,8 +388,8 @@ class ImpermanentDivergenceData(FeeGrowthDataABC):
                 latest=self._init_fees_data(
                     hypervisor=hypervisor_latest,
                     hypervisor_id=hypervisor_latest["id"],
-                    block=query_data["_meta"]["block"]["number"],
-                    timestamp=query_data["_meta"]["block"]["timestamp"],
+                    block=self.time_range.end.block,
+                    timestamp=self.time_range.end.timestamp,
                     current_tick=hypervisor_latest["pool"]["currentTick"],
                     price_0=hypervisor_latest["pool"]["token0"]["priceUSD"],
                     price_1=hypervisor_latest["pool"]["token1"]["priceUSD"],
