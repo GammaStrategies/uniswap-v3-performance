@@ -1,8 +1,12 @@
+import logging
+
 from abc import ABC, abstractmethod
 from fastapi import Response
 from v3data.enums import Chain, Protocol, QueryType
 
 from .subgraph_status import SubgraphStatusOutput, subgraph_status
+
+logger = logging.getLogger(__name__)
 
 
 class ExecutionOrderWrapper(ABC):
@@ -25,7 +29,8 @@ class ExecutionOrderWrapper(ABC):
         try:
             results = await first_func()
             first_headers()
-        except Exception:
+        except Exception as e:
+            logger.exception(f"{first} run failed for {self.__class__.__name__}")
             results = await second_func()
             second_headers()
 
