@@ -1045,7 +1045,7 @@ class db_returns_manager(db_collection_manager):
             }
         )
         # sort query
-        _query.append({"$sort": {"timestamp": -1}})
+        _query.append({"$sort": {"timestamp": 1}})
 
         # flatten
         _query.append(
@@ -1057,14 +1057,9 @@ class db_returns_manager(db_collection_manager):
                     "block": "$block",
                     "timestamp": "$timestamp",
                     "period": "$period",
-                    "feeApr": "$fees.feeApr",
-                    "feeApy": "$fees.feeApy",
-                    "imp_lping": "$impermanent.lping",
-                    "imp_hodl_deposited": "$impermanent.hodl_deposited",
-                    "imp_hodl_fifty": "$impermanent.hodl_fifty",
-                    "imp_hodl_token0": "$impermanent.hodl_token0",
-                    "imp_hodl_token1": "$impermanent.hodl_token1",
-                    "rewards_apr": {
+                    "year_feeApr": "$fees.feeApr",
+                    "year_feeApy": "$fees.feeApy",
+                    "year_allRewards2": {
                         "$ifNull": [
                             {
                                 "$first": "$allRewards2.obj_as_arr.v.pools.{}.apr".format(
@@ -1074,11 +1069,41 @@ class db_returns_manager(db_collection_manager):
                             0,
                         ]
                     },
+                    "period_feeApr": {
+                        "$multiply": ["$period", {"$divide": ["$fees.feeApr", 365]}]
+                    },
+                    "period_rewardsApr": {
+                        "$multiply": [
+                            "$period",
+                            {
+                                "$divide": [
+                                    {
+                                        "$ifNull": [
+                                            {
+                                                "$first": "$allRewards2.obj_as_arr.v.pools.{}.apr".format(
+                                                    hypervisor_address
+                                                )
+                                            },
+                                            0,
+                                        ]
+                                    },
+                                    365,
+                                ]
+                            },
+                        ]
+                    },
+                    "period_lping": "$impermanent.lping",
+                    "period_hodl_deposited": "$impermanent.hodl_deposited",
+                    "period_hodl_fifty": "$impermanent.hodl_fifty",
+                    "period_hodl_token0": "$impermanent.hodl_token0",
+                    "period_hodl_token1": "$impermanent.hodl_token1",
                 }
             }
         )
         # fastapi pydantic throws error on ObjectID
         _query.append({"$unset": ["_id"]})
+
+        debug_query = f"{_query}"
 
         # return result
         return _query
