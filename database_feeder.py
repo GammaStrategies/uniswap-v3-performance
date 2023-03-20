@@ -71,7 +71,11 @@ EXPR_ARGS = {
 async def feed_database_returns(
     periods: list, current_timestamp: int = None, max_retries: int = 1
 ):
-    logger.info(" Starting database feeding process for returns data")
+    name = "returns"
+    logger.info(f" Starting database feeding process for {name} data")
+    # start time log
+    _startime = datetime.utcnow()
+
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     returns_manager._max_retry = max_retries
 
@@ -86,6 +90,9 @@ async def feed_database_returns(
         for chain, protocol in CHAINS_PROTOCOLS
     ]
     await asyncio.gather(*requests)
+
+    # end time log
+    logger.info(f" took {get_timepassed_string(_startime)} to complete the {name} feed")
 
 
 async def feed_database_static():
