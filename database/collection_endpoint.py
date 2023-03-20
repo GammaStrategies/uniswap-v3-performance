@@ -1100,10 +1100,21 @@ class db_returns_manager(db_collection_manager):
                 }
             }
         )
+
+        _query.append(
+            {
+                "$addFields": {
+                    "period_netApr": {"$sum": ["$period_lping", "$period_rewardsApr"]},
+                    "period_impermanentResult": {
+                        "$subtract": ["$period_lping", "$period_feeApr"]
+                    },
+                }
+            }
+        )
         # fastapi pydantic throws error on ObjectID
         _query.append({"$unset": ["_id"]})
 
-        debug_query = f"{_query}"
+        # debug_query = f"{_query}"
 
         # return result
         return _query
