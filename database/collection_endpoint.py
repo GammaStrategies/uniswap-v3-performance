@@ -1108,15 +1108,28 @@ class db_returns_manager(db_collection_manager):
                     "period_impermanentResult": {
                         "$subtract": ["$period_lping", "$period_feeApr"]
                     },
-                    "ilig_measure": {
+                }
+            }
+        )
+
+        _query.append(
+            {
+                "$addFields": {
+                    "gamma_vs_hodl": {
                         "$subtract": [
-                            {"$divide": ["$period_lping", "$period_hodl_deposited"]},
+                            {
+                                "$divide": [
+                                    {"$sum": ["$period_netApr", 1]},
+                                    {"$sum": ["$period_hodl_deposited", 1]},
+                                ]
+                            },
                             1,
                         ]
                     },
                 }
             }
         )
+
         # fastapi pydantic throws error on ObjectID
         _query.append({"$unset": ["_id"]})
 
