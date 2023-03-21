@@ -1106,6 +1106,9 @@ class db_returns_manager(db_collection_manager):
                 "$addFields": {
                     "period_netApr": {"$sum": ["$period_lping", "$period_rewardsApr"]},
                     "period_impermanentResult": {
+                        "$subtract": ["$period_lping", "$period_feeApr"]
+                    },
+                    "ilig_measure": {
                         "$subtract": [
                             {"$divide": ["$period_lping", "$period_hodl_deposited"]},
                             1,
