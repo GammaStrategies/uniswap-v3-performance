@@ -6,7 +6,7 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
 
-from v3data.routers import mainnet, polygon, arbitrum, optimism, celo, simulator
+from v3data.routers import mainnet, polygon, arbitrum, optimism, celo, bsc, simulator
 from v3data.routers.quickswap import polygon as quickswap_polygon
 from v3data.routers.zyberswap import arbitrum as zyberswap_arbitrum
 from v3data.routers.thena import bsc as thena_bsc
@@ -31,6 +31,7 @@ app.include_router(polygon.router, tags=["Polygon"])
 app.include_router(arbitrum.router, tags=["Arbitrum"])
 app.include_router(optimism.router, tags=["Optimism"])
 app.include_router(celo.router, tags=["Celo"])
+app.include_router(bsc.router, tags=["BSC"])
 app.include_router(quickswap_polygon.router, tags=["Quickswap - Polygon"])
 app.include_router(zyberswap_arbitrum.router, tags=["Zyberswap - Arbitrum"])
 app.include_router(thena_bsc.router, tags=["Thena - BSC"])
