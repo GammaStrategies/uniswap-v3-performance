@@ -21,6 +21,9 @@ dex_subgraphs = {
         Chain.CELO: {
             "prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"
         },
+        Chain.BSC: {
+            "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-bsc"
+        },
     },
     Protocol.QUICKSWAP: {
         Chain.POLYGON: {
@@ -56,6 +59,9 @@ hype_pool_subgraphs = {
         },
         Chain.CELO: {
             "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-celo"
+        },
+        Chain.BSC: {
+            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-bsc"
         },
     },
     Protocol.QUICKSWAP: {
@@ -104,6 +110,9 @@ gamma_subgraphs = {
             "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/celo",
             "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-celo",
         },
+        Chain.BSC: {
+            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/uniswap-bsc",
+        },
     },
     Protocol.QUICKSWAP: {
         Chain.POLYGON: {
@@ -146,6 +155,9 @@ DEX_SUBGRAPH_URLS = {
         Chain.CELO: dex_subgraphs[Protocol.UNISWAP][Chain.CELO][
             os.environ.get("UNISWAP_SUBGRAPH_CELO", "prod")
         ],
+        Chain.BSC: dex_subgraphs[Protocol.UNISWAP][Chain.BSC][
+            os.environ.get("UNISWAP_SUBGRAPH_BSC", "prod")
+        ],
     },
     Protocol.QUICKSWAP: {
         Chain.POLYGON: dex_subgraphs[Protocol.QUICKSWAP][Chain.POLYGON][
@@ -181,6 +193,9 @@ DEX_HYPEPOOL_SUBGRAPH_URLS = {
         Chain.CELO: hype_pool_subgraphs[Protocol.UNISWAP][Chain.CELO][
             os.environ.get("UNISWAP_HP_SUBGRAPH_CELO", "prod")
         ],
+        Chain.BSC: hype_pool_subgraphs[Protocol.UNISWAP][Chain.BSC][
+            os.environ.get("UNISWAP_HP_SUBGRAPH_BSC", "prod")
+        ],
     },
     Protocol.QUICKSWAP: {
         Chain.POLYGON: hype_pool_subgraphs[Protocol.QUICKSWAP][Chain.POLYGON][
@@ -215,6 +230,9 @@ GAMMA_SUBGRAPH_URLS = {
         ],
         Chain.CELO: gamma_subgraphs[Protocol.UNISWAP][Chain.CELO][
             os.environ.get("GAMMA_SUBGRAPH_CELO", "prod")
+        ],
+        Chain.BSC: gamma_subgraphs[Protocol.UNISWAP][Chain.BSC][
+            os.environ.get("GAMMA_SUBGRAPH_BSC", "prod")
         ],
     },
     Protocol.QUICKSWAP: {
