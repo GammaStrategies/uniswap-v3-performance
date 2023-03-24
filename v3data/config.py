@@ -2,6 +2,18 @@ import os
 
 from v3data.enums import Chain, Protocol
 
+DEPLOYMENTS = [
+    (Protocol.UNISWAP, Chain.MAINNET),
+    (Protocol.UNISWAP, Chain.ARBITRUM),
+    (Protocol.UNISWAP, Chain.OPTIMISM),
+    (Protocol.UNISWAP, Chain.POLYGON),
+    (Protocol.UNISWAP, Chain.BSC),
+    (Protocol.UNISWAP, Chain.CELO),
+    (Protocol.QUICKSWAP, Chain.POLYGON),
+    (Protocol.ZYBERSWAP, Chain.ARBITRUM),
+    (Protocol.THENA, Chain.BSC)
+]
+
 dex_subgraphs = {
     Protocol.UNISWAP: {
         Chain.MAINNET: {

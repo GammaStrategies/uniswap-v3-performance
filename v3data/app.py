@@ -6,7 +6,16 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
 
-from v3data.routers import mainnet, polygon, arbitrum, optimism, celo, bsc, simulator
+from v3data.routers import (
+    mainnet,
+    polygon,
+    arbitrum,
+    optimism,
+    celo,
+    bsc,
+    simulator,
+    allDeployments,
+)
 from v3data.routers.quickswap import polygon as quickswap_polygon
 from v3data.routers.zyberswap import arbitrum as zyberswap_arbitrum
 from v3data.routers.thena import bsc as thena_bsc
@@ -26,6 +35,7 @@ logging.basicConfig(
 
 app = FastAPI()
 
+app.include_router(allDeployments.router, tags = ["All-deployments"])
 app.include_router(mainnet.router, tags=["Mainnet"])
 app.include_router(polygon.router, tags=["Polygon"])
 app.include_router(arbitrum.router, tags=["Arbitrum"])

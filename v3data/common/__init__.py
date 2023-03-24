@@ -3,6 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 from fastapi import Response
 from v3data.enums import Chain, Protocol, QueryType
+from v3data.config import DEPLOYMENTS
 
 from .subgraph_status import SubgraphStatusOutput, subgraph_status
 

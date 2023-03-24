@@ -65,24 +65,6 @@ class FeeReturns(ExecutionOrderWrapper):
         )
 
 
-class AggregateStats(ExecutionOrderWrapper):
-    async def _database(self):
-        _mngr = db_aggregateStats_manager(mongo_url=MONGO_DB_URL)
-        result = await _mngr.get_data(chain=self.chain, protocol=self.protocol)
-        self.database_datetime = result.pop("datetime", "")
-        return result
-
-    async def _subgraph(self):
-        top_level = TopLevelData(self.protocol, self.chain)
-        top_level_data = await top_level.all_stats()
-
-        return {
-            "totalValueLockedUSD": top_level_data["tvl"],
-            "pairCount": top_level_data["hypervisor_count"],
-            "totalFeesClaimedUSD": top_level_data["fees_claimed"],
-        }
-
-
 class HypervisorsReturnsAllPeriods(ExecutionOrderWrapper):
     def __init__(
         self,
