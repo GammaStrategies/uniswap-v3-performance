@@ -30,7 +30,7 @@ class ImpermanentDivergence:
             + fees_amounts_initial.total.usd.value1,
         )
 
-        fees_latest = Fees(self.data.initial, self.protocol, self.chain)
+        fees_latest = Fees(self.data.latest, self.protocol, self.chain)
         fees_amounts_latest = fees_latest.fee_amounts()
 
         self.data.latest.update_tvl(

@@ -31,12 +31,19 @@ async def test_impermanent_divergence(
     days, protocol: str = Protocol.UNISWAP, chain: Chain = Chain.MAINNET
 ):
 
+    hypervisors = ["0x75cd1842b529ed87817b0453c00b471f5a1b381a"]
+    current_timestamp = 1679572799
+
     data = await hypervisor.impermanent_divergence_all(
-        protocol=protocol, chain=chain, days=days, current_timestamp=None
+        protocol=protocol,
+        chain=chain,
+        days=days,
+        current_timestamp=current_timestamp,
+        hypervisors=hypervisors,
     )
 
     # log weird data
-    logger.info("[{}-{}] weird data:".format(chain, protocol))
+    logger.info(f"[{chain}-{protocol}] weird data:")
     for hypervisor_id, hype_data in data.items():
         for key in [
             "lping",
@@ -45,8 +52,10 @@ async def test_impermanent_divergence(
             "hodl_token0",
             "hodl_token1",
         ]:
-            if hype_data[key] > 6:
-                logger.warning("data: {} \r".format(hype_data))
+            if hype_data[key] > 3:
+                logger.warning(f"data: {hype_data} \r")
+            elif abs(hype_data[key] - hype_data["lping"]) > 1:
+                logger.warning(f"data: {hype_data} \r")
 
     return data
 
