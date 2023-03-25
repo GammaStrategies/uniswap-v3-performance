@@ -33,8 +33,10 @@ class SubgraphClient:
             params = {"query": query, "variables": variables}
         else:
             params = {"query": query}
-        # TODO: error handling -> connection, result and others   httpcore.RemoteProtocolError
-        # ssl.SSLError:   [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure
+        # TODO: error handling -> connection, result and others
+        #       httpcore.RemoteProtocolError
+        # ssl.SSLError:
+        # [SSL: SSLV3_ALERT_HANDSHAKE_FAILURE] sslv3 alert handshake failure
         #
         response = await async_client.post(self._url, json=params)
 
@@ -43,7 +45,7 @@ class SubgraphClient:
                 return response.json()
             except Exception:
                 logger.error(
-                    " Unexpected error while converting response to json. resp.text: {}  ".format(
+                    " Unexpected error while converting response to json. resp.text: {} ".format(
                         response.text
                     )
                 )

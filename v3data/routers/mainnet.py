@@ -37,7 +37,6 @@ async def subgraph_status() -> v3data.common.SubgraphStatusOutput:
     return await v3data.common.subgraph_status(PROTOCOL, CHAIN)
 
 
-
 @router.get("/charts/baseRange/all")
 # @cache(expire=CHARTS_CACHE_TIMEOUT)
 async def base_range_chart_all(days: int = 20):
@@ -139,7 +138,9 @@ async def hypervisor_analytics_basic_monthly(
 
 @router.get("/hypervisors/aggregateStats")
 async def aggregate_stats(response: Response):
-    aggregate_stats = v3data.common.aggregate_stats.AggregateStats(PROTOCOL, CHAIN, response)
+    aggregate_stats = v3data.common.aggregate_stats.AggregateStats(
+        PROTOCOL, CHAIN, response
+    )
     return await aggregate_stats.run(RUN_FIRST)
 
 

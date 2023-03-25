@@ -178,44 +178,52 @@ async def token_price_from_address(chain: Chain, token_address: str):
             },
         },
         Chain.POLYGON: {
-            "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270": {  # WMATIC
+            "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270": {
+                # WMATIC
                 "protocol": Protocol.QUICKSWAP,
                 "pool_address": "native",
                 "inverse": False,
             },
             "0x580a84c73811e1839f75d86d75d88cca0c241ff4": {
                 "protocol": Protocol.QUICKSWAP,
-                "pool_address": "0x5cd94ead61fea43886feec3c95b1e9d7284fdef3",  # WMATIC/QI
+                # WMATIC/QI
+                "pool_address": "0x5cd94ead61fea43886feec3c95b1e9d7284fdef3",
                 "inverse": True,
             },
             "0xb5c064f955d8e7f38fe0460c556a72987494ee17": {
                 "protocol": Protocol.QUICKSWAP,
-                "pool_address": "0x9f1a8caf3c8e94e43aa64922d67dff4dc3e88a42",  # WMATIC/QUICK
+                # WMATIC/QUICK
+                "pool_address": "0x9f1a8caf3c8e94e43aa64922d67dff4dc3e88a42",
                 "inverse": True,
             },
             "0x958d208cdf087843e9ad98d23823d32e17d723a1": {
                 "protocol": Protocol.QUICKSWAP,
-                "pool_address": "0xb8d00c66accdc01e78fd7957bf24050162916ae2",  # WMATIC/dQUICK
+                # WMATIC/dQUICK
+                "pool_address": "0xb8d00c66accdc01e78fd7957bf24050162916ae2",
                 "inverse": True,
             },
             "0x385eeac5cb85a38a9a07a70c73e0a3271cfb54a7": {  # GHST
                 "protocol": Protocol.QUICKSWAP,
-                "pool_address": "0x80deece4befd9f27d2df88064cf75f080d3ce1b2",  # WMATIC/GHST
+                # WMATIC/GHST
+                "pool_address": "0x80deece4befd9f27d2df88064cf75f080d3ce1b2",
                 "inverse": True,
             },
             "0x101a023270368c0d50bffb62780f4afd4ea79c35": {  # ANKR
                 "protocol": Protocol.QUICKSWAP,
-                "pool_address": "0x2f2dd65339226df7441097a710aba0f493879579",  # WMATIC/ANKR
+                # WMATIC/ANKR
+                "pool_address": "0x2f2dd65339226df7441097a710aba0f493879579",
                 "inverse": True,
             },
             "0xec38621e72d86775a89c7422746de1f52bba5320": {  # DAVOS
                 "protocol": Protocol.QUICKSWAP,
-                "pool_address": "0xfb0bc232cd11dbe804b489860c470b7f9cc80d9f",  # USDC/DAVOS
+                # USDC/DAVOS
+                "pool_address": "0xfb0bc232cd11dbe804b489860c470b7f9cc80d9f",
                 "inverse": True,
             },
             "0x67eb41a14c0fe5cd701fc9d5a3d6597a72f641a6": {  # GIDDY
                 "protocol": Protocol.QUICKSWAP,
-                "pool_address": "0x65c30f39b880bdd9616280450c4b41cc74b438b7",  # USDC/GIDDY
+                # USDC/GIDDY
+                "pool_address": "0x65c30f39b880bdd9616280450c4b41cc74b438b7",
                 "inverse": True,
             },
         },
