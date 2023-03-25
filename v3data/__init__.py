@@ -1,20 +1,16 @@
-import httpx
-from web3 import Web3
 import logging
 
+import httpx
+
 from v3data.config import (
-    ALCHEMY_URLS,
-    GAMMA_SUBGRAPH_URLS,
-    UNI_V2_SUBGRAPH_URL,
-    DEX_SUBGRAPH_URLS,
     DEX_HYPEPOOL_SUBGRAPH_URLS,
+    DEX_SUBGRAPH_URLS,
     ETH_BLOCKS_SUBGRAPH_URL,
+    GAMMA_SUBGRAPH_URLS,
     THEGRAPH_INDEX_NODE_URL,
+    UNI_V2_SUBGRAPH_URL,
     XGAMMA_SUBGRAPH_URL,
 )
-
-from v3data import abi
-
 from v3data.enums import Chain, Protocol
 
 logger = logging.getLogger(__name__)
@@ -203,39 +199,8 @@ class LlamaClient:
 
         response = await async_client.get(endpoint)
 
-        try:
-            response.raise_for_status()
-        except httpx.HTTPStatusError as e:
-            logger.error(
-                f"Error response {e.response.status_code} while querying time for {self.chain} at {timestamp}"
-            )
+        response.raise_for_status()
 
         if return_timestamp:
             return response.json()
         return response.json()["height"]
-
-
-class MasterChefContract:
-    def __init__(self, address, chain: Chain):
-        w3 = Web3(Web3.HTTPProvider(ALCHEMY_URLS[chain]))
-        self.contract = w3.eth.contract(
-            address=Web3.toChecksumAddress(address), abi=abi.MASTERCHEF_ABI
-        )
-
-    def pending_rewards(self, pool_id, user_address):
-        return self.contract.functions.pendingSushi(
-            pool_id, Web3.toChecksumAddress(user_address)
-        )
-
-
-class RewarderContract:
-    def __init__(self, address, chain: Chain):
-        w3 = Web3(Web3.HTTPProvider(ALCHEMY_URLS[chain]))
-        self.contract = w3.eth.contract(
-            address=Web3.toChecksumAddress(address), abi=abi.REWARDER_ABI
-        )
-
-    def pending_rewards(self, pool_id, user_address):
-        return self.contract.functions.pendingToken(
-            pool_id, Web3.toChecksumAddress(user_address)
-        )

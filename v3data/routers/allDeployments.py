@@ -23,7 +23,6 @@ from v3data.gamma import GammaDistribution, GammaInfo, GammaYield
 from v3data.enums import Chain, Protocol, QueryType
 from v3data.config import DEPLOYMENTS
 
-
 RUN_FIRST = QueryType.SUBGRAPH
 
 router = APIRouter(prefix="/allDeployments")

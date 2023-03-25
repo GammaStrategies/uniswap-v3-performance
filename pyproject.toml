@@ -19,12 +19,21 @@ pandas = "^1.5.3"
 gql = "^3.4.0"
 pymongo = "^4.3.3"
 gunicorn = "^20.1.0"
+pyyaml = "^6.0"
 
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
 flake8 = "^6.0.0"
+pylint = "^2.17.1"
+isort = "^5.12.0"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+
+[tool.pylint]
+max-line-length = 88

@@ -1,4 +1,4 @@
-from v3data import GammaClient, MasterChefContract
+from v3data import GammaClient
 from v3data.constants import YEAR_SECONDS
 from v3data.pricing import token_price_from_address
 from v3data.enums import Chain, Protocol
@@ -124,7 +124,9 @@ class MasterchefInfo(MasterchefData):
 
 
 class UserRewards(MasterchefData):
-    def __init__(self, user_address: str, protocol: Protocol, chain: Chain = Chain.MAINNET):
+    def __init__(
+        self, user_address: str, protocol: Protocol, chain: Chain = Chain.MAINNET
+    ):
         super().__init__(protocol, chain)
         self.user_address = user_address.lower()
 
@@ -140,30 +142,16 @@ class UserRewards(MasterchefData):
             hypervisor_id = pool["masterChefPool"]["hypervisor"]["id"]
             hypervisor_symbol = pool["masterChefPool"]["hypervisor"]["symbol"]
             hypervisor_decimal = 18
-            masterchef_id = pool["masterChefPool"]["masterChef"]["id"]
-            pool_id = int(pool["masterChefPool"]["poolId"])
             reward_token_id = pool["masterChefPool"]["masterChef"]["rewardToken"]["id"]
             reward_token_symbol = pool["masterChefPool"]["masterChef"]["rewardToken"][
                 "symbol"
             ]
-            reward_decimals = int(
-                pool["masterChefPool"]["masterChef"]["rewardToken"]["decimals"]
-            )
 
             if not info.get(hypervisor_id):
                 info[hypervisor_id] = {"hypervisorSymbol": hypervisor_symbol}
             info[hypervisor_id][reward_token_id] = {
                 "stakedAmount": int(pool["amount"]) / 10**hypervisor_decimal,
-                "pendingRewards": self._get_pending_reward(
-                    masterchef_id,
-                    pool_id,
-                )
-                / 10**reward_decimals,
                 "rewardTokenSymbol": reward_token_symbol,
             }
 
         return info
-
-    def _get_pending_reward(self, masterchef, pool_id):
-        masterchef_contract = MasterChefContract(masterchef, self.chain)
-        return masterchef_contract.pending_rewards(pool_id, self.user_address).call()
