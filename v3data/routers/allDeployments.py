@@ -1,27 +1,13 @@
-import v3data.common
-import v3data.common.charts
-import v3data.common.hypervisor
-import v3data.common.users
 import asyncio
 
-from v3data.common.aggregate_stats import AggregateStats, AggregateStatsDeploymentInfoOutput
+from fastapi import APIRouter, Response
 
-from fastapi import APIRouter, Response, status
-from fastapi_cache.decorator import cache
-
-from v3data.config import (
-    APY_CACHE_TIMEOUT,
-    DASHBOARD_CACHE_TIMEOUT,
-    DEFAULT_TIMEZONE,
-    DB_CACHE_TIMEOUT,
-    ALLDATA_CACHE_TIMEOUT,
+from v3data.common.aggregate_stats import (
+    AggregateStats,
+    AggregateStatsDeploymentInfoOutput,
 )
-from v3data.dashboard import Dashboard
-from v3data.eth import EthDistribution
-
-from v3data.gamma import GammaDistribution, GammaInfo, GammaYield
-from v3data.enums import Chain, Protocol, QueryType
 from v3data.config import DEPLOYMENTS
+from v3data.enums import QueryType
 
 RUN_FIRST = QueryType.SUBGRAPH
 
