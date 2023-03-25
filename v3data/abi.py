@@ -1,3 +1,5 @@
+"""ABIs for contract calls"""
+
 MASTERCHEF_ABI = [
     {
         "inputs": [

@@ -107,7 +107,6 @@ GAMMA_SUBGRAPH_URLS = {
 XGAMMA_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/l0c4t0r/xgamma"
 TOKEN_LIST_URL = "https://tokens.coingecko.com/uniswap/all.json"
 
-DEFAULT_BBAND_INTERVALS = 20
 DEFAULT_TIMEZONE = get_config("TIMEZONE")
 
 CHARTS_CACHE_TIMEOUT = int(get_config("CHARTS_CACHE_TIMEOUT"))

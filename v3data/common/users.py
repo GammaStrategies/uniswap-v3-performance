@@ -1,6 +1,6 @@
 from v3data.accounts import AccountInfo
-from v3data.users import UserInfo
 from v3data.enums import Chain, Protocol
+from v3data.users import UserInfo
 
 
 async def user_data(protocol: Protocol, chain: Chain, address: str):

@@ -1,7 +1,7 @@
 from v3data import GammaClient
 from v3data.constants import YEAR_SECONDS
-from v3data.pricing import token_price_from_address
 from v3data.enums import Chain, Protocol
+from v3data.pricing import token_price_from_address
 
 
 class MasterchefData:

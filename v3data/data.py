@@ -43,9 +43,11 @@ class BlockRange:
             self.end = await self._query_current_time()
 
     async def set_initial_with_timestamp(self, timestamp: int) -> None:
+        """Set initial timestamp and block by providing the timestamp"""
         self.initial = await self._get_time_from_timestamp(timestamp)
 
     async def set_initial_with_days_ago(self, days_ago: int) -> None:
+        """Set initial timestamp and block using days before current time"""
         timestamp_start = self.end.timestamp - (days_ago * DAY_SECONDS)
         try:
             response = await self._llama_client.block_from_timestamp(

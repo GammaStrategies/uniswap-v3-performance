@@ -1,13 +1,9 @@
 import logging
-from v3data.utils import sub_in_256
-from v3data.hype_fees.schema import (
-    FeesData,
-    UncollectedFees,
-    _TokenPair,
-)
-from v3data.hype_fees.data import FeeGrowthData
-from v3data.enums import Chain, PositionType, Protocol
 
+from v3data.enums import Chain, PositionType, Protocol
+from v3data.hype_fees.data import FeeGrowthData
+from v3data.hype_fees.schema import FeesData, UncollectedFees, _TokenPair
+from v3data.utils import sub_in_256
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +54,6 @@ class Fees:
         )
 
     def _calc_position_fees(self, position_type: PositionType) -> _TokenPair:
-
         if position_type == PositionType.BASE:
             position = self.data.base_position
         elif position_type == PositionType.LIMIT:

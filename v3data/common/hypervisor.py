@@ -1,24 +1,20 @@
 import asyncio
+import logging
 
 from fastapi import Response, status
 
+from database.collection_endpoint import (
+    db_allData_manager,
+    db_returns_manager,
+)
 from v3data.common import ExecutionOrderWrapper
-from v3data.hypervisor import HypervisorInfo
-from v3data.toplevel import TopLevelData
+from v3data.config import MONGO_DB_URL
 from v3data.enums import Chain, Protocol
 from v3data.hype_fees.fees import fees_all
 from v3data.hype_fees.fees_yield import fee_returns_all
 from v3data.hype_fees.impermanent_divergence import impermanent_divergence_all
-
-
-from database.collection_endpoint import (
-    db_returns_manager,
-    db_allData_manager,
-    db_aggregateStats_manager,
-)
-from v3data.config import MONGO_DB_URL
-
-import logging
+from v3data.hypervisor import HypervisorInfo
+from v3data.toplevel import TopLevelData
 
 logger = logging.getLogger(__name__)
 
@@ -132,9 +128,15 @@ class HypervisorsReturnsAllPeriods(ExecutionOrderWrapper):
 
     async def _subgraph(self):
         daily, weekly, monthly = await asyncio.gather(
-            fee_returns_all(self.protocol, self.chain, 1, self.hypervisors, self.current_timestamp),
-            fee_returns_all(self.protocol, self.chain, 7, self.hypervisors, self.current_timestamp),
-            fee_returns_all(self.protocol, self.chain, 30, self.hypervisors, self.current_timestamp),
+            fee_returns_all(
+                self.protocol, self.chain, 1, self.hypervisors, self.current_timestamp
+            ),
+            fee_returns_all(
+                self.protocol, self.chain, 7, self.hypervisors, self.current_timestamp
+            ),
+            fee_returns_all(
+                self.protocol, self.chain, 30, self.hypervisors, self.current_timestamp
+            ),
         )
 
         results = {}
@@ -177,7 +179,7 @@ class ImpermanentDivergence(ExecutionOrderWrapper):
 
     async def _database(self):
         # check days in database
-        if not self.days in [1, 7, 30]:
+        if self.days not in [1, 7, 30]:
             raise NotImplementedError(
                 " Only a limited quantity of periods reside in database. Chosen one is not among them"
             )

@@ -1,8 +1,8 @@
 import datetime
 import logging
 
-from v3data.constants import BLOCK_TIME_SECONDS
 from v3data.config import CHAIN_NAME_CONVERSION
+from v3data.constants import BLOCK_TIME_SECONDS
 from v3data.enums import Chain
 
 logger = logging.getLogger(__name__)

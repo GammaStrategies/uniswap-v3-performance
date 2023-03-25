@@ -1,14 +1,14 @@
 from pydantic import BaseModel
 
-from v3data.common import ExecutionOrderWrapper
-from v3data.enums import Chain, Protocol
-from v3data.toplevel import TopLevelData
-
 from database.collection_endpoint import db_aggregateStats_manager
+from v3data.common import ExecutionOrderWrapper
+from v3data.config import MONGO_DB_URL
+from v3data.toplevel import TopLevelData
 
 
 class AggregateStatsOutput(BaseModel):
     """Aggregated data across all hypervisors"""
+
     totalValueLockedUSD: float
     pairCount: int
     totalFeesClaimedUSD: float
@@ -23,6 +23,7 @@ class AggregateStatsOutput(BaseModel):
 
 class AggregateStatsDeploymentInfoOutput(AggregateStatsOutput):
     """Includes extra info about deployments that were considered"""
+
     deployments: list[str]
 
 

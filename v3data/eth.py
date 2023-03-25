@@ -1,11 +1,13 @@
 from v3data import GammaClient
 from v3data.config import DEFAULT_TIMEZONE
-from v3data.utils import timestamp_to_date
 from v3data.enums import Chain, Protocol
+from v3data.utils import timestamp_to_date
 
 
 class EthData:
-    def __init__(self, protocol: Protocol, chain: Chain, days, timezone=DEFAULT_TIMEZONE):
+    def __init__(
+        self, protocol: Protocol, chain: Chain, days, timezone=DEFAULT_TIMEZONE
+    ):
         self.gamma_client = GammaClient(protocol, chain)
         self.days = days
         self.timezone = timezone
@@ -13,7 +15,6 @@ class EthData:
         self.data = {}
 
     async def _get_data(self):
-
         query = """
         query($token: String!, $days: Int!, $timezone: String!){
             protocolDistribution(
@@ -59,7 +60,6 @@ class EthCalculations(EthData):
         }
 
     async def distributions(self, get_data=True):
-
         if get_data:
             await self._get_data()
 

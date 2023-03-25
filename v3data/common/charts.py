@@ -1,17 +1,10 @@
 from fastapi_cache.decorator import cache
-from v3data.bollingerbands import BollingerBand
+
 from v3data.charts.base_range import BaseLimit
 from v3data.charts.benchmark import Benchmark
-
 from v3data.config import CHARTS_CACHE_TIMEOUT
-from v3data.utils import parse_date
 from v3data.enums import Chain, Protocol
-
-
-@cache(expire=CHARTS_CACHE_TIMEOUT)
-async def bollingerbands_chart(protocol: Protocol, chain: Chain, poolAddress: str, periodHours: int = 24):
-    bband = BollingerBand(poolAddress, periodHours, protocol, chain=chain)
-    return {"data": await bband.chart_data()}
+from v3data.utils import parse_date
 
 
 @cache(expire=CHARTS_CACHE_TIMEOUT)

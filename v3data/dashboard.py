@@ -2,14 +2,14 @@ import asyncio
 from datetime import timedelta
 
 from v3data import GammaClient
+from v3data.config import GROSS_FEES_MAX, legacy_stats
+from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
+from v3data.enums import Chain, Protocol
 from v3data.gamma import GammaCalculations, ProtocolFeesCalculations
 from v3data.pricing import token_price
-from v3data.toplevel import TopLevelData
 from v3data.rewardshypervisor import RewardsHypervisorInfo
+from v3data.toplevel import TopLevelData
 from v3data.utils import timestamp_ago
-from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
-from v3data.config import legacy_stats, GROSS_FEES_MAX
-from v3data.enums import Chain, Protocol
 
 
 class Dashboard:
@@ -127,7 +127,7 @@ class Dashboard:
             "timezone": timezone,
             "timestampStart": timestamp_ago(timedelta(self.days)),
             "rebalancesStart": timestamp_ago(timedelta(7)),
-            "grossFeesMax": GROSS_FEES_MAX
+            "grossFeesMax": GROSS_FEES_MAX,
         }
 
         response = await self.gamma_client.query(query, variables)
@@ -153,7 +153,6 @@ class Dashboard:
         self.rewards_hypervisor_data = {"rewardHypervisor": data["rewardHypervisor"]}
 
     async def info(self, timezone):
-
         _, gamma_prices = await asyncio.gather(
             self._get_data(timezone), token_price("GAMMA")
         )
@@ -185,7 +184,7 @@ class Dashboard:
         gamma_staked_usd = rewards_info["gamma_staked"] * gamma_price_usd
 
         # Use fees for gamma yield
-        fees_per_day = collected_fees['weekly']["collected_usd"]
+        fees_per_day = collected_fees["weekly"]["collected_usd"]
         gamma_fees_apr = 365 * fees_per_day / gamma_staked_usd
         gamma_fees_apy = (1 + fees_per_day / gamma_staked_usd) ** 365 - 1
 

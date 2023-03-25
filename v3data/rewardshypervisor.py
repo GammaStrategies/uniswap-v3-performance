@@ -10,7 +10,6 @@ class RewardsHypervisorData:
         self.data = {}
 
     async def _get_data(self):
-
         query = """
         xgammaQuery($xgammaAddres: String!){
             rewardHypervisor(id: $xgammaAddress) {

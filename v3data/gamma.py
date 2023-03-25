@@ -1,14 +1,15 @@
 import asyncio
-import numpy as np
 from datetime import timedelta
+
+import numpy as np
 from pandas import DataFrame, to_datetime
 
 from v3data import GammaClient
 from v3data.config import DEFAULT_TIMEZONE, GROSS_FEES_MAX
-from v3data.pricing import token_price
-from v3data.utils import timestamp_ago
 from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
 from v3data.enums import Chain, Protocol
+from v3data.pricing import token_price
+from v3data.utils import timestamp_ago
 
 
 class GammaData:
@@ -21,9 +22,13 @@ class GammaData:
         self.data = {}
 
     async def _get_data(self):
-
         query = """
-        query($xgammaAddress: String!, $gammaAddress: String!, $days: Int!, $timezone: String!){
+        query(
+            $xgammaAddress: String!,
+            $gammaAddress: String!,
+            $days: Int!,
+            $timezone: String!
+        ){
             token(id: $gammaAddress){
                 totalSupply
             }
@@ -235,7 +240,11 @@ class ProtocolFeesData:
 
     def _get_data(self, time_delta):
         query = """
-        query  protocolFees($xgammaAddress: String!, $timestamp_start: Int!, $grossFeesMax: Int!) {
+        query  protocolFees(
+            $xgammaAddress: String!,
+            $timestamp_start: Int!,
+            $grossFeesMax: Int!
+        ) {
             uniswapV3Rebalances(
                 where: {
                     timestamp_gt: $timestamp_start
@@ -253,7 +262,7 @@ class ProtocolFeesData:
         variables = {
             "xgammaAddress": XGAMMA_ADDRESS,
             "timestamp_start": timestamp_ago(time_delta),
-            "groossFeesMax": GROSS_FEES_MAX
+            "groossFeesMax": GROSS_FEES_MAX,
         }
         self.data = self.gamma_client.query(query, variables)["data"]
 

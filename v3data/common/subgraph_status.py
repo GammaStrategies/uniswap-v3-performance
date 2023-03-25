@@ -13,6 +13,5 @@ async def subgraph_status(protocol: Protocol, chain: Chain) -> SubgraphStatusOut
     client = IndexNodeClient(protocol, chain)
     response = await client.status()
     return SubgraphStatusOutput(
-        url=response["url"],
-        latestBlock=response["latestBlock"]
+        url=response["url"], latestBlock=response["latestBlock"]
     )

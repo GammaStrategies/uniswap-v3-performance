@@ -27,13 +27,6 @@ async def subgraph_status() -> v3data.common.SubgraphStatusOutput:
     return await v3data.common.subgraph_status(PROTOCOL, CHAIN)
 
 
-@router.get("/charts/bollingerbands/{poolAddress}")
-async def bollingerbands_chart(poolAddress: str, periodHours: int = 24):
-    return await v3data.common.charts.bollingerbands_chart(
-        PROTOCOL, CHAIN, poolAddress, periodHours
-    )
-
-
 @router.get("/charts/baseRange/all")
 # @cache(expire=CHARTS_CACHE_TIMEOUT)
 async def base_range_chart_all(days: int = 20):

@@ -3,11 +3,11 @@ import logging
 import numpy as np
 from pandas import DataFrame
 
+from v3data.constants import DAY_SECONDS, YEAR_SECONDS
+from v3data.enums import Chain, Protocol
 from v3data.hype_fees.data import FeeGrowthSnapshotData
 from v3data.hype_fees.fees import Fees
 from v3data.hype_fees.schema import FeesData, FeesSnapshot, FeeYield
-from v3data.constants import DAY_SECONDS, YEAR_SECONDS
-from v3data.enums import Chain, Protocol
 
 logger = logging.getLogger(__name__)
 
