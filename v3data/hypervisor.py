@@ -64,7 +64,8 @@ class HypervisorData:
         variables = {"id": hypervisor_address.lower()}
         response = await self.gamma_client.query(query, variables)
 
-        # TODO: hardcoded hypervisor address matches more than one --> MAINNET(xPSDN-ETH1) and OPTIMISM(xUSDC-DAI05)
+        # TODO: hardcoded hypervisor address matches more than one --> 
+        #       MAINNET(xPSDN-ETH1) and OPTIMISM(xUSDC-DAI05)
         # TODO: specify chain on hardcoded overrides
         if hypervisor_address == "0x0ec4a47065bf52e1874d2491d4deeed3c638c75f":
             response["data"]["uniswapV3Hypervisor"]["grossFeesClaimedUSD"] = str(
@@ -121,7 +122,8 @@ class HypervisorData:
 
         basics_response = await self.gamma_client.query(query_basics)
 
-        # TODO: hardcoded hypervisor address matches more than one --> MAINNET(xPSDN-ETH1) and OPTIMISM(xUSDC-DAI05)
+        # TODO: hardcoded hypervisor address matches more than one --> 
+        #       MAINNET(xPSDN-ETH1) and OPTIMISM(xUSDC-DAI05)
         # TODO: specify chain on hardcoded overrides
         for hypervisor in basics_response["data"]["uniswapV3Hypervisors"]:
             if hypervisor["id"] == "0x0ec4a47065bf52e1874d2491d4deeed3c638c75f":

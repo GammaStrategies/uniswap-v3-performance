@@ -1,13 +1,13 @@
+from fastapi import APIRouter, Response
+from fastapi_cache.decorator import cache
+
 import v3data.common
 import v3data.common.charts
 import v3data.common.hypervisor
-import v3data.common.users
 import v3data.common.masterchef
 import v3data.common.masterchef_v2
-
-from fastapi import APIRouter, Response
-from fastapi_cache.decorator import cache
-from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT, DB_CACHE_TIMEOUT
+import v3data.common.users
+from v3data.config import ALLDATA_CACHE_TIMEOUT, APY_CACHE_TIMEOUT, DB_CACHE_TIMEOUT
 from v3data.enums import Chain, Protocol, QueryType
 
 PROTOCOL = Protocol.ZYBERSWAP
@@ -128,7 +128,9 @@ async def hypervisor_analytics_basic_monthly(
 
 @router.get("/hypervisors/aggregateStats")
 async def aggregate_stats(response: Response):
-    aggregate_stats = v3data.common.aggregate_stats.AggregateStats(PROTOCOL, CHAIN, response)
+    aggregate_stats = v3data.common.aggregate_stats.AggregateStats(
+        PROTOCOL, CHAIN, response
+    )
     return await aggregate_stats.run(RUN_FIRST)
 
 

@@ -181,7 +181,7 @@ class ImpermanentDivergence(ExecutionOrderWrapper):
         # check days in database
         if self.days not in [1, 7, 30]:
             raise NotImplementedError(
-                " Only a limited quantity of periods reside in database. Chosen one is not among them"
+                "Requested period does not exist in database"
             )
 
     async def _subgraph(self):

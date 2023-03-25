@@ -123,6 +123,7 @@ class AccountInfo(AccountData):
                 token * price_token_in_base * price_base_in_usd
             ) + (base * price_base_in_usd)
             current_USD = shareOfPool * tvl_USD
+            hypervisorReturnsPercentage = (current_USD / initial_token_current_USD) - 1
 
             returns[hypervisor_address] = {
                 "initialTokenUSD": initial_USD,
@@ -133,7 +134,7 @@ class AccountInfo(AccountData):
                 if initial_USD > 0
                 else "N/A",
                 "hypervisorReturnsUSD": current_USD - initial_token_current_USD,
-                "hypervisorReturnsPercentage": f"{(current_USD / initial_token_current_USD) - 1:.2%}"
+                "hypervisorReturnsPercentage": f"{hypervisorReturnsPercentage:.2%}"
                 if initial_token_current_USD > 0
                 else "N/A",
             }

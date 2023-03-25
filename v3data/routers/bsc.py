@@ -129,7 +129,9 @@ async def hypervisor_analytics_basic_monthly(
 
 @router.get("/hypervisors/aggregateStats")
 async def aggregate_stats(response: Response):
-    aggregate_stats = v3data.common.aggregate_stats.AggregateStats(PROTOCOL, CHAIN, response)
+    aggregate_stats = v3data.common.aggregate_stats.AggregateStats(
+        PROTOCOL, CHAIN, response
+    )
     return await aggregate_stats.run(RUN_FIRST)
 
 

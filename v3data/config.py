@@ -1,6 +1,7 @@
 """Initialise configurations"""
 
 import os
+
 import yaml
 
 from v3data.enums import Chain, Protocol
