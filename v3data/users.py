@@ -1,4 +1,5 @@
 import asyncio
+
 from v3data import GammaClient
 from v3data.accounts import AccountInfo
 from v3data.constants import XGAMMA_ADDRESS
@@ -94,7 +95,6 @@ class UserData:
 
 class UserInfo(UserData):
     async def output(self, get_data=True):
-
         if get_data:
             await self._get_data()
 

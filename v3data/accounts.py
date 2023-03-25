@@ -1,8 +1,9 @@
 import asyncio
+
 from v3data import GammaClient
 from v3data.constants import XGAMMA_ADDRESS
-from v3data.pricing import token_price
 from v3data.enums import Chain, Protocol
+from v3data.pricing import token_price
 
 
 class AccountData:
@@ -50,7 +51,10 @@ class AccountData:
         }
 
         query_xgamma = """
-        query accountXgamma($accountAddress: String!, $rewardHypervisorAddress: String!) {
+        query accountXgamma(
+            $accountAddress: String!,
+            $rewardHypervisorAddress: String!
+        ){
             account(
                 id: $accountAddress
             ){
@@ -137,7 +141,6 @@ class AccountInfo(AccountData):
         return returns
 
     async def output(self, get_data=True):
-
         if get_data:
             await self._get_data()
 
@@ -205,7 +208,8 @@ class AccountInfo(AccountData):
                     "pendingGammaEarnedUSD": pendingGammaEarned
                     * gamma_pricing["token_in_usdc"],
                     "totalGammaEarned": totalGammaEarned,
-                    "totalGammaEarnedUSD": totalGammaEarned * gamma_pricing["token_in_usdc"],
+                    "totalGammaEarnedUSD": totalGammaEarned
+                    * gamma_pricing["token_in_usdc"],
                     "gammaStakedShare": f"{gammaStakedShare:.2%}",
                     "xgammaAmount": xgamma_shares / self.decimal_factor,
                 }

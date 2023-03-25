@@ -1,0 +1,53 @@
+# GAMMA Subgraph URL
+UNISWAP_MAINNET_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/gamma
+UNISWAP_POLYGON_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/polygon
+UNISWAP_ARBITRUM_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/arbitrum
+UNISWAP_OPTIMISM_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/optimism
+UNISWAP_CELO_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/celo
+UNISWAP_BSC_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/uniswap-bsc
+QUICKSWAP_POLYGON_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/algebra-polygon
+ZYBERSWAP_ARBITRUM_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/zyberswap-arbitrum
+THENA_BSC_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/thena
+
+# DEX Subgraph URL
+UNISWAP_MAINNET_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3
+UNISWAP_POLYGON_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-polygon
+UNISWAP_ARBITRUM_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/ianlapham/arbitrum-dev
+UNISWAP_OPTIMISM_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/ianlapham/optimism-post-regenesis
+UNISWAP_CELO_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo
+UNISWAP_BSC_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-bsc
+QUICKSWAP_POLYGON_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3
+ZYBERSWAP_ARBITRUM_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/iliaazhel/zyberswap-info
+THENA_BSC_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/iliaazhel/thena-info
+
+# HypePool Subgraph URL
+UNISWAP_MAINNET_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-mainnet
+UNISWAP_POLYGON_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-polygon
+UNISWAP_ARBITRUM_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-arbitrum
+UNISWAP_OPTIMISM_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-optimism
+UNISWAP_CELO_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-celo
+UNISWAP_BSC_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-bsc
+QUICKSWAP_POLYGON_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-quickswap-polygon
+ZYBERSWAP_ARBITRUM_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-zyberswap-arbitrum
+THENA_BSC_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-thena-bsc
+
+# Timezone for daily data
+TIMEZONE: UTC-5
+
+# Cache timeout settings
+CHARTS_CACHE_TIMEOUT: 600
+APY_CACHE_TIMEOUT: 600
+DASHBOARD_CACHE_TIMEOUT: 600
+ALLDATA_CACHE_TIMEOUT: 600
+DB_CACHE_TIMEOUT: 160
+
+# Set timeout for GQL queries
+GQL_CLIENT_TIMEOUT: 120
+
+# Comma delimited list of hypes to exclude
+EXCLUDED_HYPES: ""
+
+# MongoDB settings
+MONGO_DB_URL: mongodb://localhost:27072
+MONGO_DB_TIMEOUTMS: 2000
+

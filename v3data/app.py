@@ -6,17 +6,22 @@ from fastapi_cache import FastAPICache
 from fastapi_cache.backends.inmemory import InMemoryBackend
 from fastapi_cache.decorator import cache
 
-from v3data.routers import mainnet, polygon, arbitrum, optimism, celo, bsc, simulator
-from v3data.routers.quickswap import polygon as quickswap_polygon
-from v3data.routers.zyberswap import arbitrum as zyberswap_arbitrum
-from v3data.routers.thena import bsc as thena_bsc
-
-from v3data.bollingerbands import BollingerBand
-
 from v3data.charts.daily import DailyChart
 from v3data.config import CHARTS_CACHE_TIMEOUT
-
 from v3data.pools import pools_from_symbol
+from v3data.routers import (
+    allDeployments,
+    arbitrum,
+    bsc,
+    celo,
+    mainnet,
+    optimism,
+    polygon,
+    simulator,
+)
+from v3data.routers.quickswap import polygon as quickswap_polygon
+from v3data.routers.thena import bsc as thena_bsc
+from v3data.routers.zyberswap import arbitrum as zyberswap_arbitrum
 
 logging.basicConfig(
     format="[%(asctime)s:%(levelname)s:%(name)s]:%(message)s",
@@ -26,6 +31,7 @@ logging.basicConfig(
 
 app = FastAPI()
 
+app.include_router(allDeployments.router, tags=["All-deployments"])
 app.include_router(mainnet.router, tags=["Mainnet"])
 app.include_router(polygon.router, tags=["Polygon"])
 app.include_router(arbitrum.router, tags=["Arbitrum"])
@@ -41,12 +47,6 @@ app.include_router(simulator.router, tags=["Simulator"])
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
-
-
-@app.get("/bollingerBandsLatest/{poolAddress}")
-async def bollingerbands_latest(poolAddress: str, periodHours: int = 24):
-    bband = BollingerBand(poolAddress, periodHours)
-    return await bband.latest_bands()
 
 
 @app.get("/charts/dailyTvl")

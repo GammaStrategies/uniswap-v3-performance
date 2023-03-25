@@ -1,10 +1,10 @@
 import logging
 
-from v3data.masterchef_v2 import MasterchefV2Info, UserRewardsV2
 from database.collection_endpoint import db_allRewards2_manager
+from v3data.common import ExecutionOrderWrapper
 from v3data.config import MONGO_DB_URL
 from v3data.enums import Chain, Protocol
-from v3data.common import ExecutionOrderWrapper
+from v3data.masterchef_v2 import MasterchefV2Info, UserRewardsV2
 
 logger = logging.getLogger(__name__)
 

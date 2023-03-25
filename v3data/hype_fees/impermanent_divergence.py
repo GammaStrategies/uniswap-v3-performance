@@ -1,10 +1,10 @@
 import logging
 
+from v3data.constants import X128
+from v3data.enums import Chain, Protocol
 from v3data.hype_fees.data import ImpermanentDivergenceData
 from v3data.hype_fees.fees import Fees
 from v3data.hype_fees.schema import FeesDataRange
-from v3data.constants import X128
-from v3data.enums import Chain, Protocol
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class ImpermanentDivergence:
         )
 
     def hold_fifty_tokens_usd(self):
-        """Gain/loss from holding 50% / 50% tokens outside of vault, denominated in USD"""
+        """Gain/loss from holding 50%/50% tokens outside of vault, denominated in USD"""
         total_ini_value = (
             self.data.initial.tvl.value0.adjusted * self.data.initial.price.value0
         ) + (self.data.initial.tvl.value1.adjusted * self.data.initial.price.value1)
@@ -108,7 +108,7 @@ class ImpermanentDivergence:
         )
 
     def hold_initial_tokens_usd(self):
-        """Gain/loss from holding initial supplied tokens outside of vault, denominated in USD"""
+        """Gain/loss from holding initial supplied tokens outside of vault, in USD"""
 
         initial_tokens_initial_price = (
             (

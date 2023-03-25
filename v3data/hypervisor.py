@@ -1,14 +1,12 @@
 import logging
 
 from v3data import GammaClient, UniswapV3Client
-from v3data.utils import timestamp_to_date, filter_address_by_chain
-from v3data.constants import DAYS_IN_PERIOD
 from v3data.config import EXCLUDED_HYPERVISORS
-from v3data.hype_fees.fees_yield import fee_returns_all
+from v3data.constants import DAYS_IN_PERIOD
 from v3data.enums import Chain, Protocol
+from v3data.hype_fees.fees_yield import fee_returns_all
+from v3data.utils import filter_address_by_chain, timestamp_to_date
 
-DAY_SECONDS = 24 * 60 * 60
-YEAR_SECONDS = 365 * DAY_SECONDS
 
 logger = logging.getLogger(__name__)
 

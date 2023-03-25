@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 
 from v3data import UniswapV3Client
-from v3data.utils import sqrtPriceX96_to_priceDecimal
 from v3data.enums import Chain, Protocol
+from v3data.utils import sqrtPriceX96_to_priceDecimal
 
 
 class DexPriceData(ABC):
@@ -217,7 +217,7 @@ async def token_price_from_address(chain: Chain, token_address: str):
                 "protocol": Protocol.QUICKSWAP,
                 "pool_address": "0x65c30f39b880bdd9616280450c4b41cc74b438b7",  # USDC/GIDDY
                 "inverse": True,
-            }
+            },
         },
     }
 

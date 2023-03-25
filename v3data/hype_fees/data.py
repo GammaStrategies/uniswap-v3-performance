@@ -1,18 +1,12 @@
 from abc import ABC, abstractmethod
+
 from gql.dsl import DSLQuery
 
-from v3data import LlamaClient
-from v3data.constants import BLOCK_TIME_SECONDS, DAY_SECONDS
-from v3data.hype_fees.schema import (
-    FeesData,
-    FeesDataRange,
-    HypervisorStaticInfo,
-    Time,
-)
-from v3data.utils import estimate_block_from_timestamp_diff
-from v3data.enums import Chain, Protocol
-from v3data.subgraphs.hype_pool import HypePoolClient
+from v3data.constants import BLOCK_TIME_SECONDS
 from v3data.data import BlockRange
+from v3data.enums import Chain, Protocol
+from v3data.hype_fees.schema import FeesData, FeesDataRange, HypervisorStaticInfo
+from v3data.subgraphs.hype_pool import HypePoolClient
 
 
 class FeeGrowthDataABC(ABC):

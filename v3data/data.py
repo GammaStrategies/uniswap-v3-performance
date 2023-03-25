@@ -1,24 +1,28 @@
 import asyncio
-import requests
 import datetime
+
 import numpy as np
 import pandas as pd
+import requests
+from gql.dsl import DSLQuery
 from httpx import HTTPStatusError
 
-from gql.dsl import DSLQuery
-from dataclasses import dataclass
-from v3data import SubgraphClient as SubgraphClientOld, LlamaClient
-from v3data.utils import sqrtPriceX96_to_priceDecimal
+from v3data import LlamaClient
+from v3data import SubgraphClient as SubgraphClientOld
 from v3data.config import DEX_SUBGRAPH_URLS, TOKEN_LIST_URL
-from v3data.enums import Chain, Protocol
 from v3data.constants import DAY_SECONDS
-
-from v3data.subgraphs import SubgraphClient
+from v3data.enums import Chain, Protocol
 from v3data.hype_fees.schema import Time
+from v3data.subgraphs import SubgraphClient
+from v3data.utils import (
+    estimate_block_from_timestamp_diff,
+    sqrtPriceX96_to_priceDecimal,
+)
 
 
 class BlockRange:
     """Manage time ranges"""
+
     def __init__(
         self,
         chain: Chain,
@@ -29,7 +33,7 @@ class BlockRange:
         self.end: Time | None = None
         if subgraph_client:
             self._subgraph_client = subgraph_client
-        self._llama_client = LlamaClient(chain)  
+        self._llama_client = LlamaClient(chain)
 
     async def set_end(self, timestamp: int | None = None) -> None:
         """Set end time and block"""
@@ -39,13 +43,16 @@ class BlockRange:
             self.end = await self._query_current_time()
 
     async def set_initial_with_timestamp(self, timestamp: int) -> None:
-        self.initial = await self._get_time_from_timestamp(timestamp)            
-
+        """Set initial timestamp and block by providing the timestamp"""
+        self.initial = await self._get_time_from_timestamp(timestamp)
 
     async def set_initial_with_days_ago(self, days_ago: int) -> None:
+        """Set initial timestamp and block using days before current time"""
         timestamp_start = self.end.timestamp - (days_ago * DAY_SECONDS)
         try:
-            response = await self._llama_client.block_from_timestamp(timestamp_start, True)
+            response = await self._llama_client.block_from_timestamp(
+                timestamp_start, True
+            )
             self.initial = Time(
                 block=response["height"], timestamp=response["timestamp"]
             )
@@ -64,7 +71,6 @@ class BlockRange:
     async def _get_time_from_timestamp(self, timestamp: int) -> Time:
         response = await self._llama_client.block_from_timestamp(timestamp, True)
         return Time(block=response["height"], timestamp=response["timestamp"])
-
 
     async def _query_current_time(self) -> Time:
         query = DSLQuery(

@@ -1,136 +1,41 @@
+"""Initialise configurations"""
+
 import os
+import yaml
 
 from v3data.enums import Chain, Protocol
 
-dex_subgraphs = {
-    Protocol.UNISWAP: {
-        Chain.MAINNET: {
-            "prod": "https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3",
-            "alt": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-alt",
-            "test": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-testing",
-        },
-        Chain.POLYGON: {
-            "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-polygon"
-        },
-        Chain.ARBITRUM: {
-            "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/arbitrum-dev"
-        },
-        Chain.OPTIMISM: {
-            "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/optimism-post-regenesis"
-        },
-        Chain.CELO: {
-            "prod": "https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo"
-        },
-        Chain.BSC: {
-            "prod": "https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-bsc"
-        },
-    },
-    Protocol.QUICKSWAP: {
-        Chain.POLYGON: {
-            "prod": "https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3"
-        }
-    },
-    Protocol.ZYBERSWAP: {
-        Chain.ARBITRUM: {
-            "prod": "https://api.thegraph.com/subgraphs/name/iliaazhel/zyberswap-info"
-        }
-    },
-    Protocol.THENA: {
-        Chain.BSC : {
-            "prod": "https://api.thegraph.com/subgraphs/name/iliaazhel/thena-info"
-        }
-    }
-}
+try:
+    with open("config.yaml", mode="r", encoding="utf-8") as stream:
+        YAML_CONFIG = yaml.safe_load(stream)
+except FileNotFoundError:
+    YAML_CONFIG = None
+
+with open("config.defaults.yaml", mode="r", encoding="utf-8") as stream:
+    YAML_CONFIG_DEFAULTS = yaml.safe_load(stream)
 
 
-hype_pool_subgraphs = {
-    Protocol.UNISWAP: {
-        Chain.MAINNET: {
-            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-mainnet",
-        },
-        Chain.POLYGON: {
-            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-polygon"
-        },
-        Chain.ARBITRUM: {
-            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-arbitrum"
-        },
-        Chain.OPTIMISM: {
-            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-optimism"
-        },
-        Chain.CELO: {
-            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-celo"
-        },
-        Chain.BSC: {
-            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-bsc"
-        },
-    },
-    Protocol.QUICKSWAP: {
-        Chain.POLYGON: {
-            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-quickswap-polygon"
-        }
-    },
-    Protocol.ZYBERSWAP: {
-        Chain.ARBITRUM: {
-            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-zyberswap-arbitrum"
-        }
-    },
-    Protocol.THENA: {
-        Chain.BSC : {
-            "prod": "https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-thena-bsc"
-        }
-    }
-}
+def get_config(key: str):
+    """Find config in env var/config.yaml"""
+    value = os.environ.get(key)
+    if not value and YAML_CONFIG:
+        value = YAML_CONFIG.get(key)
+    if not value:
+        value = YAML_CONFIG_DEFAULTS[key]
+    return value
 
-visor_subgraphs = {
-    "prod": "https://api.thegraph.com/subgraphs/name/visorfinance/visor",
-    "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/visor",
-    "lab": "https://api.thegraph.com/subgraphs/name/l0c4t0r/laboratory",
-}
 
-gamma_subgraphs = {
-    Protocol.UNISWAP: {
-        Chain.MAINNET: {
-            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/gamma",
-            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma",
-            "lab": "https://api.thegraph.com/subgraphs/name/l0c4t0r/laboratory",
-        },
-        Chain.POLYGON: {
-            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/polygon",
-            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-polygon",
-        },
-        Chain.ARBITRUM: {
-            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/arbitrum",
-            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/visor-arbitrum",
-        },
-        Chain.OPTIMISM: {
-            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/optimism",
-            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-optimism",
-        },
-        Chain.CELO: {
-            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/celo",
-            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-celo",
-        },
-        Chain.BSC: {
-            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/uniswap-bsc",
-        },
-    },
-    Protocol.QUICKSWAP: {
-        Chain.POLYGON: {
-            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/algebra-polygon",
-            "test": "https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-algebra-polygon",
-        },
-    },
-    Protocol.ZYBERSWAP: {
-        Chain.ARBITRUM: {
-            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/zyberswap-arbitrum",
-        }
-    },
-    Protocol.THENA: {
-        Chain.BSC : {
-            "prod": "https://api.thegraph.com/subgraphs/name/gammastrategies/thena"
-        }
-    }
-}
+DEPLOYMENTS = [
+    (Protocol.UNISWAP, Chain.MAINNET),
+    (Protocol.UNISWAP, Chain.ARBITRUM),
+    (Protocol.UNISWAP, Chain.OPTIMISM),
+    (Protocol.UNISWAP, Chain.POLYGON),
+    (Protocol.UNISWAP, Chain.BSC),
+    (Protocol.UNISWAP, Chain.CELO),
+    (Protocol.QUICKSWAP, Chain.POLYGON),
+    (Protocol.ZYBERSWAP, Chain.ARBITRUM),
+    (Protocol.THENA, Chain.BSC),
+]
 
 THEGRAPH_INDEX_NODE_URL = "https://api.thegraph.com/index-node/graphql"
 ETH_BLOCKS_SUBGRAPH_URL = (
@@ -138,139 +43,79 @@ ETH_BLOCKS_SUBGRAPH_URL = (
 )
 UNI_V2_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/ianlapham/uniswapv2"
 
+
 DEX_SUBGRAPH_URLS = {
     Protocol.UNISWAP: {
-        Chain.MAINNET: dex_subgraphs[Protocol.UNISWAP][Chain.MAINNET][
-            os.environ.get("UNISWAP_SUBGRAPH_MAINNET", "prod")
-        ],
-        Chain.POLYGON: dex_subgraphs[Protocol.UNISWAP][Chain.POLYGON][
-            os.environ.get("UNISWAP_SUBGRAPH_POLYGON", "prod")
-        ],
-        Chain.ARBITRUM: dex_subgraphs[Protocol.UNISWAP][Chain.ARBITRUM][
-            os.environ.get("UNISWAP_SUBGRAPH_ARBITRUM", "prod")
-        ],
-        Chain.OPTIMISM: dex_subgraphs[Protocol.UNISWAP][Chain.OPTIMISM][
-            os.environ.get("UNISWAP_SUBGRAPH_OPTIMISM", "prod")
-        ],
-        Chain.CELO: dex_subgraphs[Protocol.UNISWAP][Chain.CELO][
-            os.environ.get("UNISWAP_SUBGRAPH_CELO", "prod")
-        ],
-        Chain.BSC: dex_subgraphs[Protocol.UNISWAP][Chain.BSC][
-            os.environ.get("UNISWAP_SUBGRAPH_BSC", "prod")
-        ],
+        Chain.MAINNET: get_config("UNISWAP_MAINNET_SUBGRAPH_URL"),
+        Chain.POLYGON: get_config("UNISWAP_POLYGON_SUBGRAPH_URL"),
+        Chain.ARBITRUM: get_config("UNISWAP_ARBITRUM_SUBGRAPH_URL"),
+        Chain.OPTIMISM: get_config("UNISWAP_OPTIMISM_SUBGRAPH_URL"),
+        Chain.CELO: get_config("UNISWAP_CELO_SUBGRAPH_URL"),
+        Chain.BSC: get_config("UNISWAP_BSC_SUBGRAPH_URL"),
     },
     Protocol.QUICKSWAP: {
-        Chain.POLYGON: dex_subgraphs[Protocol.QUICKSWAP][Chain.POLYGON][
-            os.environ.get("QUICKSWAP_SUBGRAPH_POLYGON", "prod")
-        ],
+        Chain.POLYGON: get_config("QUICKSWAP_POLYGON_SUBGRAPH_URL"),
     },
     Protocol.ZYBERSWAP: {
-        Chain.ARBITRUM: dex_subgraphs[Protocol.ZYBERSWAP][Chain.ARBITRUM][
-            os.environ.get("ZYBERSWAP_SUBGRAPH_ARBITRUM", "prod")
-        ],
+        Chain.ARBITRUM: get_config("ZYBERSWAP_ARBITRUM_SUBGRAPH_URL"),
     },
     Protocol.THENA: {
-        Chain.BSC: dex_subgraphs[Protocol.THENA][Chain.BSC][
-            os.environ.get("THENA_SUBGRAPH_BSC", "prod")
-        ],
+        Chain.BSC: get_config("THENA_BSC_SUBGRAPH_URL"),
     },
 }
 
 DEX_HYPEPOOL_SUBGRAPH_URLS = {
     Protocol.UNISWAP: {
-        Chain.MAINNET: hype_pool_subgraphs[Protocol.UNISWAP][Chain.MAINNET][
-            os.environ.get("UNISWAP_HP_SUBGRAPH_MAINNET", "prod")
-        ],
-        Chain.POLYGON: hype_pool_subgraphs[Protocol.UNISWAP][Chain.POLYGON][
-            os.environ.get("UNISWAP_HP_SUBGRAPH_POLYGON", "prod")
-        ],
-        Chain.ARBITRUM: hype_pool_subgraphs[Protocol.UNISWAP][Chain.ARBITRUM][
-            os.environ.get("UNISWAP_HP_SUBGRAPH_ARBITRUM", "prod")
-        ],
-        Chain.OPTIMISM: hype_pool_subgraphs[Protocol.UNISWAP][Chain.OPTIMISM][
-            os.environ.get("UNISWAP_HP_SUBGRAPH_OPTIMISM", "prod")
-        ],
-        Chain.CELO: hype_pool_subgraphs[Protocol.UNISWAP][Chain.CELO][
-            os.environ.get("UNISWAP_HP_SUBGRAPH_CELO", "prod")
-        ],
-        Chain.BSC: hype_pool_subgraphs[Protocol.UNISWAP][Chain.BSC][
-            os.environ.get("UNISWAP_HP_SUBGRAPH_BSC", "prod")
-        ],
+        Chain.MAINNET: get_config("UNISWAP_MAINNET_HP_SUBGRAPH_URL"),
+        Chain.POLYGON: get_config("UNISWAP_POLYGON_HP_SUBGRAPH_URL"),
+        Chain.ARBITRUM: get_config("UNISWAP_ARBITRUM_HP_SUBGRAPH_URL"),
+        Chain.OPTIMISM: get_config("UNISWAP_OPTIMISM_HP_SUBGRAPH_URL"),
+        Chain.CELO: get_config("UNISWAP_CELO_HP_SUBGRAPH_URL"),
+        Chain.BSC: get_config("UNISWAP_BSC_HP_SUBGRAPH_URL"),
     },
     Protocol.QUICKSWAP: {
-        Chain.POLYGON: hype_pool_subgraphs[Protocol.QUICKSWAP][Chain.POLYGON][
-            os.environ.get("QUICKSWAP_HP_SUBGRAPH_POLYGON", "prod")
-        ],
+        Chain.POLYGON: get_config("QUICKSWAP_POLYGON_HP_SUBGRAPH_URL"),
     },
     Protocol.ZYBERSWAP: {
-        Chain.ARBITRUM: hype_pool_subgraphs[Protocol.ZYBERSWAP][Chain.ARBITRUM][
-            os.environ.get("ZYBERSWAP_HP_SUBGRAPH_ARBITRUM", "prod")
-        ],
+        Chain.ARBITRUM: get_config("ZYBERSWAP_ARBITRUM_HP_SUBGRAPH_URL"),
     },
     Protocol.THENA: {
-        Chain.BSC: hype_pool_subgraphs[Protocol.THENA][Chain.BSC][
-            os.environ.get("THENA_HP_SUBGRAPH_BSC", "prod")
-        ],
+        Chain.BSC: get_config("THENA_BSC_HP_SUBGRAPH_URL"),
     },
 }
 
 GAMMA_SUBGRAPH_URLS = {
     Protocol.UNISWAP: {
-        Chain.MAINNET: gamma_subgraphs[Protocol.UNISWAP][Chain.MAINNET][
-            os.environ.get("GAMMA_SUBGRAPH_MAINNET", "prod")
-        ],
-        Chain.POLYGON: gamma_subgraphs[Protocol.UNISWAP][Chain.POLYGON][
-            os.environ.get("GAMMA_SUBGRAPH_POLYGON", "prod")
-        ],
-        Chain.ARBITRUM: gamma_subgraphs[Protocol.UNISWAP][Chain.ARBITRUM][
-            os.environ.get("GAMMA_SUBGRAPH_ARBITRUM", "prod")
-        ],
-        Chain.OPTIMISM: gamma_subgraphs[Protocol.UNISWAP][Chain.OPTIMISM][
-            os.environ.get("GAMMA_SUBGRAPH_OPTIMISM", "prod")
-        ],
-        Chain.CELO: gamma_subgraphs[Protocol.UNISWAP][Chain.CELO][
-            os.environ.get("GAMMA_SUBGRAPH_CELO", "prod")
-        ],
-        Chain.BSC: gamma_subgraphs[Protocol.UNISWAP][Chain.BSC][
-            os.environ.get("GAMMA_SUBGRAPH_BSC", "prod")
-        ],
+        Chain.MAINNET: get_config("UNISWAP_MAINNET_GAMMA_SUBGRAPH_URL"),
+        Chain.POLYGON: get_config("UNISWAP_POLYGON_GAMMA_SUBGRAPH_URL"),
+        Chain.ARBITRUM: get_config("UNISWAP_ARBITRUM_GAMMA_SUBGRAPH_URL"),
+        Chain.OPTIMISM: get_config("UNISWAP_OPTIMISM_GAMMA_SUBGRAPH_URL"),
+        Chain.CELO: get_config("UNISWAP_CELO_GAMMA_SUBGRAPH_URL"),
+        Chain.BSC: get_config("UNISWAP_BSC_GAMMA_SUBGRAPH_URL"),
     },
     Protocol.QUICKSWAP: {
-        Chain.POLYGON: gamma_subgraphs[Protocol.QUICKSWAP][Chain.POLYGON][
-            os.environ.get("GAMMA_QUICKSWAP_POLYGON_SUBGRAPH", "prod")
-        ],
+        Chain.POLYGON: get_config("QUICKSWAP_POLYGON_GAMMA_SUBGRAPH_URL"),
     },
     Protocol.ZYBERSWAP: {
-        Chain.ARBITRUM: gamma_subgraphs[Protocol.ZYBERSWAP][Chain.ARBITRUM][
-            os.environ.get("GAMMA_ZYBERSWAP_ARBITRUM_SUBGRAPH", "prod")
-        ],
+        Chain.ARBITRUM: get_config("ZYBERSWAP_ARBITRUM_GAMMA_SUBGRAPH_URL"),
     },
     Protocol.THENA: {
-        Chain.BSC: gamma_subgraphs[Protocol.THENA][Chain.BSC][
-            os.environ.get("GAMMA_THENA_BSC_SUBGRAPH", "prod")
-        ],
+        Chain.BSC: get_config("THENA_BSC_GAMMA_SUBGRAPH_URL"),
     },
 }
 
-
 XGAMMA_SUBGRAPH_URL = "https://api.thegraph.com/subgraphs/name/l0c4t0r/xgamma"
-
-
 TOKEN_LIST_URL = "https://tokens.coingecko.com/uniswap/all.json"
 
-DEFAULT_BBAND_INTERVALS = 20
-DEFAULT_TIMEZONE = os.environ.get("TIMEZONE", "UTC-5")
+DEFAULT_TIMEZONE = get_config("TIMEZONE")
 
-CHARTS_CACHE_TIMEOUT = int(os.environ.get("CHARTS_CACHE_TIMEOUT", 600))
-APY_CACHE_TIMEOUT = int(os.environ.get("APY_CACHE_TIMEOUT", 600))
-DASHBOARD_CACHE_TIMEOUT = int(os.environ.get("DASHBOARD_CACHE_TIMEOUT", 600))
-ALLDATA_CACHE_TIMEOUT = int(os.environ.get("ALLDATA_CACHE_TIMEOUT", 600))
-DB_CACHE_TIMEOUT = int(os.environ.get("DB_CACHE_TIMEOUT", 160))  # database calls cache
+CHARTS_CACHE_TIMEOUT = int(get_config("CHARTS_CACHE_TIMEOUT"))
+APY_CACHE_TIMEOUT = int(get_config("APY_CACHE_TIMEOUT"))
+DASHBOARD_CACHE_TIMEOUT = int(get_config("DASHBOARD_CACHE_TIMEOUT"))
+ALLDATA_CACHE_TIMEOUT = int(get_config("ALLDATA_CACHE_TIMEOUT"))
+DB_CACHE_TIMEOUT = int(get_config("DB_CACHE_TIMEOUT"))  # database calls cache
 
-EXCLUDED_HYPERVISORS = list(
-    filter(None, os.environ.get("EXCLUDED_HYPES", "").split(","))
-)
-FALLBACK_DAYS = int(os.environ.get("FALLBACK_DAYS", 90))
+EXCLUDED_HYPERVISORS = list(filter(None, get_config("EXCLUDED_HYPES").split(",")))
 
 legacy_stats = {
     "visr_distributed": 987998.1542393989,
@@ -279,14 +124,8 @@ legacy_stats = {
     "estimated_visr_annual_distribution_usd": 1197097.0895269862,
 }
 
-ALCHEMY_URLS = {
-    Chain.MAINNET: f"https://eth-mainnet.g.alchemy.com/v2/{os.environ.get('ALCHEMY_MAINNET_KEY', '')}",
-    Chain.POLYGON: f"https://polygon-mainnet.g.alchemy.com/v2/{os.environ.get('ALCHEMY_POLYGON_KEY', '')}",
-    Chain.OPTIMISM: f"https://opt-mainnet.g.alchemy.com/v2/{os.environ.get('ALCHEMY_OPTIMISM_KEY', '')}",
-}
-
-MONGO_DB_URL = os.environ.get("MONGO_DB_URL", "mongodb://localhost:27072")
-MONGO_DB_TIMEOUTMS = int(os.environ.get("MONGO_DB_TIMEOUTMS", 2000))
+MONGO_DB_URL = get_config("MONGO_DB_URL")
+MONGO_DB_TIMEOUTMS = int(get_config("MONGO_DB_TIMEOUTMS"))
 MONGO_DB_COLLECTIONS = {
     "static": {"id": True},  # no historic
     "returns": {"id": True},  # historic
@@ -308,4 +147,4 @@ CHAIN_NAME_CONVERSION = {
 # Max fees per rebalance to remove outliers
 GROSS_FEES_MAX = 10**6
 
-GQL_CLIENT_TIMEOUT = int(os.environ.get("GQL_CLIENT_TIMEOUT", 120))
+GQL_CLIENT_TIMEOUT = int(get_config("GQL_CLIENT_TIMEOUT"))

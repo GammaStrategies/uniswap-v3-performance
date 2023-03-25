@@ -1,8 +1,9 @@
 import datetime
+
 from v3data import UniswapV3Client
 from v3data.data import UniV3Data
-from v3data.utils import sqrtPriceX96_to_priceDecimal
 from v3data.enums import Chain, Protocol
+from v3data.utils import sqrtPriceX96_to_priceDecimal
 
 
 async def pools_from_symbol(symbol):
@@ -67,7 +68,6 @@ class Pool:
         return data
 
     async def hourly_prices(self, pools, hours):
-
         query = """
         query poolPrices($pools: [String!]!, $hours: Int!){
             pools(

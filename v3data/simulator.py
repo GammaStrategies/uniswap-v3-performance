@@ -72,10 +72,7 @@ class SimulatorData:
             }
         }
         """
-        variables = {
-            "token0": token0,
-            "token1": token1
-        }
+        variables = {"token0": token0, "token1": token1}
         response = await self.uniswap_client.query(query, variables)
         self.pool_data = response["data"]["pools"]
 
@@ -93,9 +90,7 @@ class SimulatorData:
             }
         }
         """
-        variables = {
-            "poolAddress": pool_address
-        }
+        variables = {"poolAddress": pool_address}
         response = await self.uniswap_client.query(query, variables)
         self.volume_data = response["data"]["poolDayDatas"]
 

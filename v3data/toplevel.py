@@ -1,15 +1,16 @@
 import asyncio
-import numpy as np
 from datetime import timedelta
+
+import numpy as np
 from pandas import DataFrame
 
 from v3data import GammaClient
-from v3data.pricing import token_price
-from v3data.utils import timestamp_ago, filter_address_by_chain
-from v3data.constants import DAYS_IN_PERIOD
 from v3data.config import EXCLUDED_HYPERVISORS, GROSS_FEES_MAX
+from v3data.constants import DAYS_IN_PERIOD
 from v3data.enums import Chain, Protocol
 from v3data.hype_fees.fees_yield import fee_returns_all
+from v3data.pricing import token_price
+from v3data.utils import filter_address_by_chain, timestamp_ago
 
 
 class TopLevelData:
