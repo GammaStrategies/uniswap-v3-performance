@@ -35,7 +35,7 @@ async def aggregate_stats(
                 f"{DEPLOYMENTS[index][0]}-{DEPLOYMENTS[index][1]}"
             )
 
-    aggregated_results = sum(valid_results[:1], valid_results[0])
+    aggregated_results = sum(valid_results[1:], valid_results[0])
 
     return AggregateStatsDeploymentInfoOutput(
         totalValueLockedUSD=aggregated_results.totalValueLockedUSD,
