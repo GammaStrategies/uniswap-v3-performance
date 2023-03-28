@@ -21,7 +21,7 @@ POOLS = {
         },
     },
     Chain.OPTIMISM: {
-        "USDC_WETH": {
+        "WETH_USDC": {
             "protocol": Protocol.UNISWAP,
             "address": "0x85149247691df622eaf1a8bd0cafd40bc45154a9",
         },
@@ -88,12 +88,12 @@ POOL_PATHS = {
         # OP
         "0x4200000000000000000000000000000000000042": [
             (POOLS[Chain.OPTIMISM]["WETH_OP"], 0),
-            (POOLS[Chain.OPTIMISM]["USDC_WETH"], 0),
+            (POOLS[Chain.OPTIMISM]["WETH_USDC"], 1),
         ],
         # MOCK-OPT
         "0x601e471de750cdce1d5a2b8e6e671409c8eb2367": [
             (POOLS[Chain.OPTIMISM]["WETH_OP"], 0),
-            (POOLS[Chain.OPTIMISM]["USDC_WETH"], 0),
+            (POOLS[Chain.OPTIMISM]["WETH_USDC"], 1),
         ],
     },
     Chain.POLYGON: {
