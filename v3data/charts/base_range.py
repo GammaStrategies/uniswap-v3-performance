@@ -1,13 +1,12 @@
+from datetime import timedelta
+
 import numpy as np
 import pandas as pd
 
-from datetime import timedelta
-
 from v3data import GammaClient
+from v3data.enums import Chain, Protocol
 from v3data.pools import Pool
 from v3data.utils import tick_to_priceDecimal, timestamp_ago
-from v3data.enums import Chain, Protocol
-
 
 BASE_TOKEN_PRIORITY = {
     "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": 1,  # USDC
@@ -24,7 +23,9 @@ OVERRIDE_TS = [1625162739, 1625332777, 1627458476]
 
 
 class BaseLimit:
-    def __init__(self, hours, protocol: Protocol, chart=True, chain: Chain = Chain.MAINNET):
+    def __init__(
+        self, hours, protocol: Protocol, chart=True, chain: Chain = Chain.MAINNET
+    ):
         self.protocol = protocol
         self.chain = chain
         self.hours = hours
@@ -34,7 +35,6 @@ class BaseLimit:
         self.pool_hourly = {}
 
     async def _get_pool_data(self, pool_addresses):
-
         pool = Pool(self.protocol, self.chain)
         pool_data = await pool.hourly_prices(pool_addresses, self.hours)
 

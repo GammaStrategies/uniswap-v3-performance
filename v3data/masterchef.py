@@ -1,7 +1,7 @@
 from v3data import GammaClient
 from v3data.constants import YEAR_SECONDS
 from v3data.enums import Chain, Protocol
-from v3data.pricing import token_price_from_address
+from v3data.pricing import token_prices
 
 
 class MasterchefData:
@@ -44,7 +44,7 @@ class MasterchefData:
         query = """
         query userRewards($userAddress: String!){
             account(id: $userAddress) {
-                masterChefPoolAccounts {
+                mcPoolAccounts {
                     amount
                     masterChefPool {
                         poolId
@@ -77,12 +77,9 @@ class MasterchefInfo(MasterchefData):
             await self._get_masterchef_data()
 
         info = {}
-
+        prices = await token_prices(self.chain)
         for masterchef in self.data:
-            rewardTokenPrice = await token_price_from_address(
-                self.chain, masterchef["rewardToken"]["id"]
-            )
-            rewardTokenPriceUsdc = rewardTokenPrice["token_in_usdc"]
+            reward_token_price = prices.get(masterchef["rewardToken"]["id"], 0)
             reward_per_second = (
                 int(
                     masterchef["rewardPerBlock"]
@@ -94,7 +91,7 @@ class MasterchefInfo(MasterchefData):
             for pool in masterchef["pools"]:
                 try:
                     apr = (
-                        rewardTokenPriceUsdc
+                        reward_token_price
                         * reward_per_second
                         * (int(pool["allocPoint"]) / int(masterchef["totalAllocPoint"]))
                         * YEAR_SECONDS
@@ -138,7 +135,7 @@ class UserRewards(MasterchefData):
             return {}
 
         info = {}
-        for pool in self.data["masterChefPoolAccounts"]:
+        for pool in self.data["mcPoolAccounts"]:
             hypervisor_id = pool["masterChefPool"]["hypervisor"]["id"]
             hypervisor_symbol = pool["masterChefPool"]["hypervisor"]["symbol"]
             hypervisor_decimal = 18

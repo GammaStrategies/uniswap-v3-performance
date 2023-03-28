@@ -3,7 +3,7 @@
 from v3data import GammaClient
 from v3data.constants import YEAR_SECONDS
 from v3data.enums import Chain, Protocol
-from v3data.pricing import token_price_from_address
+from v3data.pricing import token_prices
 
 
 class MasterchefV2Data:
@@ -132,7 +132,7 @@ class MasterchefV2Info(MasterchefV2Data):
 
         info = {}
 
-        pricing = {}
+        pricing = await token_prices(self.chain)
 
         for masterChef in self.data:
             pool_info = {}
@@ -150,15 +150,8 @@ class MasterchefV2Info(MasterchefV2Data):
                     )
 
                     reward_token_price = pricing.get(
-                        rewarder_pool["rewarder"]["rewardToken"]["id"]
+                        rewarder_pool["rewarder"]["rewardToken"]["id"], 0
                     )
-                    if not reward_token_price:
-                        reward_token_price = await token_price_from_address(
-                            self.chain, rewarder_pool["rewarder"]["rewardToken"]["id"]
-                        )
-                        pricing[
-                            rewarder_pool["rewarder"]["rewardToken"]["id"]
-                        ] = reward_token_price
 
                     total_alloc_point = int(
                         rewarder_pool["rewarder"]["totalAllocPoint"]
@@ -182,7 +175,7 @@ class MasterchefV2Info(MasterchefV2Data):
 
                     # Weighted reward_per_second_usdc
                     reward_per_second_usdc += (
-                        weighted_reward_per_second * reward_token_price["token_in_usdc"]
+                        weighted_reward_per_second * reward_token_price
                     )
 
                 try:
@@ -205,7 +198,6 @@ class MasterchefV2Info(MasterchefV2Data):
                 }
 
             info[masterChef["id"]] = {"pools": pool_info}
-
         return info
 
 

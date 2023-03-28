@@ -6,7 +6,7 @@ from v3data.config import GROSS_FEES_MAX, legacy_stats
 from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
 from v3data.enums import Chain, Protocol
 from v3data.gamma import GammaCalculations, ProtocolFeesCalculations
-from v3data.pricing import token_price
+from v3data.pricing import gamma_price
 from v3data.rewardshypervisor import RewardsHypervisorInfo
 from v3data.toplevel import TopLevelData
 from v3data.utils import timestamp_ago
@@ -153,12 +153,9 @@ class Dashboard:
         self.rewards_hypervisor_data = {"rewardHypervisor": data["rewardHypervisor"]}
 
     async def info(self, timezone):
-        _, gamma_prices = await asyncio.gather(
-            self._get_data(timezone), token_price("GAMMA")
+        _, gamma_price_usd = await asyncio.gather(
+            self._get_data(timezone), gamma_price()
         )
-
-        gamma_price_usd = gamma_prices["token_in_usdc"]
-        gamma_in_eth = gamma_prices["token_in_native"]
 
         gamma_calcs = GammaCalculations(self.chain, days=30)
         gamma_calcs.data = self.gamma_data
@@ -213,7 +210,6 @@ class Dashboard:
             "uniswapFeesGenerated": top_level_data["fees_claimed"],
             "uniswapFeesBasedApr": f"{top_level_returns['feeApr']:.0%}",
             "gammaPrice": gamma_price_usd,
-            "gammaInEth": gamma_in_eth,
             "gammaPerXgamma": rewards_info["gamma_per_xgamma"],
             "id": 2,
         }
@@ -223,7 +219,6 @@ class Dashboard:
             {
                 "feeStatsAmountVisr": dashboard_stats["feeStatsAmountGamma"],
                 "visrPrice": dashboard_stats["gammaPrice"],
-                "visrInEth": dashboard_stats["gammaInEth"],
                 "visrPerVvisr": dashboard_stats["gammaPerXgamma"],
             }
         )
