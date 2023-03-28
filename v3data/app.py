@@ -8,7 +8,6 @@ from fastapi_cache.decorator import cache
 
 from v3data.charts.daily import DailyChart
 from v3data.config import CHARTS_CACHE_TIMEOUT
-from v3data.pools import pools_from_symbol
 from v3data.routers import (
     allDeployments,
     arbitrum,
@@ -66,11 +65,6 @@ async def daily_flows_chart_data(days: int = 20):
 async def daily_hypervisor_flows_chart_data(hypervisor_address: str, days: int = 20):
     daily = DailyChart(days)
     return {"data": await daily.asset_flows(hypervisor_address)}
-
-
-@app.get("/pools/{token}")
-async def uniswap_pools(token: str):
-    return {"pools": await pools_from_symbol(token)}
 
 
 @app.on_event("startup")

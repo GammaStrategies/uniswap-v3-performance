@@ -9,7 +9,7 @@ from v3data.config import EXCLUDED_HYPERVISORS, GROSS_FEES_MAX
 from v3data.constants import DAYS_IN_PERIOD
 from v3data.enums import Chain, Protocol
 from v3data.hype_fees.fees_yield import fee_returns_all
-from v3data.pricing import token_price
+from v3data.pricing import gamma_price
 from v3data.utils import filter_address_by_chain, timestamp_ago
 
 
@@ -147,7 +147,7 @@ class TopLevelData:
 
     async def recent_fees(self, hours=24):
         data, gamma_prices = await asyncio.gather(
-            self.get_recent_rebalance_data(hours), token_price("GAMMA")
+            self.get_recent_rebalance_data(hours), gamma_price()
         )
         gamma_price_usd = gamma_prices["token_in_usdc"]
         df_fees = DataFrame(data, dtype=np.float64)

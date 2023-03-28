@@ -8,7 +8,7 @@ from v3data import GammaClient
 from v3data.config import DEFAULT_TIMEZONE, GROSS_FEES_MAX
 from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
 from v3data.enums import Chain, Protocol
-from v3data.pricing import token_price
+from v3data.pricing import gamma_price
 from v3data.utils import timestamp_ago
 
 
@@ -207,12 +207,12 @@ class GammaInfo(GammaCalculations):
         super().__init__(chain=chain, days=days)
 
     async def output(self):
-        gamma_pricing, _ = await asyncio.gather(token_price("GAMMA"), self._get_data())
+        price_gamma, _ = await asyncio.gather(gamma_price(), self._get_data())
 
         return {
             "info": await self.basic_info(get_data=False),
             "yield": await self.gamma_yield(get_data=False),
-            "price": gamma_pricing,
+            "price": price_gamma,
         }
 
 
@@ -274,7 +274,7 @@ class ProtocolFeesCalculations(ProtocolFeesData):
 
     def _empty_fees(self):
         results = {}
-        for period, days in DAYS_IN_PERIOD.items():
+        for period, _ in DAYS_IN_PERIOD.items():
             results[period] = {}
             results[period]["collected_usd"] = 0
             results[period]["collected_gamma"] = 0
@@ -296,8 +296,7 @@ class ProtocolFeesCalculations(ProtocolFeesData):
 
         df_rebalances = DataFrame(rebalances, dtype=np.float64)
 
-        gamma_prices = await token_price("GAMMA")
-        gamma_in_usd = gamma_prices["token_in_usdc"]
+        gamma_in_usd = await gamma_price()
 
         gamma_staked_usd = (
             gamma_in_usd * int(self.data["rewardHypervisor"]["totalGamma"]) / 10**18

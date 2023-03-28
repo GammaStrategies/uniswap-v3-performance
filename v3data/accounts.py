@@ -3,7 +3,7 @@ import asyncio
 from v3data import GammaClient
 from v3data.constants import XGAMMA_ADDRESS
 from v3data.enums import Chain, Protocol
-from v3data.pricing import token_price
+from v3data.pricing import gamma_price
 
 
 class AccountData:
@@ -13,6 +13,7 @@ class AccountData:
         self.address = account_address.lower()
         self.reward_hypervisor_address = XGAMMA_ADDRESS
         self.decimal_factor = 10**18
+        self.data: dict
 
     async def _get_data(self):
         query = """
@@ -99,9 +100,11 @@ class AccountInfo(AccountData):
             hypervisor_address = share["hypervisor"]["id"]
             initial_token0 = int(share["initialToken0"])
             initial_token1 = int(share["initialToken1"])
-            initial_USD = float(share["initialUSD"])
-            shareOfPool = int(share["shares"]) / int(share["hypervisor"]["totalSupply"])
-            tvl_USD = float(share["hypervisor"]["tvlUSD"])
+            initial_usd = float(share["initialUSD"])
+            share_of_pool = int(share["shares"]) / int(
+                share["hypervisor"]["totalSupply"]
+            )
+            tvl_usd = float(share["hypervisor"]["tvlUSD"])
 
             conversion = share["hypervisor"]["conversion"]
 
@@ -119,23 +122,25 @@ class AccountInfo(AccountData):
                 token = 0
                 base = 0
 
-            initial_token_current_USD = (
+            initial_token_current_usd = (
                 token * price_token_in_base * price_base_in_usd
             ) + (base * price_base_in_usd)
-            current_USD = shareOfPool * tvl_USD
-            hypervisorReturnsPercentage = (current_USD / initial_token_current_USD) - 1
+            current_usd = share_of_pool * tvl_usd
+            hypervisor_returns_percentage = (
+                current_usd / initial_token_current_usd
+            ) - 1
 
             returns[hypervisor_address] = {
-                "initialTokenUSD": initial_USD,
-                "initialTokenCurrentUSD": initial_token_current_USD,
-                "currentUSD": current_USD,
-                "netMarketReturnsUSD": current_USD - initial_USD,
-                "netMarketReturnsPercentage": f"{(current_USD /initial_USD) - 1:.2%}"
-                if initial_USD > 0
+                "initialTokenUSD": initial_usd,
+                "initialTokenCurrentUSD": initial_token_current_usd,
+                "currentUSD": current_usd,
+                "netMarketReturnsUSD": current_usd - initial_usd,
+                "netMarketReturnsPercentage": f"{(current_usd /initial_usd) - 1:.2%}"
+                if initial_usd > 0
                 else "N/A",
-                "hypervisorReturnsUSD": current_USD - initial_token_current_USD,
-                "hypervisorReturnsPercentage": f"{hypervisorReturnsPercentage:.2%}"
-                if initial_token_current_USD > 0
+                "hypervisorReturnsUSD": current_usd - initial_token_current_usd,
+                "hypervisorReturnsPercentage": f"{hypervisor_returns_percentage:.2%}"
+                if initial_token_current_usd > 0
                 else "N/A",
             }
 
@@ -182,36 +187,36 @@ class AccountInfo(AccountData):
                 ):
                     xgamma_shares = int(shares["shares"])
 
-            totalGammaStaked = int(xgamma_data["rewardHypervisor"]["totalGamma"])
-            xgamma_virtual_price = totalGammaStaked / int(
+            total_gamma_staked = int(xgamma_data["rewardHypervisor"]["totalGamma"])
+            xgamma_virtual_price = total_gamma_staked / int(
                 xgamma_data["rewardHypervisor"]["totalSupply"]
             )
 
             # Get pricing
-            gamma_pricing = await token_price("GAMMA")
+            gamma_price_usd = await gamma_price()
 
-            gammaStaked = (xgamma_shares * xgamma_virtual_price) / self.decimal_factor
-            gammaDeposited = (
+            gamma_staked = (xgamma_shares * xgamma_virtual_price) / self.decimal_factor
+            gamma_deposited = (
                 int(xgamma_data["account"]["gammaDeposited"]) / self.decimal_factor
             )
-            gammaEarnedRealized = (
+            gamma_earned_realized = (
                 int(xgamma_data["account"]["gammaEarnedRealized"]) / self.decimal_factor
             )
-            gammaStakedShare = gammaStaked / (totalGammaStaked / self.decimal_factor)
-            pendingGammaEarned = gammaStaked - gammaDeposited
-            totalGammaEarned = gammaStaked - gammaDeposited + gammaEarnedRealized
+            gamma_staked_share = gamma_staked / (
+                total_gamma_staked / self.decimal_factor
+            )
+            pending_gamma_earned = gamma_staked - gamma_deposited
+            total_gamma_earned = gamma_staked - gamma_deposited + gamma_earned_realized
             account_info.update(
                 {
-                    "gammaStaked": gammaStaked,
-                    "gammaStakedUSD": gammaStaked * gamma_pricing["token_in_usdc"],
-                    "gammaDeposited": gammaDeposited,
-                    "pendingGammaEarned": pendingGammaEarned,
-                    "pendingGammaEarnedUSD": pendingGammaEarned
-                    * gamma_pricing["token_in_usdc"],
-                    "totalGammaEarned": totalGammaEarned,
-                    "totalGammaEarnedUSD": totalGammaEarned
-                    * gamma_pricing["token_in_usdc"],
-                    "gammaStakedShare": f"{gammaStakedShare:.2%}",
+                    "gammaStaked": gamma_staked,
+                    "gammaStakedUSD": gamma_staked * gamma_price_usd,
+                    "gammaDeposited": gamma_deposited,
+                    "pendingGammaEarned": pending_gamma_earned,
+                    "pendingGammaEarnedUSD": pending_gamma_earned * gamma_price_usd,
+                    "totalGammaEarned": total_gamma_earned,
+                    "totalGammaEarnedUSD": total_gamma_earned * gamma_price_usd,
+                    "gammaStakedShare": f"{gamma_staked_share:.2%}",
                     "xgammaAmount": xgamma_shares / self.decimal_factor,
                 }
             )
@@ -232,9 +237,9 @@ class AccountInfo(AccountData):
                     continue
                 hypervisor_id = hypervisor["hypervisor"]["id"]
                 shares = int(hypervisor["shares"])
-                totalSupply = int(hypervisor["hypervisor"]["totalSupply"])
-                shareOfSupply = shares / totalSupply if totalSupply > 0 else 0
-                tvlUSD = float(hypervisor["hypervisor"]["tvlUSD"])
+                total_supply = int(hypervisor["hypervisor"]["totalSupply"])
+                share_of_supply = shares / total_supply if total_supply > 0 else 0
+                tvl_usd = float(hypervisor["hypervisor"]["tvlUSD"])
                 decimal0 = int(hypervisor["hypervisor"]["pool"]["token0"]["decimals"])
                 decimal1 = int(hypervisor["hypervisor"]["pool"]["token1"]["decimals"])
                 tvl0_decimal = float(hypervisor["hypervisor"]["tvl0"]) / 10**decimal0
@@ -242,10 +247,10 @@ class AccountInfo(AccountData):
 
                 account_info[hypervisor_id] = {
                     "shares": shares,
-                    "shareOfSupply": shareOfSupply,
-                    "balance0": tvl0_decimal * shareOfSupply,
-                    "balance1": tvl1_decimal * shareOfSupply,
-                    "balanceUSD": tvlUSD * shareOfSupply,
+                    "shareOfSupply": share_of_supply,
+                    "balance0": tvl0_decimal * share_of_supply,
+                    "balance1": tvl1_decimal * share_of_supply,
+                    "balanceUSD": tvl_usd * share_of_supply,
                     "returns": returns[hypervisor_id],
                 }
 

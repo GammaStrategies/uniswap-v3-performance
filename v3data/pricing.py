@@ -1,242 +1,251 @@
-from abc import ABC, abstractmethod
+import asyncio
+from collections import defaultdict
 
 from v3data import UniswapV3Client
 from v3data.enums import Chain, Protocol
 from v3data.utils import sqrtPriceX96_to_priceDecimal
 
+POOLS = {
+    Chain.MAINNET: {
+        "USDC_WETH": {
+            "protocol": Protocol.UNISWAP,
+            "address": "0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640",
+        },
+        "WETH_RPL": {
+            "protocol": Protocol.UNISWAP,
+            "address": "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
+        },
+        "GAMMA_WETH": {
+            "protocol": Protocol.UNISWAP,
+            "address": "0x4006bed7bf103d70a1c6b7f1cef4ad059193dc25",
+        },
+    },
+    Chain.OPTIMISM: {
+        "USDC_WETH": {
+            "protocol": Protocol.UNISWAP,
+            "address": "0x85149247691df622eaf1a8bd0cafd40bc45154a9",
+        },
+        "WETH_OP": {
+            "protocol": Protocol.UNISWAP,
+            "address": "0x68f5c0a2de713a54991e01858fd27a3832401849",
+        },
+    },
+    Chain.POLYGON: {
+        "WMATIC_USDC": {
+            "protocol": Protocol.QUICKSWAP,
+            "address": "0xae81fac689a1b4b1e06e7ef4a2ab4cd8ac0a087d",
+        },
+        "WMATIC_QI": {
+            "protocol": Protocol.QUICKSWAP,
+            "address": "0x5cd94ead61fea43886feec3c95b1e9d7284fdef3",
+        },
+        "WMATIC_QUICK": {
+            "protocol": Protocol.QUICKSWAP,
+            "address": "0x9f1a8caf3c8e94e43aa64922d67dff4dc3e88a42",
+        },
+        "WMATIC_DQUICK": {
+            "protocol": Protocol.QUICKSWAP,
+            "address": "0xb8d00c66accdc01e78fd7957bf24050162916ae2",
+        },
+        "WMATIC_GHST": {
+            "protocol": Protocol.QUICKSWAP,
+            "address": "0x80deece4befd9f27d2df88064cf75f080d3ce1b2",
+        },
+        "WMATIC_ANKR": {
+            "protocol": Protocol.QUICKSWAP,
+            "address": "0x2f2dd65339226df7441097a710aba0f493879579",
+        },
+        "USDC_DAVOS": {
+            "protocol": Protocol.QUICKSWAP,
+            "address": "0xfb0bc232cd11dbe804b489860c470b7f9cc80d9f",
+        },
+        "USDC_GIDDY": {
+            "protocol": Protocol.QUICKSWAP,
+            "address": "0x65c30f39b880bdd9616280450c4b41cc74b438b7",
+        },
+        "WMATIC_LCD": {
+            "protocol": Protocol.QUICKSWAP,
+            "address": "0xd9c2c978915b907df04972cb3f577126fe55143c",
+        },
+    },
+}
 
-class DexPriceData(ABC):
+
+POOL_PATHS = {
+    Chain.MAINNET: {
+        # GAMMA
+        "0x6bea7cfef803d1e3d5f7c0103f7ded065644e197": [
+            (POOLS[Chain.MAINNET]["GAMMA_WETH"], 1),
+            (POOLS[Chain.MAINNET]["USDC_WETH"], 0),
+        ],
+        # RPL
+        "0xd33526068d116ce69f19a9ee46f0bd304f21a51f": [
+            (POOLS[Chain.MAINNET]["WETH_RPL"], 0),
+            (POOLS[Chain.MAINNET]["USDC_WETH"], 0),
+        ],
+    },
+    Chain.OPTIMISM: {
+        # OP
+        "0x4200000000000000000000000000000000000042": [
+            (POOLS[Chain.OPTIMISM]["WETH_OP"], 0),
+            (POOLS[Chain.OPTIMISM]["USDC_WETH"], 0),
+        ],
+        # MOCK-OPT
+        "0x601e471de750cdce1d5a2b8e6e671409c8eb2367": [
+            (POOLS[Chain.OPTIMISM]["WETH_OP"], 0),
+            (POOLS[Chain.OPTIMISM]["USDC_WETH"], 0),
+        ],
+    },
+    Chain.POLYGON: {
+        # WMATIC
+        "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270": [
+            (POOLS[Chain.POLYGON]["WMATIC_USDC"], 1)
+        ],
+        # QI
+        "0x580a84c73811e1839f75d86d75d88cca0c241ff4": [
+            (POOLS[Chain.POLYGON]["WMATIC_QI"], 0),
+            (POOLS[Chain.POLYGON]["WMATIC_USDC"], 1),
+        ],
+        # QUICK
+        "0xb5c064f955d8e7f38fe0460c556a72987494ee17": [
+            (POOLS[Chain.POLYGON]["WMATIC_QUICK"], 0),
+            (POOLS[Chain.POLYGON]["WMATIC_USDC"], 1),
+        ],
+        # dQUICK
+        "0x958d208cdf087843e9ad98d23823d32e17d723a1": [
+            (POOLS[Chain.POLYGON]["WMATIC_DQUICK"], 0),
+            (POOLS[Chain.POLYGON]["WMATIC_USDC"], 1),
+        ],
+        # GHST
+        "0x385eeac5cb85a38a9a07a70c73e0a3271cfb54a7": [
+            (POOLS[Chain.POLYGON]["WMATIC_GHST"], 0),
+            (POOLS[Chain.POLYGON]["WMATIC_USDC"], 1),
+        ],
+        # ANKR
+        "0x101a023270368c0d50bffb62780f4afd4ea79c35": [
+            (POOLS[Chain.POLYGON]["WMATIC_ANKR"], 0),
+            (POOLS[Chain.POLYGON]["WMATIC_USDC"], 1),
+        ],
+        # DAVOS
+        "0xec38621e72d86775a89c7422746de1f52bba5320": [
+            (POOLS[Chain.POLYGON]["USDC_DAVOS"], 0)
+        ],
+        # GIDDY
+        "0x67eb41a14c0fe5cd701fc9d5a3d6597a72f641a6": [
+            (POOLS[Chain.POLYGON]["USDC_GIDDY"], 0)
+        ],
+        # LCD
+        "0xc2a45fe7d40bcac8369371b08419ddafd3131b4a": [
+            (POOLS[Chain.POLYGON]["WMATIC_LCD"], 0),
+            (POOLS[Chain.POLYGON]["WMATIC_USDC"], 1),
+        ],
+    },
+}
+
+
+class DexPriceData:
     """Base class for dex prices"""
 
-    def __init__(self, protocol: Protocol, pool: str, chain: Chain) -> None:
+    def __init__(self, protocol: Protocol, chain: Chain, pools: [str]) -> None:
+        self.protocol = protocol
+        self.chain = chain
         self.uniswap_client = UniswapV3Client(protocol, chain)
-        self.pool = pool
+        self.pools = pools
         self.pool_query = ""
-        self.native_query = ""
-        self.pool_data = {}
-        self.native_data = {}
+        self.data = {}
 
-    @abstractmethod
     def _init_queries(self):
-        """Set queries"""
-        # self.pool_query = ""
-        # self.native_query = ""
-        pass
+        self.pool_query = """
+        query tokenPrice($pools: [String!]!){
+            pools(
+                where: {
+                    id_in: $pools
+                }
+            ){
+                id
+                sqrtPrice
+                token0{
+                    symbol
+                    decimals
+                }
+                token1{
+                    symbol
+                    decimals
+                }
+            }
+        }
+        """
+
+    async def get_data(self):
+        self._init_queries()
+        variables = {"pools": self.pools}
+        response = await self.uniswap_client.query(self.pool_query, variables)
+        self.data = response["data"]["pools"]
+
+
+class DexPrice:
+    def __init__(self, chain: Chain):
+        self.chain_prices: dict
+        self.token_prices: dict
+        self.chain = chain
 
     async def _get_data(self):
-        self._init_queries()
-        if self.pool == "native":
-            await self._get_native_data()
-        else:
-            await self._get_pool_data()
+        pools_by_protocol = defaultdict(list)
+        for pool in POOLS[self.chain].values():
+            pools_by_protocol[pool["protocol"]].append(pool["address"])
 
-    async def _get_pool_data(self):
-        variables = {"id": self.pool}
-        response = await self.uniswap_client.query(self.pool_query, variables)
-        self.pool_data = response["data"]["pool"]
-        self.native_data = response["data"]["bundle"]
+        dex_clients = [
+            DexPriceData(protocol, self.chain, pools)
+            for protocol, pools in pools_by_protocol.items()
+        ]
 
-    async def _get_native_data(self):
-        response = await self.uniswap_client.query(self.native_query)
-        self.native_data = response["data"]["bundle"]
+        await asyncio.gather(*[client.get_data() for client in dex_clients])
 
-
-class UniV3PriceData(DexPriceData):
-    """Class for querying GAMMA related data"""
-
-    def __init__(self, pool: str, chain: Chain = Chain.MAINNET):
-        super().__init__(Protocol.UNISWAP, pool, chain)
-
-    def _init_queries(self):
-        self.pool_query = """
-        query tokenPrice($id: String!){
-            pool(
-                id: $id
-            ){
-                sqrtPrice
-                token0{
-                    symbol
-                    decimals
-                }
-                token1{
-                    symbol
-                    decimals
-                }
+        chain_prices = {}
+        for protocol_client in dex_clients:
+            chain_prices[protocol_client.protocol] = {
+                pool.pop("id"): pool for pool in protocol_client.data
             }
-            bundle(id:1){
-                nativePriceUSD: ethPriceUSD
-            }
-        }
-        """
+        self.chain_prices = chain_prices
 
-        self.native_query = """
-        query nativePrice{
-            bundle(id:1){
-                nativePriceUSD: ethPriceUSD
-            }
-        }
-        """
+    async def get_token_prices(self):
+        await self._get_data()
+        token_pricing = {}
+        for token, path in POOL_PATHS[self.chain].items():
+            price = 1
+            for pool in path:
+                pool_address = pool[0]["address"]
+                pool_protocol = pool[0]["protocol"]
+                pool_info = self.chain_prices[pool_protocol].get(pool_address)
 
+                if not pool_info:
+                    price = 0
+                    break
 
-class QuickswapV3PriceData(DexPriceData):
-    """Class for querying quickswap price data"""
+                sqrt_price_x96 = float(pool_info["sqrtPrice"])
+                decimal0 = int(pool_info["token0"]["decimals"])
+                decimal1 = int(pool_info["token1"]["decimals"])
 
-    def __init__(self, pool: str, chain: Chain = Chain.MAINNET):
-        super().__init__(Protocol.QUICKSWAP, pool, chain)
+                token_in_base = sqrtPriceX96_to_priceDecimal(
+                    sqrt_price_x96, decimal0, decimal1
+                )
+                if pool[1] == 0:
+                    token_in_base = 1 / token_in_base
 
-    def _init_queries(self):
-        self.pool_query = """
-        query tokenPrice($id: String!){
-            pool(
-                id: $id
-            ){
-                sqrtPrice
-                token0{
-                    symbol
-                    decimals
-                }
-                token1{
-                    symbol
-                    decimals
-                }
-            }
-            bundle(id:1){
-                nativePriceUSD: maticPriceUSD
-            }
-        }
-        """
+                price *= token_in_base
 
-        self.native_query = """
-        query nativePrice{
-            bundle(id:1){
-                nativePriceUSD: maticPriceUSD
-            }
-        }
-        """
+            token_pricing[token] = price
+
+        self.token_prices = token_pricing
 
 
-class UniV3Price:
-    def __init__(self, chain, protocol: Protocol, pool_address):
-        if protocol == Protocol.UNISWAP:
-            self.data = UniV3PriceData(pool_address, chain)
-        elif protocol == Protocol.QUICKSWAP:
-            self.data = QuickswapV3PriceData(pool_address, chain)
-
-    async def output(self, inverse=False):
-        await self.data._get_data()
-
-        if self.data.pool_data:
-            sqrt_priceX96 = float(self.data.pool_data["sqrtPrice"])
-            decimal0 = int(self.data.pool_data["token0"]["decimals"])
-            decimal1 = int(self.data.pool_data["token1"]["decimals"])
-
-            token_in_native = sqrtPriceX96_to_priceDecimal(
-                sqrt_priceX96, decimal0, decimal1
-            )
-            if inverse:
-                token_in_native = 1 / token_in_native
-        else:
-            token_in_native = 1
-
-        native_in_usdc = float(self.data.native_data["nativePriceUSD"])
-
-        return {
-            "token_in_usdc": token_in_native * native_in_usdc,
-            "token_in_native": token_in_native,
-        }
+async def gamma_price():
+    dex_pricing = DexPrice(Chain.MAINNET)
+    await dex_pricing.get_token_prices()
+    return dex_pricing.token_prices["0x6bea7cfef803d1e3d5f7c0103f7ded065644e197"]
 
 
-async def token_price(token: str):
-    if token == "GAMMA":
-        pool_address = "0x4006bed7bf103d70a1c6b7f1cef4ad059193dc25"
-    else:
-        return None
-
-    pricing = UniV3Price(Chain.MAINNET, Protocol.UNISWAP, pool_address)
-    return await pricing.output()
-
-
-async def token_price_from_address(chain: Chain, token_address: str):
-    pool_config = {
-        Chain.MAINNET: {
-            "0xd33526068d116ce69f19a9ee46f0bd304f21a51f": {
-                "protocol": Protocol.UNISWAP,
-                "pool_address": "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
-                "inverse": True,
-            }
-        },
-        Chain.OPTIMISM: {
-            "0x4200000000000000000000000000000000000042": {
-                "protocol": Protocol.UNISWAP,
-                "pool_address": "0x68f5c0a2de713a54991e01858fd27a3832401849",
-                "inverse": True,
-            },
-            "0x601e471de750cdce1d5a2b8e6e671409c8eb2367": {
-                "protocol": Protocol.UNISWAP,
-                "pool_address": "0x68f5c0a2de713a54991e01858fd27a3832401849",
-                "inverse": True,
-            },
-        },
-        Chain.POLYGON: {
-            "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270": {
-                # WMATIC
-                "protocol": Protocol.QUICKSWAP,
-                "pool_address": "native",
-                "inverse": False,
-            },
-            "0x580a84c73811e1839f75d86d75d88cca0c241ff4": {
-                "protocol": Protocol.QUICKSWAP,
-                # WMATIC/QI
-                "pool_address": "0x5cd94ead61fea43886feec3c95b1e9d7284fdef3",
-                "inverse": True,
-            },
-            "0xb5c064f955d8e7f38fe0460c556a72987494ee17": {
-                "protocol": Protocol.QUICKSWAP,
-                # WMATIC/QUICK
-                "pool_address": "0x9f1a8caf3c8e94e43aa64922d67dff4dc3e88a42",
-                "inverse": True,
-            },
-            "0x958d208cdf087843e9ad98d23823d32e17d723a1": {
-                "protocol": Protocol.QUICKSWAP,
-                # WMATIC/dQUICK
-                "pool_address": "0xb8d00c66accdc01e78fd7957bf24050162916ae2",
-                "inverse": True,
-            },
-            "0x385eeac5cb85a38a9a07a70c73e0a3271cfb54a7": {  # GHST
-                "protocol": Protocol.QUICKSWAP,
-                # WMATIC/GHST
-                "pool_address": "0x80deece4befd9f27d2df88064cf75f080d3ce1b2",
-                "inverse": True,
-            },
-            "0x101a023270368c0d50bffb62780f4afd4ea79c35": {  # ANKR
-                "protocol": Protocol.QUICKSWAP,
-                # WMATIC/ANKR
-                "pool_address": "0x2f2dd65339226df7441097a710aba0f493879579",
-                "inverse": True,
-            },
-            "0xec38621e72d86775a89c7422746de1f52bba5320": {  # DAVOS
-                "protocol": Protocol.QUICKSWAP,
-                # USDC/DAVOS
-                "pool_address": "0xfb0bc232cd11dbe804b489860c470b7f9cc80d9f",
-                "inverse": True,
-            },
-            "0x67eb41a14c0fe5cd701fc9d5a3d6597a72f641a6": {  # GIDDY
-                "protocol": Protocol.QUICKSWAP,
-                # USDC/GIDDY
-                "pool_address": "0x65c30f39b880bdd9616280450c4b41cc74b438b7",
-                "inverse": True,
-            },
-        },
-    }
-
-    config = pool_config.get(chain, {}).get(token_address, None)
-
-    if config:
-        pricing = UniV3Price(chain, config["protocol"], config["pool_address"])
-        price = await pricing.output(inverse=config["inverse"])
-    else:
-        price = {
-            "token_in_usdc": 0,
-            "token_in_native": 0,
-        }
-    return price
+async def token_prices(chain: Chain):
+    dex_pricing = DexPrice(chain)
+    await dex_pricing.get_token_prices()
+    return dex_pricing.token_prices
