@@ -126,9 +126,12 @@ class AccountInfo(AccountData):
                 token * price_token_in_base * price_base_in_usd
             ) + (base * price_base_in_usd)
             current_usd = share_of_pool * tvl_usd
+
             hypervisor_returns_percentage = (
-                current_usd / initial_token_current_usd
-            ) - 1
+                (current_usd / initial_token_current_usd) - 1
+                if initial_token_current_usd > 0
+                else 0
+            )
 
             returns[hypervisor_address] = {
                 "initialTokenUSD": initial_usd,
