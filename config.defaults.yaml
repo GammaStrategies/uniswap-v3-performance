@@ -51,3 +51,4 @@ EXCLUDED_HYPES: ""
 MONGO_DB_URL: mongodb://localhost:27072
 MONGO_DB_TIMEOUTMS: 2000
 
+RUN_FIRST_QUERY_TYPE: subgraph # database

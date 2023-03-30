@@ -8,12 +8,17 @@ import v3data.common.hypervisor
 import v3data.common.masterchef
 import v3data.common.masterchef_v2
 import v3data.common.users
-from v3data.config import ALLDATA_CACHE_TIMEOUT, APY_CACHE_TIMEOUT, DB_CACHE_TIMEOUT
-from v3data.enums import Chain, Protocol, QueryType
+from v3data.config import (
+    ALLDATA_CACHE_TIMEOUT,
+    APY_CACHE_TIMEOUT,
+    DB_CACHE_TIMEOUT,
+    RUN_FIRST_QUERY_TYPE,
+)
+from v3data.enums import Chain, Protocol
 
 PROTOCOL = Protocol.QUICKSWAP
 CHAIN = Chain.POLYGON
-RUN_FIRST = QueryType.SUBGRAPH
+RUN_FIRST = RUN_FIRST_QUERY_TYPE
 
 router = APIRouter(prefix="/quickswap/polygon")
 

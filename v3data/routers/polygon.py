@@ -6,12 +6,17 @@ import v3data.common.masterchef
 
 from fastapi import APIRouter, Response
 from fastapi_cache.decorator import cache
-from v3data.config import APY_CACHE_TIMEOUT, ALLDATA_CACHE_TIMEOUT, DB_CACHE_TIMEOUT
-from v3data.enums import Chain, Protocol, QueryType
+from v3data.config import (
+    APY_CACHE_TIMEOUT,
+    ALLDATA_CACHE_TIMEOUT,
+    DB_CACHE_TIMEOUT,
+    RUN_FIRST_QUERY_TYPE,
+)
+from v3data.enums import Chain, Protocol
 
 PROTOCOL = Protocol.UNISWAP
 CHAIN = Chain.POLYGON
-RUN_FIRST = QueryType.SUBGRAPH
+RUN_FIRST = RUN_FIRST_QUERY_TYPE
 
 router = APIRouter(prefix="/polygon")
 
