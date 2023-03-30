@@ -207,6 +207,10 @@ class db_returns_manager(db_collection_manager):
                 result[k]["symbol"] = v["symbol"]
                 # add impermanent
                 result[k]["impermanent"] = {
+                    "ini_block": v["ini_block"],
+                    "end_block": v["end_block"],
+                    "ini_timestamp": v["ini_timestamp"],
+                    "end_timestamp": v["end_timestamp"],
                     "lping": v["lping"],
                     "hodl_deposited": v["hodl_deposited"],
                     "hodl_fifty": v["hodl_fifty"],
@@ -392,8 +396,93 @@ class db_returns_manager(db_collection_manager):
 
         return result
 
-    # TODO: use a limited number of items back? ( $limit )
-    # TODO: return dict item with hypervisor id's as keys and 1 item list only ... to match others
+    async def get_impermanentDivergence_data(
+        self,
+        chain: Chain,
+        protocol: Protocol,
+        period: int,
+    ) -> dict:
+        # query database
+        dbdata = await self._get_data(
+            query=self.query_impermanentDivergence(
+                chain=chain,
+                protocol=protocol,
+                period=period,
+            )
+        )
+        # set database last update field as the maximum date found within the items returned
+        try:
+            db_lastUpdate = max([x["timestamp"] for x in dbdata])
+        except Exception:
+            # TODO: log error
+            db_lastUpdate = datetime.utcnow().timestamp()
+
+        # init result
+        result = dict()
+        # convert result to dict
+        for item in dbdata:
+            address = item.pop("address")
+            result[address] = {
+                "id": address,
+                "symbol": item["symbol"],
+                "lping": item["lping"],
+                "hodl_deposited": item["hodl_deposited"],
+                "hodl_fifty": item["hodl_fifty"],
+                "hodl_token0": item["hodl_token0"],
+                "hodl_token1": item["hodl_token1"],
+            }
+
+        # add database last update datetime
+        result["datetime"] = datetime.fromtimestamp(db_lastUpdate)
+
+        return result
+
+    async def get_analytics_data(
+        self,
+        chain: Chain,
+        hypervisor_address: str,
+        period: int,
+        ini_date: datetime,
+        end_date: datetime,
+    ) -> list:
+
+        return await self._get_data(
+            query=self.query_return_imperm_rewards2_flat(
+                chain=chain,
+                hypervisor_address=hypervisor_address,
+                period=period,
+                ini_date=ini_date,
+                end_date=end_date,
+            )
+        )
+
+    async def get_analytics_data_variation(
+        self,
+        chain: Chain,
+        hypervisor_address: str,
+        period: int,
+        ini_date: datetime,
+        end_date: datetime,
+    ) -> list:
+
+        result = []
+        last_row = None
+        for idx, row in enumerate(
+            await self._get_analytics_data(
+                chain=chain,
+                hypervisor_address=hypervisor_address,
+                period=period,
+                ini_date=ini_date,
+                end_date=end_date,
+            )
+        ):
+            if idx == 0:
+                result.append({k: 0 for k, v in row.items()})
+            else:
+                result.append({k: v - last_row[k] for k, v in row.items()})
+            last_row = row
+        return result
+
     @staticmethod
     def query_hypervisors_average(
         chain: Chain,
@@ -712,8 +801,8 @@ class db_returns_manager(db_collection_manager):
         # set return match vars
         _returns_match = {
             "chain": chain,
-            "$and": [{"fees.feeApr": {"$gt": 0}}, {"fees.feeApr": {"$lt": 8}}],
-            "$and": [{"fees.feeApy": {"$gt": 0}}, {"fees.feeApy": {"$lt": 8}}],
+            "$and": [{"fees.feeApr": {"$gt": 0}}, {"fees.feeApr": {"$lt": 9}}],
+            "$and": [{"fees.feeApy": {"$gt": 0}}, {"fees.feeApy": {"$lt": 9}}],
         }
 
         if period != 0:
@@ -1137,6 +1226,67 @@ class db_returns_manager(db_collection_manager):
 
         # return result
         return _query
+
+    @staticmethod
+    def query_impermanentDivergence(
+        chain: Chain, protocol: Protocol, period: int
+    ) -> list[dict]:
+
+        # set return match vars
+        _returns_match = {"chain": chain, "period": period}
+        # set protocol match vars
+        _static_match = {"hypervisor.protocol": protocol}
+        # set query
+        return [
+            {"$match": _returns_match},
+            {
+                "$project": {
+                    "period": "$period",
+                    "address": "$address",
+                    "hypervisor_id": {"$concat": ["$chain", "_", "$address"]},
+                    "timestamp": "$timestamp",
+                    "block": "$block",
+                    "lping": "$impermanent.lping",
+                    "hodl_deposited": "$impermanent.hodl_deposited",
+                    "hodl_fifty": "$impermanent.hodl_fifty",
+                    "hodl_token0": "$impermanent.hodl_token0",
+                    "hodl_token1": "$impermanent.hodl_token1",
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "static",
+                    "localField": "hypervisor_id",
+                    "foreignField": "id",
+                    "as": "hypervisor",
+                }
+            },
+            {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
+            {"$match": _static_match},
+            {"$sort": {"block": -1}},
+            {
+                "$project": {
+                    "period": "$period",
+                    "address": "$address",
+                    "timestamp": "$timestamp",
+                    "block": "$block",
+                    "lping": "$lping",
+                    "hodl_deposited": "$hodl_deposited",
+                    "hodl_fifty": "$hodl_fifty",
+                    "hodl_token0": "$hodl_token0",
+                    "hodl_token1": "$hodl_token1",
+                    "symbol": "$hypervisor.symbol",
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"address": "$address", "period": "$period"},
+                    "item": {"$first": "$$ROOT"},
+                }
+            },
+            {"$replaceRoot": {"newRoot": "$item"}},
+            {"$unset": ["_id"]},
+        ]
 
 
 class db_allData_manager(db_collection_manager):

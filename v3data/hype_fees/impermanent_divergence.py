@@ -288,6 +288,15 @@ async def impermanent_divergence_all(
     results = {}
     for hypervisor_id, hypervisor in divergence_data.data.items():
         divergence = ImpermanentDivergence(hypervisor, protocol, chain)
-        results[hypervisor_id] = divergence.calculate()
+        calculation = divergence.calculate()
+        results[hypervisor_id] = {
+            "id": calculation["id"],
+            "symbol": calculation["symbol"],
+            "lping": calculation["lping"],
+            "hodl_deposited": calculation["hodl_deposited"],
+            "hodl_fifty": calculation["hodl_fifty"],
+            "hodl_token0": calculation["hodl_token0"],
+            "hodl_token1": calculation["hodl_token1"],
+        }
 
     return results
