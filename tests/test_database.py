@@ -17,7 +17,7 @@ PARENT_FOLDER = os.path.dirname(CURRENT_FOLDER)
 sys.path.append(PARENT_FOLDER)
 
 
-from v3data.enums import Protocol, Chain
+from v3data.enums import Protocol, Chain, QueryType
 from v3data.config import (
     MONGO_DB_URL,
     GAMMA_SUBGRAPH_URLS,
@@ -36,6 +36,7 @@ from database.collection_endpoint import (
 from v3data.common.analytics import get_hype_data
 
 from v3data.common import hypervisor
+from v3data.common.aggregate_stats import AggregateStats
 import database_feeder
 
 logger = logging.getLogger(__name__)
@@ -167,14 +168,42 @@ async def test_get_data_from_Mongodb_v2():
     for chain, protocol in chains_protocols:
         # start time log
         _startime = dt.datetime.utcnow()
-
-        data_result = await hypervisor.hypervisors_average_return(protocol, chain)
-        # end time log
+        impermanent = hypervisor.ImpermanentDivergence(
+            protocol=protocol, chain=chain, days=1
+        )
+        impermanentDivergence_data = await impermanent.run(first=QueryType.DATABASE)
         print(
-            "[{} {}]  took {} to get hypervisors return data".format(
+            "[{} {}]  took {} to complete Impermanent Divergence call".format(
                 chain, protocol, get_timepassed_string(_startime)
             )
         )
+        _startime = dt.datetime.utcnow()
+        fee_returns = hypervisor.FeeReturns(protocol=protocol, chain=chain, days=1)
+        fee_returns_data = await fee_returns.run(QueryType.DATABASE)
+        print(
+            "[{} {}]  took {} to complete FeeReturns call".format(
+                chain, protocol, get_timepassed_string(_startime)
+            )
+        )
+        _startime = dt.datetime.utcnow()
+        hypervisor_returns = hypervisor.HypervisorsReturnsAllPeriods(
+            protocol=protocol, chain=chain
+        )
+        allReturns_data = await hypervisor_returns.run(QueryType.DATABASE)
+        print(
+            "[{} {}]  took {} to complete Returns all Periods call".format(
+                chain, protocol, get_timepassed_string(_startime)
+            )
+        )
+        _startime = dt.datetime.utcnow()
+        aggregate_stats = AggregateStats(protocol=protocol, chain=chain, response=None)
+        aggregateStats_data = await aggregate_stats.run(QueryType.DATABASE)
+        print(
+            "[{} {}]  took {} to complete aggregateStats call".format(
+                chain, protocol, get_timepassed_string(_startime)
+            )
+        )
+        _startime = dt.datetime.utcnow()
 
 
 def check_returns(data: dict, **kwargs):
@@ -232,7 +261,7 @@ if __name__ == "__main__":
     # start time log
     _startime = dt.datetime.utcnow()
 
-    asyncio.run(test_analytics())
+    asyncio.run(test_get_data_from_Mongodb_v2())
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))
