@@ -6,10 +6,9 @@ from v3data.common.aggregate_stats import (
     AggregateStats,
     AggregateStatsDeploymentInfoOutput,
 )
-from v3data.config import DEPLOYMENTS
-from v3data.enums import QueryType
+from v3data.config import DEPLOYMENTS, RUN_FIRST_QUERY_TYPE
 
-RUN_FIRST = QueryType.SUBGRAPH
+RUN_FIRST = RUN_FIRST_QUERY_TYPE
 
 router = APIRouter(prefix="/allDeployments")
 

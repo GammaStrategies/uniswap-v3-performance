@@ -12,17 +12,18 @@ from v3data.config import (
     DEFAULT_TIMEZONE,
     DB_CACHE_TIMEOUT,
     ALLDATA_CACHE_TIMEOUT,
+    RUN_FIRST_QUERY_TYPE,
 )
 from v3data.dashboard import Dashboard
 from v3data.eth import EthDistribution
 
 from v3data.gamma import GammaDistribution, GammaInfo, GammaYield
-from v3data.enums import Chain, Protocol, QueryType
+from v3data.enums import Chain, Protocol
 
 
 PROTOCOL = Protocol.UNISWAP
 CHAIN = Chain.MAINNET
-RUN_FIRST = QueryType.SUBGRAPH
+RUN_FIRST = RUN_FIRST_QUERY_TYPE
 
 router = APIRouter()
 

@@ -7,12 +7,17 @@ import v3data.common.hypervisor
 import v3data.common.masterchef
 import v3data.common.masterchef_v2
 import v3data.common.users
-from v3data.config import ALLDATA_CACHE_TIMEOUT, APY_CACHE_TIMEOUT, DB_CACHE_TIMEOUT
-from v3data.enums import Chain, Protocol, QueryType
+from v3data.config import (
+    ALLDATA_CACHE_TIMEOUT,
+    APY_CACHE_TIMEOUT,
+    DB_CACHE_TIMEOUT,
+    RUN_FIRST_QUERY_TYPE,
+)
+from v3data.enums import Chain, Protocol
 
 PROTOCOL = Protocol.ZYBERSWAP
 CHAIN = Chain.ARBITRUM
-RUN_FIRST = QueryType.SUBGRAPH
+RUN_FIRST = RUN_FIRST_QUERY_TYPE
 
 router = APIRouter(prefix="/zyberswap/arbitrum")
 
@@ -40,14 +45,14 @@ async def base_range_chart(hypervisor_address: str, days: int = 20):
     )
 
 
-@router.get("/charts/benchmark/{hypervisor_address}")
-# @cache(expire=CHARTS_CACHE_TIMEOUT)
-async def benchmark_chart(
-    hypervisor_address: str, startDate: str = "", endDate: str = ""
-):
-    return await v3data.common.charts.benchmark_chart(
-        PROTOCOL, CHAIN, hypervisor_address, startDate, endDate
-    )
+# @router.get("/charts/benchmark/{hypervisor_address}")
+# # @cache(expire=CHARTS_CACHE_TIMEOUT)
+# async def benchmark_chart(
+#     hypervisor_address: str, startDate: str = "", endDate: str = ""
+# ):
+#     return await v3data.common.charts.benchmark_chart(
+#         PROTOCOL, CHAIN, hypervisor_address, startDate, endDate
+#     )
 
 
 @router.get("/hypervisor/{hypervisor_address}/basicStats")

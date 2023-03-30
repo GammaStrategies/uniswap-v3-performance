@@ -180,9 +180,11 @@ class ImpermanentDivergence(ExecutionOrderWrapper):
     async def _database(self):
         # check days in database
         if self.days not in [1, 7, 30]:
-            raise NotImplementedError(
-                "Requested period does not exist in database"
-            )
+            raise NotImplementedError("Requested period does not exist in database")
+        returns_mngr = db_returns_manager(mongo_url=MONGO_DB_URL)
+        return await returns_mngr.get_impermanentDivergence_data(
+            chain=self.chain, protocol=self.protocol, period=self.days
+        )
 
     async def _subgraph(self):
         return await impermanent_divergence_all(
