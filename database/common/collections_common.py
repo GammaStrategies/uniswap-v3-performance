@@ -1,7 +1,10 @@
+from decimal import Decimal
 import logging
 import asyncio
 from dataclasses import dataclass, field, asdict, InitVar
 from math import log
+
+from bson import Decimal128
 
 from database.common.db_managers import MongoDbManager
 from v3data.config import MONGO_DB_COLLECTIONS
