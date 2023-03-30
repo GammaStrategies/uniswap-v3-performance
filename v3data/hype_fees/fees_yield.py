@@ -15,7 +15,7 @@ YIELD_PER_DAY_MAX = 300
 
 
 class FeesYield:
-    def __init__(self, data: [FeesData], protocol: Protocol, chain: Chain) -> None:
+    def __init__(self, data: list[FeesData], protocol: Protocol, chain: Chain) -> None:
         self.data = data
         self.protocol = protocol
         self.chain = chain
