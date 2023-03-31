@@ -5,7 +5,6 @@ from gql import Client as GqlClient
 from gql.dsl import DSLFragment, DSLQuery, DSLSchema, dsl_gql
 from gql.transport.aiohttp import AIOHTTPTransport, log as requests_logger
 
-from v3data.enums import Chain, Protocol
 from v3data.config import GQL_CLIENT_TIMEOUT
 
 requests_logger.setLevel(logging.WARNING)

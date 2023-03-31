@@ -5,7 +5,7 @@ import numpy as np
 from pandas import DataFrame
 
 from v3data import GammaClient
-from v3data.config import EXCLUDED_HYPERVISORS, GROSS_FEES_MAX
+from v3data.config import EXCLUDED_HYPERVISORS, GROSS_FEES_MAX, TVL_MAX
 from v3data.constants import DAYS_IN_PERIOD
 from v3data.enums import Chain, Protocol
 from v3data.hype_fees.fees_yield import fee_returns_all
@@ -110,28 +110,33 @@ class TopLevelData:
         """
         data = self.all_stats_data
 
+        total_tvl = 0
         for hypervisor in data["uniswapV3Hypervisors"]:
             if hypervisor["badRebalances"]:
-                correction_value = sum(
+                fees_correction_value = sum(
                     [
                         float(rebalance["grossFeesUSD"])
                         for rebalance in hypervisor["badRebalances"]
                     ]
                 )
                 hypervisor["grossFeesClaimedUSD"] = str(
-                    max(float(hypervisor["grossFeesClaimedUSD"]) - correction_value, 0)
+                    max(
+                        float(hypervisor["grossFeesClaimedUSD"])
+                        - fees_correction_value,
+                        0,
+                    )
                 )
+
+            hypervisor_tvl = float(hypervisor["tvlUSD"])
+            if (hypervisor_tvl not in self.excluded_hypervisors) and (
+                hypervisor_tvl < TVL_MAX
+            ):
+                total_tvl += hypervisor_tvl
 
         return {
             "pool_count": len(data["uniswapV3Pools"]),
             "hypervisor_count": len(data["uniswapV3Hypervisors"]),
-            "tvl": sum(
-                [
-                    float(hypervisor["tvlUSD"])
-                    for hypervisor in data["uniswapV3Hypervisors"]
-                    if hypervisor["id"] not in self.excluded_hypervisors
-                ]
-            ),
+            "tvl": total_tvl,
             "fees_claimed": sum(
                 [
                     float(hypervisor["grossFeesClaimedUSD"])

@@ -146,6 +146,7 @@ CHAIN_NAME_CONVERSION = {
 
 # Max fees per rebalance to remove outliers
 GROSS_FEES_MAX = 10**6
+TVL_MAX = 100e6
 
 GQL_CLIENT_TIMEOUT = int(get_config("GQL_CLIENT_TIMEOUT"))
 
