@@ -4,7 +4,7 @@ import os
 
 import yaml
 
-from v3data.enums import Chain, Protocol, QueryType, Enum
+from v3data.enums import Chain, Protocol, QueryType
 
 try:
     with open("config.yaml", mode="r", encoding="utf-8") as stream:
@@ -16,7 +16,7 @@ with open("config.defaults.yaml", mode="r", encoding="utf-8") as stream:
     YAML_CONFIG_DEFAULTS = yaml.safe_load(stream)
 
 
-def get_config(key: str):
+def get_config(key: str) -> str:
     """Find config in env var/config.yaml"""
     value = os.environ.get(key)
     if not value and YAML_CONFIG:
@@ -24,30 +24,6 @@ def get_config(key: str):
     if not value:
         value = YAML_CONFIG_DEFAULTS[key]
     return value
-
-
-def convert_to_enum(string: str, enum: Enum, default=None):
-    """converts a string to an enum
-
-    Args:
-        string (str): string to be converted
-        enum (Enum): enum to convert to
-        default (Enum, optional): default value to return if the string cannot be converted to the enum. Defaults to None.
-
-    Raises:
-        ValueError: if the string can't be converted to the enum
-
-    Returns:
-        Enum: the converted enum
-    """
-    for itm in enum:  # for each item in the enum
-        if string == itm.value:  # if the string is the same as the items's value
-            return itm  # return the item
-    else:  # otherwise
-        if default:  # if a default is provided
-            return default
-        else:  # otherwise
-            raise ValueError(f"can't convert {string} to Enum")  # raise a ValueError
 
 
 DEPLOYMENTS = [
@@ -173,7 +149,5 @@ GROSS_FEES_MAX = 10**6
 
 GQL_CLIENT_TIMEOUT = int(get_config("GQL_CLIENT_TIMEOUT"))
 
-# What to run first
-RUN_FIRST_QUERY_TYPE = convert_to_enum(
-    get_config("RUN_FIRST_QUERY_TYPE"), QueryType, QueryType.SUBGRAPH
-)
+# What to run first, subgraph or database
+RUN_FIRST_QUERY_TYPE = QueryType(get_config("RUN_FIRST_QUERY_TYPE"))
