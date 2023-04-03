@@ -19,6 +19,10 @@ POOLS = {
             "protocol": Protocol.UNISWAP,
             "address": "0x4006bed7bf103d70a1c6b7f1cef4ad059193dc25",
         },
+        "AXL_USDC": {
+            "protocol": Protocol.UNISWAP,
+            "address": "0x5b0d2536f0c970b8d9cbf3959460fb97ce808ade"
+        }
     },
     Chain.OPTIMISM: {
         "WETH_USDC": {
@@ -83,6 +87,10 @@ POOL_PATHS = {
             (POOLS[Chain.MAINNET]["WETH_RPL"], 0),
             (POOLS[Chain.MAINNET]["USDC_WETH"], 0),
         ],
+        # AXL
+        "0x467719ad09025fcc6cf6f8311755809d45a5e5f3": [
+            (POOLS[Chain.MAINNET]["AXL_USDC"], 1)
+        ]
     },
     Chain.OPTIMISM: {
         # OP
@@ -248,4 +256,15 @@ async def gamma_price():
 async def token_prices(chain: Chain):
     dex_pricing = DexPrice(chain)
     await dex_pricing.get_token_prices()
-    return dex_pricing.token_prices
+    prices = dex_pricing.token_prices
+    
+    # Stop gap until refactoring to get multichain prices
+    if chain != Chain.MAINNET:
+        dex_pricing_mainnet = DexPrice(Chain.MAINNET)
+        await dex_pricing_mainnet.get_token_prices()
+
+        for token, price in dex_pricing_mainnet.token_prices.items():
+            if token not in prices:
+                prices[token] = price
+
+    return prices
