@@ -1,7 +1,7 @@
 import asyncio
 from collections import defaultdict
 
-from v3data import UniswapV3Client
+from v3data import UniswapV3Client, LlamaClient
 from v3data.enums import Chain, Protocol
 from v3data.utils import sqrtPriceX96_to_priceDecimal
 
@@ -257,7 +257,7 @@ async def token_prices(chain: Chain):
     dex_pricing = DexPrice(chain)
     await dex_pricing.get_token_prices()
     prices = dex_pricing.token_prices
-    
+
     # Stop gap until refactoring to get multichain prices
     if chain != Chain.MAINNET:
         dex_pricing_mainnet = DexPrice(Chain.MAINNET)
@@ -266,5 +266,12 @@ async def token_prices(chain: Chain):
         for token, price in dex_pricing_mainnet.token_prices.items():
             if token not in prices:
                 prices[token] = price
+
+    llama_client = LlamaClient(Chain.MAINNET)
+    try:
+        ALCX_ADDRESS = "0xdbdb4d16eda451d0503b854cf79d55697f90c8df"
+        prices[ALCX_ADDRESS] = await llama_client.current_token_price(ALCX_ADDRESS)
+    except Exception:
+        pass
 
     return prices
