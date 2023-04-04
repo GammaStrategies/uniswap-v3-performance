@@ -206,3 +206,13 @@ class LlamaClient:
         if return_timestamp:
             return response.json()
         return response.json()["height"]
+
+    async def current_token_price(self, token_address: str):
+        chain_address = f"{self.chain}:{token_address}"
+        endpoint = f"{self.base}/prices/current/{chain_address}"
+
+        response = await async_client.get(endpoint)
+
+        response.raise_for_status()
+
+        return response.json()["coins"][chain_address]["price"]
