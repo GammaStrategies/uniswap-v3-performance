@@ -1,8 +1,7 @@
 import logging
 import asyncio
 import sys
-from datetime import datetime
-
+from datetime import datetime, timezone
 from v3data.hypervisor import HypervisorInfo, HypervisorData
 from v3data.masterchef_v2 import MasterchefV2Info
 from v3data.hype_fees.data import FeeGrowthSnapshotData
@@ -19,7 +18,18 @@ logger = logging.getLogger(__name__)
 
 
 class db_collection_manager(db_collections_common):
-    db_collection_name = ""
+    def __init__(
+        self,
+        mongo_url: str,
+        db_name: str,
+        db_collections: dict,
+    ):
+        self.db_collection_name = ""
+        # self.db_name = "gamma_db_v1"
+
+        super().__init__(
+            mongo_url=mongo_url, db_name=db_name, db_collections=db_collections
+        )
 
     async def feed_db(self, chain: Chain, protocol: Protocol):
         try:
@@ -38,8 +48,25 @@ class db_collection_manager(db_collections_common):
         )
 
 
+# gamma_v1 database related classes
+
+
 class db_static_manager(db_collection_manager):
-    db_collection_name = "static"
+    def __init__(self, mongo_url: str):
+
+        # Create a dictionary of collections
+        self.db_collections = {"static": {"id": True}}  # no historical data}
+        # Set the database name
+        self.db_name = "gamma_db_v1"
+
+        super().__init__(
+            mongo_url=mongo_url,
+            db_name=self.db_name,
+            db_collections=self.db_collections,
+        )
+
+        # Set the collection to static, which is the name of the collection in the database
+        self.db_collection_name = "static"
 
     async def create_data(self, chain: Chain, protocol: Protocol) -> dict:
         """Create a dictionary of hypervisor_static database models
@@ -52,7 +79,7 @@ class db_static_manager(db_collection_manager):
             dict: <hypervisor_id>:<db_data_models.hypervisor_static>
         """
         # define result var
-        result = dict()
+        result = {}
         hypervisors_data = HypervisorData(protocol=protocol, chain=chain)
         # get all hypervisors & their pools data
 
@@ -132,8 +159,25 @@ class db_returns_manager(db_collection_manager):
 
     """
 
-    db_collection_name = "returns"
-    _max_retry = 1
+    def __init__(self, mongo_url: str):
+        # Create a dictionary of collections
+        self.db_collections = {
+            "returns": {"id": True},
+            "static": {"id": True},
+            "allRewards2": {"id": True},
+        }
+        # Set the database name
+        self.db_name = "gamma_db_v1"
+
+        super().__init__(
+            mongo_url=mongo_url,
+            db_name=self.db_name,
+            db_collections=self.db_collections,
+        )
+
+        # Set the collection to returns, which is the name of the collection in the database
+        self.db_collection_name = "returns"
+        self._max_retry = 1
 
     # format data to be used with mongo db
     async def create_data(
@@ -154,7 +198,7 @@ class db_returns_manager(db_collection_manager):
             dict:   <hypervisor_id>:<db_data_models.hypervisor_return>
         """
         # define result var
-        result = dict()
+        result = {}
 
         # calculate return
         fees_data = FeeGrowthSnapshotData(protocol, chain)
@@ -202,11 +246,15 @@ class db_returns_manager(db_collection_manager):
         # impermanent data process
         for k, v in imperm_data.items():
             # only hypervisors with FeeYield data
-            if k in result.keys():
+            if k in result:
                 # add symbol
                 result[k]["symbol"] = v["symbol"]
                 # add impermanent
                 result[k]["impermanent"] = {
+                    "ini_block": v["ini_block"],
+                    "end_block": v["end_block"],
+                    "ini_timestamp": v["ini_timestamp"],
+                    "end_timestamp": v["end_timestamp"],
                     "ini_block": v["ini_block"],
                     "end_block": v["end_block"],
                     "ini_timestamp": v["ini_timestamp"],
@@ -272,16 +320,15 @@ class db_returns_manager(db_collection_manager):
                     retried=retried + 1,
                     current_timestamp=current_timestamp,
                 )
+            elif err:
+                # {'message': 'Failed to decode `block.number` value: `subgraph QmXUphAvAEiGcTzdopmaEt8YDxZ2uEmLJcCQGcfaDvRhp2 only has data starting at block number 63562887 and data for block number 50084142 is therefore not available`'}
+                logger.debug(
+                    f" Can't feed database {chain}'s {protocol} returns to db  err:{err.args[0]}. Retries: {retried}."
+                )
             else:
-                if err:
-                    # {'message': 'Failed to decode `block.number` value: `subgraph QmXUphAvAEiGcTzdopmaEt8YDxZ2uEmLJcCQGcfaDvRhp2 only has data starting at block number 63562887 and data for block number 50084142 is therefore not available`'}
-                    logger.debug(
-                        f" Can't feed database {chain}'s {protocol} returns to db  err:{err.args[0]}. Retries: {retried}."
-                    )
-                else:
-                    logger.exception(
-                        f" Unexpected error feeding {chain}'s {protocol} returns to db  err:{sys.exc_info()[0]}. Retries: {retried}."
-                    )
+                logger.exception(
+                    f" Unexpected error feeding {chain}'s {protocol} returns to db  err:{sys.exc_info()[0]}. Retries: {retried}."
+                )
 
     async def get_hypervisors_average(
         self, chain: Chain, period: int = 0, protocol: Protocol = ""
@@ -347,13 +394,13 @@ class db_returns_manager(db_collection_manager):
         )
         # set database last update field as the maximum date found within the items returned
         try:
-            db_lastUpdate = max([x["timestamp"] for x in dbdata])
+            db_lastUpdate = max(x["timestamp"] for x in dbdata)
         except Exception:
             # TODO: log error
-            db_lastUpdate = datetime.utcnow().timestamp()
+            db_lastUpdate = datetime.now(timezone.utc).timestamp()
 
         # init result
-        result = dict()
+        result = {}
         # convert result to dict
         for item in dbdata:
             address = item.pop("address")
@@ -377,10 +424,10 @@ class db_returns_manager(db_collection_manager):
         )
         # set database last update field as the maximum date found within the items returned
         try:
-            db_lastUpdate = max([x["timestamp"] for x in result])
+            db_lastUpdate = max(x["timestamp"] for x in result)
         except Exception:
             # TODO: log error
-            db_lastUpdate = datetime.utcnow().timestamp()
+            db_lastUpdate = datetime.now(timezone.utc).timestamp()
 
         # convert result to dict
         result = {
@@ -512,7 +559,7 @@ class db_returns_manager(db_collection_manager):
             _returns_match["address"] = hypervisor_address
 
         # set return match vars
-        _static_match = dict()
+        _static_match = {}
         if protocol != "":
             _static_match["hypervisor.protocol"] = protocol
 
@@ -639,7 +686,6 @@ class db_returns_manager(db_collection_manager):
         # set return match vars
         _returns_match = {
             "chain": chain,
-            "$and": [{"fees.feeApr": {"$gt": 0}}, {"fees.feeApr": {"$lt": 8}}],
             "$and": [{"fees.feeApy": {"$gt": 0}}, {"fees.feeApy": {"$lt": 8}}],
         }
 
@@ -649,7 +695,7 @@ class db_returns_manager(db_collection_manager):
             _returns_match["address"] = hypervisor_address
 
         # set return match vars
-        _static_match = dict()
+        _static_match = {}
         if protocol != "":
             _static_match["hypervisor.protocol"] = protocol
 
@@ -803,6 +849,8 @@ class db_returns_manager(db_collection_manager):
             "chain": chain,
             "$and": [{"fees.feeApr": {"$gt": 0}}, {"fees.feeApr": {"$lt": 9}}],
             "$and": [{"fees.feeApy": {"$gt": 0}}, {"fees.feeApy": {"$lt": 9}}],
+            "$and": [{"fees.feeApr": {"$gt": 0}}, {"fees.feeApr": {"$lt": 9}}],
+            "$and": [{"fees.feeApy": {"$gt": 0}}, {"fees.feeApy": {"$lt": 9}}],
         }
 
         if period != 0:
@@ -811,7 +859,7 @@ class db_returns_manager(db_collection_manager):
             _returns_match["address"] = hypervisor_address
 
         # set return match vars
-        _static_match = dict()
+        _static_match = {}
         if protocol != "":
             _static_match["hypervisor.protocol"] = protocol
 
@@ -950,7 +998,6 @@ class db_returns_manager(db_collection_manager):
                     "address": "$address",
                     "hypervisor_id": {"$concat": ["$chain", "_", "$address"]},
                     "timestamp": "$timestamp",
-                    "block": "$block",
                     "feeApr": "$fees.feeApr",
                     "feeApy": "$fees.feeApy",
                     "status": "$fees.status",
@@ -989,10 +1036,7 @@ class db_returns_manager(db_collection_manager):
             {"$unset": ["_id"]},
         ]
 
-        if period != 0:
-            return returns_by_period
-        else:
-            return returns_all_periods
+        return returns_by_period if period != 0 else returns_all_periods
 
     @staticmethod
     def query_return_impermanent(
@@ -1003,8 +1047,6 @@ class db_returns_manager(db_collection_manager):
         ini_date: datetime = None,
         end_date: datetime = None,
     ) -> list[dict]:
-
-        _query = list()
 
         # build first main match part of the query
         _match = {"chain": chain, "period": period}
@@ -1020,31 +1062,30 @@ class db_returns_manager(db_collection_manager):
         elif end_date:
             _match["timestamp"] = {"$lte": int(end_date.timestamp())}
 
-        # add matches to query
-        _query.append({"$match": _match})
-
+        _query = [{"$match": _match}]
         # build protocol part as needed
         if protocol:
-            _query.append(
-                {
-                    "$lookup": {
-                        "from": "static",
-                        "localField": "hypervisor_id",
-                        "foreignField": "id",
-                        "as": "hypervisor",
-                    }
-                }
+            _query.extend(
+                (
+                    {
+                        "$lookup": {
+                            "from": "static",
+                            "localField": "hypervisor_id",
+                            "foreignField": "id",
+                            "as": "hypervisor",
+                        }
+                    },
+                    {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}},
+                    {"$match": {"hypervisor.protocol": protocol}},
+                )
             )
-            _query.append(
-                {"$set": {"hypervisor": {"$arrayElemAt": ["$hypervisor", 0]}}}
+
+        _query.extend(
+            (
+                {"$sort": {"timestamp": -1}},
+                {"$unset": ["_id", "hypervisor_id", "hypervisor", "id"]},
             )
-            _query.append({"$match": {"hypervisor.protocol": protocol}})
-
-        # sort query
-        _query.append({"$sort": {"timestamp": -1}})
-
-        # remove non usefull fields
-        _query.append({"$unset": ["_id", "hypervisor_id", "hypervisor", "id"]})
+        )
 
         # debug_query = f"{_query}"
 
@@ -1072,8 +1113,6 @@ class db_returns_manager(db_collection_manager):
         Returns:
             list[dict]: query
         """
-        _query = list()
-
         # build first main match part of the query
         _match = {"chain": chain, "period": period, "address": hypervisor_address}
 
@@ -1087,11 +1126,11 @@ class db_returns_manager(db_collection_manager):
         elif end_date:
             _match["timestamp"] = {"$lte": int(end_date.timestamp())}
 
-        # add matches to query
-        _query.append({"$match": _match})
+        # debug_query = f"{_query}"
 
-        # add rewards2
-        _query.append(
+        # return result
+        return [
+            {"$match": _match},
             {
                 "$lookup": {
                     "from": "allRewards2",
@@ -1123,7 +1162,7 @@ class db_returns_manager(db_collection_manager):
                         {"$unwind": "$obj_as_arr"},
                         {
                             "$match": {
-                                "obj_as_arr.v.pools.{}".format(hypervisor_address): {
+                                f"obj_as_arr.v.pools.{hypervisor_address}": {
                                     "$exists": 1
                                 }
                             }
@@ -1131,13 +1170,8 @@ class db_returns_manager(db_collection_manager):
                     ],
                     "as": "allRewards2",
                 }
-            }
-        )
-        # sort query
-        _query.append({"$sort": {"timestamp": 1}})
-
-        # flatten
-        _query.append(
+            },
+            {"$sort": {"timestamp": 1}},
             {
                 "$project": {
                     "chain": "$chain",
@@ -1151,9 +1185,7 @@ class db_returns_manager(db_collection_manager):
                     "year_allRewards2": {
                         "$ifNull": [
                             {
-                                "$first": "$allRewards2.obj_as_arr.v.pools.{}.apr".format(
-                                    hypervisor_address
-                                )
+                                "$first": f"$allRewards2.obj_as_arr.v.pools.{hypervisor_address}.apr"
                             },
                             0,
                         ]
@@ -1169,9 +1201,7 @@ class db_returns_manager(db_collection_manager):
                                     {
                                         "$ifNull": [
                                             {
-                                                "$first": "$allRewards2.obj_as_arr.v.pools.{}.apr".format(
-                                                    hypervisor_address
-                                                )
+                                                "$first": f"$allRewards2.obj_as_arr.v.pools.{hypervisor_address}.apr"
                                             },
                                             0,
                                         ]
@@ -1187,10 +1217,7 @@ class db_returns_manager(db_collection_manager):
                     "period_hodl_token0": "$impermanent.hodl_token0",
                     "period_hodl_token1": "$impermanent.hodl_token1",
                 }
-            }
-        )
-
-        _query.append(
+            },
             {
                 "$addFields": {
                     "period_netApr": {"$sum": ["$period_lping", "$period_rewardsApr"]},
@@ -1198,10 +1225,7 @@ class db_returns_manager(db_collection_manager):
                         "$subtract": ["$period_lping", "$period_feeApr"]
                     },
                 }
-            }
-        )
-
-        _query.append(
+            },
             {
                 "$addFields": {
                     "gamma_vs_hodl": {
@@ -1216,16 +1240,9 @@ class db_returns_manager(db_collection_manager):
                         ]
                     },
                 }
-            }
-        )
-
-        # fastapi pydantic throws error on ObjectID
-        _query.append({"$unset": ["_id"]})
-
-        # debug_query = f"{_query}"
-
-        # return result
-        return _query
+            },
+            {"$unset": ["_id"]},
+        ]
 
     @staticmethod
     def query_impermanentDivergence(
@@ -1290,7 +1307,17 @@ class db_returns_manager(db_collection_manager):
 
 
 class db_allData_manager(db_collection_manager):
-    db_collection_name = "allData"
+    def __init__(self, mongo_url: str):
+        # Create a dictionary of collections
+        self.db_collections = {"allData": {"id": True}}
+        # Set the database name
+        self.db_name = "gamma_db_v1"
+
+        super().__init__(
+            mongo_url=mongo_url,
+            db_name=self.db_name,
+            db_collections=self.db_collections,
+        )
 
     async def create_data(self, chain: Chain, protocol: Protocol) -> dict:
         """Create a dictionary of hypervisor_allData database models
@@ -1303,7 +1330,7 @@ class db_allData_manager(db_collection_manager):
             dict: <hypervisor_id>:<db_data_models.hypervisor_static>
         """
         # define result var
-        result = dict()
+        result = {}
         hypervisor_info = HypervisorInfo(protocol=protocol, chain=chain)
         allData = await hypervisor_info.all_data()
 
@@ -1315,7 +1342,7 @@ class db_allData_manager(db_collection_manager):
 
         # add id and datetime to data
         allData["id"] = f"{chain}_{protocol}"
-        allData["datetime"] = datetime.utcnow()
+        allData["datetime"] = datetime.now(timezone.utc)
 
         return allData
 
@@ -1359,7 +1386,20 @@ class db_allData_manager(db_collection_manager):
 
 
 class db_allRewards2_manager(db_collection_manager):
-    db_collection_name = "allRewards2"
+    def __init__(self, mongo_url: str):
+        # Create a dictionary of collections
+        self.db_collections = {"allRewards2": {"id": True}}
+        # Set the database name
+        self.db_name = "gamma_db_v1"
+
+        super().__init__(
+            mongo_url=mongo_url,
+            db_name=self.db_name,
+            db_collections=self.db_collections,
+        )
+
+        # Set the collection, which is the name of the collection in the database
+        self.db_collection_name = "allRewards2"
 
     async def create_data(self, chain: Chain, protocol: Protocol) -> dict:
         """
@@ -1372,16 +1412,18 @@ class db_allRewards2_manager(db_collection_manager):
             dict:
         """
         # define result var
-        data = dict()
+        data = {}
         try:
             masterchef_info = MasterchefV2Info(protocol=protocol, chain=chain)
             data = await masterchef_info.output(get_data=True)
-        except Exception:
+        except Exception as e:
             # some pools do not have Masterchef info
-            raise ValueError(f" {chain}'s {protocol} has no Masterchef v2 implemented ")
+            raise ValueError(
+                f" {chain}'s {protocol} has no Masterchef v2 implemented "
+            ) from e
 
         # add id and datetime to data
-        data["datetime"] = datetime.utcnow()
+        data["datetime"] = datetime.now(timezone.utc)
         # get timestamp without decimals
         timestamp = int(datetime.timestamp(data["datetime"]))
         # set id
@@ -1517,25 +1559,34 @@ class db_allRewards2_manager(db_collection_manager):
             {"$sort": {"datetime": -1}},
             {"$addFields": {"obj_as_arr": {"$objectToArray": "$$ROOT"}}},
             {"$unwind": "$obj_as_arr"},
-            {
-                "$match": {
-                    "obj_as_arr.v.pools.{}".format(hypervisor_address): {"$exists": 1}
-                }
-            },
+            {"$match": {f"obj_as_arr.v.pools.{hypervisor_address}": {"$exists": 1}}},
             {
                 "$project": {
                     "_id": 0,
                     "chain": "$chain",
                     "datetime": "$datetime",
                     "protocol": "$protocol",
-                    "rewards2": "$obj_as_arr.v.pools.{}".format(hypervisor_address),
+                    "rewards2": f"$obj_as_arr.v.pools.{hypervisor_address}",
                 }
             },
         ]
 
 
 class db_aggregateStats_manager(db_collection_manager):
-    db_collection_name = "agregateStats"
+    def __init__(self, mongo_url: str):
+        # Create a dictionary of collections
+        self.db_collections = {"agregateStats": {"id": True}}
+        # Set the database name
+        self.db_name = "gamma_db_v1"
+
+        super().__init__(
+            mongo_url=mongo_url,
+            db_name=self.db_name,
+            db_collections=self.db_collections,
+        )
+
+        # Set the collection, which is the name of the collection in the database
+        self.db_collection_name = "agregateStats"
 
     async def create_data(self, chain: Chain, protocol: Protocol) -> dict:
         """
@@ -1551,7 +1602,7 @@ class db_aggregateStats_manager(db_collection_manager):
         top_level = TopLevelData(protocol=protocol, chain=chain)
         top_level_data = await top_level.all_stats()
 
-        dtime = datetime.utcnow()
+        dtime = datetime.now(timezone.utc)
         return {
             "id": f"{chain}_{protocol}_{dtime.timestamp()}",
             "chain": chain,
@@ -1603,3 +1654,1089 @@ class db_aggregateStats_manager(db_collection_manager):
             {"$sort": {"datetime": -1}},
             {"$unset": ["_id", "id", "chain", "protocol"]},
         ]
+
+
+# web3 database related classes
+
+
+class database_global(db_collections_common):
+    """global database helper
+    "blocks":
+        item-> {id: <network>_<block_number>
+                network:
+                block:
+                timestamp:
+                }
+    "usd_prices":
+        item-> {id: <network>_<block_number>_<address>
+                network:
+                block:
+                address:
+                price:
+                }
+    """
+
+    def __init__(
+        self, mongo_url: str, db_name: str = "global", db_collections: dict = None
+    ):
+        if db_collections is None:
+            db_collections = {"blocks": {"id": True}, "usd_prices": {"id": True}}
+        super().__init__(
+            mongo_url=mongo_url, db_name=db_name, db_collections=db_collections
+        )
+
+    async def set_price_usd(
+        self, network: str, block: int, token_address: str, price_usd: float
+    ):
+        data = {
+            "id": f"{network}_{block}_{token_address}",
+            "network": network,
+            "block": int(block),
+            "address": token_address,
+            "price": float(price_usd),
+        }
+
+        await self.save_item_to_database(data=data, collection_name="usd_prices")
+
+    async def set_block(self, network: str, block: int, timestamp: datetime.timestamp):
+
+        data = {
+            "id": f"{network}_{block}",
+            "network": network,
+            "block": block,
+            "timestamp": timestamp,
+        }
+        await self.save_item_to_database(data=data, collection_name="blocks")
+
+    async def get_unique_prices_addressBlock(self, network: str) -> list:
+        """get addresses and blocks already present in database
+            with price greater than zero.
+
+        Args:
+            network (str):
+
+        Returns:
+            list:
+        """
+        return await self.get_items_from_database(
+            collection_name="usd_prices", find={"network": network, "price": {"$gt": 0}}
+        )
+
+    async def get_price_usd(
+        self,
+        network: str,
+        block: int,
+        address: str,
+    ) -> list[dict]:
+        """get usd price from block
+
+        Args:
+            network (str): ethereum, optimism, polygon....
+            block (int): number
+            address (str): token address
+
+        Returns:
+            list[dict]: list of price dict obj
+        """
+        return await self.get_items_from_database(
+            collection_name="usd_prices",
+            find={"network": network, "block": block, "address": address},
+        )
+
+    async def get_price_usd_closestBlock(
+        self,
+        network: str,
+        block: int,
+        address: str,
+    ) -> dict:
+        """get usd price from closest block to <block>
+
+        Args:
+            network (str):
+            block (int): number
+            address (str): token address
+
+        Returns:
+            dict:
+        """
+        return await self.query_items_from_database(
+            query=self.query_blocks_closest(network=network, block=block),
+            collection_name="usd_prices",
+        )
+
+    async def get_timestamp(
+        self,
+        network: str,
+        block: int,
+    ) -> dict:
+        return await self.get_items_from_database(
+            collection_name="blocks",
+            find={"network": network, "block": block},
+        )
+
+    async def get_closest_timestamp(self, network: str, block: int) -> dict:
+        return await self.query_items_from_database(
+            query=self.query_blocks_closest(network=network, block=block),
+            collection_name="blocks",
+        )
+
+    async def get_block(
+        self,
+        network: str,
+        timestamp: int,
+    ) -> dict:
+        return await self.get_items_from_database(
+            collection_name="blocks", find={"network": network, "timestamp": timestamp}
+        )
+
+    async def get_closest_block(self, network: str, timestamp: int) -> dict:
+        return await self.query_items_from_database(
+            query=self.query_blocks_closest(network=network, timestamp=timestamp),
+            collection_name="blocks",
+        )
+
+    async def get_all_block_timestamp(self, network: str) -> list:
+        """get all blocks and timestamps from database
+            sorted by block
+        Args:
+            network (str):
+
+        Returns:
+            list: of sorted blocks timestamps
+        """
+        return await self.get_items_from_database(
+            collection_name="blocks", find={"network": network}, sort=[("block", 1)]
+        )
+
+    @staticmethod
+    def query_prices_addressBlocks(network: str) -> list[dict]:
+        """get addresses and blocks of usd prices present at database and greater than zero
+
+        Args:
+            network (str):
+
+        Returns:
+            list[dict]:
+        """
+        return [
+            {"$match": {"network": network, "price": {"$gt": 0}}},
+        ]
+
+    @staticmethod
+    def query_blocks_closest(
+        network: str, block: int = 0, timestamp: int = 0
+    ) -> list[dict]:
+        """find closest block/timestamp item in database
+
+        Args:
+            network (str):
+            block (int, optional): . Defaults to 0.
+            timestamp (int, optional): . Defaults to 0.
+
+        Raises:
+            NotImplementedError: when no block or timestamp are provided
+
+        Returns:
+            list[dict]:
+        """
+        if block != 0:
+            _search = [block, "$block"]
+        elif timestamp != 0:
+            _search = [timestamp, "$timestamp"]
+        else:
+            raise NotImplementedError(
+                " provide either block or timestamp. If both are provided, block will be used "
+            )
+        return [
+            {"$match": {"network": network}},
+            # Project a diff field that's the absolute difference along with the original doc.
+            {
+                "$project": {
+                    "diff": {"$abs": {"$subtract": _search}},
+                    "doc": "$$ROOT",
+                }
+            },
+            # Order the docs by diff
+            {"$sort": {"diff": 1}},
+            # Take the first one
+            {"$limit": 1},
+        ]
+
+
+class database_local(db_collections_common):
+    """local database helper
+    "static":
+        item-> {id: <hypervisor_address>_
+                "address": "",  # hypervisor id
+                "created": None,  # datetime
+                "fee": 0,  # 500
+                "network": "",  # polygon
+                "name": "",  # xWMATIC-USDC05
+                "pool_id": "",  # pool id
+                "tokens": [  db_objec_model.token... ],
+
+    "operations":
+        item-> {id: <logIndex>_<transactionHash>
+                {
+                    "_id" : ObjectId("63e0f19e2309ec2395434e4b"),
+                    "transactionHash" : "0x8bf414df76a612ce2110cabec4fcaefd9cfc6aaeddd29d7850ac6fa2786adbb4",
+                    "blockHash" : "0x286390969e2ddfa3aed6ed885c793bc78bb1974ec7f019116bed6b3edd5fa294",
+                    "blockNumber" : 12590365,
+                    "address" : "0x9a98bffabc0abf291d6811c034e239e916bbcec0",
+                    "timestamp" : 1623108400,
+                    "decimals_token0" : 18,
+                    "decimals_token1" : 6,
+                    "decimals_contract" : 18,
+                    "tick" : -197716,
+                    "totalAmount0" : "3246736264521404428",
+                    "totalAmount1" : "6762363410",
+                    "qtty_token0" : "3741331192922089",
+                    "qtty_token1" : "0",
+                    "topic" : "rebalance",
+                    "logIndex" : 118,
+                    "id" : "118_0x8bf414df76a612ce2110cabec4fcaefd9cfc6aaeddd29d7850ac6fa2786adbb4"
+                }
+                ...
+                }
+
+    "status":
+        item-> {id: <hypervisor address>_<block_number>
+                network:
+                block:
+                address:
+                qtty_token0: 0,  # token qtty   (this is tvl = deployed_qtty + owed fees + parked_qtty )
+                qtty_token1: 0,  #
+                deployed_token0: 0,  # tokens deployed into pool
+                deployed_token1: 0,  #
+                parked_token0: 0,  # tokens sitting in hype contract ( sleeping )
+                parked_token1: 0,  #
+                supply: 0,  # total Suply
+
+                }
+
+    "user_status":
+        item-> {id: <wallet_address>_<block_number>
+                network:
+                block:
+                address:  <wallet_address>
+                ...
+
+                }
+    """
+
+    def __init__(self, mongo_url: str, db_name: str, db_collections: dict = None):
+        if db_collections is None:
+            db_collections = {
+                "static": {"id": True},
+                "operations": {
+                    "id": True,
+                    "address": False,
+                    "blockNumber": False,
+                },
+                "status": {
+                    "id": True,
+                    "address": False,
+                    "block": False,
+                    "timestamp": False,
+                },
+                "user_status": {
+                    "id": True,
+                    "address": False,
+                    "hypervisor_address": False,
+                    "block": False,
+                    "timestamp": False,
+                },
+            }
+
+        super().__init__(
+            mongo_url=mongo_url, db_name=db_name, db_collections=db_collections
+        )
+
+    # static
+
+    async def set_static(self, data: dict):
+        data["id"] = data["address"]
+        await self.save_item_to_database(data=data, collection_name="static")
+
+    async def get_unique_tokens(self) -> list:
+        """Get a unique token list from static database
+
+        Returns:
+            list:
+        """
+        return await self.get_items_from_database(
+            collection_name="static", aggregate=self.query_unique_token_addresses()
+        )
+
+    async def get_mostUsed_tokens1(self, limit: int = 10) -> list:
+        """Return the addresses of the top used tokens1, present in static database
+
+        Args:
+            limit (int, optional): . Defaults to 5.
+
+        Returns:
+            list: of {"token":<address>}
+        """
+        return await self.get_items_from_database(
+            collection_name="static",
+            aggregate=self.query_status_mostUsed_token1(limit=limit),
+        )
+
+    # operation
+
+    async def set_operation(self, data: dict):
+        await self.replace_item_to_database(data=data, collection_name="operations")
+
+    async def get_all_operations(self, hypervisor_address: str) -> list:
+        """find all hypervisor operations from db
+            sort by lowest block and lowest logIndex first
+
+        Args:
+            hypervisor_address (str): address
+
+        Returns:
+            list: hypervisor status list
+        """
+        find = {"address": hypervisor_address}
+        sort = [("blockNumber", 1), ("logIndex", 1)]
+        return await self.get_items_from_database(
+            collection_name="operations", find=find, sort=sort
+        )
+
+    async def get_hype_operations_btwn_timestamps(
+        self,
+        hypervisor_address: str,
+        timestamp_ini: int,
+        timestamp_end: int,
+    ) -> list:
+        return await self.query_items_from_database(
+            collection_name="operations",
+            query=self.query_operations_btwn_timestamps(
+                hypervisor_address=hypervisor_address,
+                timestamp_ini=timestamp_ini,
+                timestamp_end=timestamp_end,
+            ),
+        )
+
+    async def get_unique_operations_addressBlock(self, topics: list = None) -> list:
+        """Retrieve a list of unique blocks + hypervisor addresses present in operations collection
+
+        Returns:
+            list: of  {
+                    "address" : "0x407e99b20d61f245426031df872966953909e9d3",
+                    "block" : 12736656
+                    }
+        """
+        query = []
+        if topics:
+            query.append({"$match": {"topics": {"$in": topics}}})
+
+        query.extend(
+            (
+                {
+                    "$group": {
+                        "_id": {"address": "$address", "block": "$blockNumber"},
+                    }
+                },
+                {
+                    "$project": {
+                        "address": "$_id.address",
+                        "block": "$_id.block",
+                    }
+                },
+                {"$unset": ["_id"]},
+            )
+        )
+
+        debug_query = f"{query}"
+
+        return await self.get_items_from_database(
+            collection_name="operations", aggregate=query
+        )
+
+    async def get_user_operations(
+        self, user_address: str, timestamp_ini: int | None, timestamp_end: int | None
+    ) -> list:
+        find = {
+            "$or": [
+                {"src": user_address},
+                {"dst": user_address},
+                {"from": user_address},
+                {"to": user_address},
+            ]
+        }
+
+        if timestamp_ini and timestamp_end:
+            find["$and"] = [
+                {"timestamp": {"$lte": timestamp_end}},
+                {"timestamp": {"$gte": timestamp_ini}},
+            ]
+        elif timestamp_ini:
+            find["timestamp"] = {"$gte": timestamp_ini}
+        elif timestamp_end:
+            find["timestamp"] = {"$lte": timestamp_end}
+
+        sort = [("block", 1)]
+        return await self.get_items_from_database(
+            collection_name="status", find=find, sort=sort
+        )
+
+    # status
+
+    async def set_status(self, data: dict):
+        # define database id
+        data["id"] = f"{data['address']}_{data['block']}"
+        await self.save_item_to_database(data=data, collection_name="status")
+
+    async def get_all_status(self, hypervisor_address: str) -> list:
+        """find all hypervisor status from db
+            sort by lowest block first
+
+        Args:
+            hypervisor_address (str): address
+
+        Returns:
+            list: hypervisor status list
+        """
+        find = {"address": hypervisor_address}
+        sort = [("block", 1)]
+        return await self.get_items_from_database(
+            collection_name="status", find=find, sort=sort
+        )
+
+    async def get_hype_status_btwn_blocks(
+        self,
+        hypervisor_address: str,
+        block_ini: int,
+        block_end: int,
+    ) -> list:
+        return await self.query_items_from_database(
+            collection_name="status",
+            query=self.query_status_btwn_blocks(
+                hypervisor_address=hypervisor_address,
+                block_ini=block_ini,
+                block_end=block_end,
+            ),
+        )
+
+    async def get_hype_status_blocks(
+        self, hypervisor_address: str, blocks: list
+    ) -> list:
+        find = {"address": hypervisor_address, "block": {"$in": blocks}}
+        sort = [("block", 1)]
+        return await self.get_items_from_database(
+            collection_name="status", find=find, sort=sort
+        )
+
+    async def get_unique_status_addressBlock(self) -> list:
+        """Retrieve a list of unique blocks + hypervisor addresses present in status collection
+
+        Returns:
+            list: of {
+                    "address" : "0x407e99b20d61f245426031df872966953909e9d3",
+                    "block" : 12736656
+                    }
+        """
+        query = [
+            {
+                "$group": {
+                    "_id": {"address": "$address", "block": "$block"},
+                }
+            },
+            {
+                "$project": {
+                    "address": "$_id.address",
+                    "block": "$_id.block",
+                }
+            },
+            {"$unset": ["_id"]},
+        ]
+        return await self.get_items_from_database(
+            collection_name="status", aggregate=query
+        )
+
+    async def get_status_feeReturn_data(
+        self,
+        hypervisor_address: str,
+        timestamp_ini: int,
+        timestamp_end: int,
+    ) -> list:
+        return await self.query_items_from_database(
+            collection_name="status",
+            query=self.query_status_feeReturn_data(
+                hypervisor_address=hypervisor_address,
+                timestamp_ini=timestamp_ini,
+                timestamp_end=timestamp_end,
+            ),
+        )
+
+    async def get_status_feeReturn_data_alternative(
+        self,
+        hypervisor_address: str,
+        timestamp_ini: int,
+        timestamp_end: int,
+    ) -> list:
+        return await self.query_items_from_database(
+            collection_name="status",
+            query=self.query_status_feeReturn_data_alternative(
+                hypervisor_address=hypervisor_address,
+                timestamp_ini=timestamp_ini,
+                timestamp_end=timestamp_end,
+            ),
+        )
+
+    # user status
+
+    async def set_user_status(self, data: dict):
+        """
+
+        Args:
+            data (dict):
+        """
+        # define database id
+        data[
+            "id"
+        ] = f"{data['address']}_{data['block']}_{data['logIndex']}_{data['hypervisor_address']}"
+
+        # convert decimal to bson compatible and save
+        await self.replace_item_to_database(data=data, collection_name="user_status")
+
+    # async def get_user_status(
+    #     self, address: str, hypervisor_address:str
+    # ) -> list:
+
+    #     _main_match = {"address": address, "hypervisor_address": hypervisor_address}
+    #     query = [
+    #         {"$match": _main_match},
+    #         {"$sort": {"block": 1}},
+    #         {
+    #             "$group": {
+    #                 "_id": "$hypervisor_address",
+    #                 "hypervisor_address": {"$first": "$$ROOT.hypervisor_address"},
+    #                 "history": {"$push": "$$ROOT"},
+    #             }
+    #         },
+    #         {"$unset": ["_id"]},
+    #     ]
+
+    #     # debug query
+    #     debug_query = f"{query}"
+    #     return [
+    #         self.convert_d128_to_decimal(item=item)
+    #         for item in await self.query_items_from_database(
+    #             query=query, collection_name="user_status"
+    #         )
+    #     ]
+
+    async def get_user_status(
+        self, address: str, block_ini: int = 0, block_end: int = 0
+    ) -> list:
+
+        _main_match = {"address": address, "topic": "report"}
+        if block_ini and block_end:
+            _main_match["$and"] = [
+                {"block": {"$lte": block_end}},
+                {"block": {"$gte": block_ini}},
+            ]
+        elif block_ini:
+            _main_match["block"] = {"$gte": block_ini}
+        elif block_end:
+            _main_match["block"] = {"$lte": block_end}
+
+        query = [
+            {"$match": _main_match},
+            {"$sort": {"block": 1}},
+            {
+                "$group": {
+                    "_id": "$hypervisor_address",
+                    "hypervisor_address": {"$first": "$$ROOT.hypervisor_address"},
+                    "history": {
+                        "$push": {
+                            "hypervisor_address": "$$ROOT.hypervisor_address",
+                            "block": "$$ROOT.block",
+                            "timestamp": "$$ROOT.timestamp",
+                            "investment_qtty_token0": "$$ROOT.investment_qtty_token0",
+                            "investment_qtty_token1": "$$ROOT.investment_qtty_token1",
+                            "total_investment_qtty_in_usd": "$$ROOT.total_investment_qtty_in_usd",
+                            "total_investment_qtty_in_token0": "$$ROOT.total_investment_qtty_in_token0",
+                            "total_investment_qtty_in_token1": "$$ROOT.total_investment_qtty_in_token1",
+                            "underlying_token0": "$$ROOT.underlying_token0",
+                            "underlying_token1": "$$ROOT.underlying_token1",
+                            "fees_collected_token0": "$$ROOT.fees_collected_token0",
+                            "fees_collected_token1": "$$ROOT.fees_collected_token1",
+                            "fees_owed_token0": "$$ROOT.fees_owed_token0",
+                            "fees_owed_token1": "$$ROOT.fees_owed_token1",
+                            "fees_uncollected_token0": "$$ROOT.fees_uncollected_token0",
+                            "fees_uncollected_token1": "$$ROOT.fees_uncollected_token1",
+                            "usd_price_token0": "$$ROOT.usd_price_token0",
+                            "usd_price_token1": "$$ROOT.usd_price_token1",
+                            "divestment_base_qtty_token0": "$$ROOT.divestment_base_qtty_token0",
+                            "divestment_base_qtty_token1": "$$ROOT.divestment_base_qtty_token1",
+                            "divestment_fee_qtty_token0": "$$ROOT.divestment_fee_qtty_token0",
+                            "divestment_fee_qtty_token1": "$$ROOT.divestment_fee_qtty_token1",
+                        }
+                    },
+                }
+            },
+            {"$unset": ["_id"]},
+        ]
+
+        # debug_query = f"{query}"
+        return [
+            self.convert_decimal_to_float(item=self.convert_d128_to_decimal(item=item))
+            for item in await self.query_items_from_database(
+                query=query, collection_name="user_status"
+            )
+        ]
+
+    # all
+
+    async def get_items(self, collection_name: str, **kwargs) -> list:
+        """Any
+
+        Returns:
+            list: of results
+        """
+        return await self.get_items_from_database(
+            collection_name=collection_name, **kwargs
+        )
+
+    async def get_max_field(self, collection: str, field: str) -> list:
+        """get the maximum field present in db
+        Args:
+            collection (str): _description_
+            field (str): _description_
+
+        Returns:
+            list: of { "max": <value>}
+        """
+        return await self.get_items_from_database(
+            collection_name=collection,
+            aggregate=self.query_max(field=field),
+        )
+
+    # queries
+
+    @staticmethod
+    def query_unique_addressBlocks() -> list[dict]:
+        """retriev
+
+        Args:
+            field (str): ca
+
+        Returns:
+            list[dict]: _description_
+        """
+        # return query
+        return [
+            {
+                "$group": {
+                    "_id": {"address": "$address", "block": "$blockNumber"},
+                }
+            },
+            {
+                "$project": {
+                    "address": "$_id.address",
+                    "block": "$_id.block",
+                }
+            },
+            {"$unset": ["_id"]},
+        ]
+
+    @staticmethod
+    def query_unique_token_addresses() -> list[dict]:
+        """Unique token list using status database
+
+        Returns:
+            list[dict]:
+        """
+        return [
+            {
+                "$group": {
+                    "_id": "$pool.address",
+                    "items": {"$push": "$$ROOT"},
+                }
+            },
+            {"$project": {"_id": "$_id", "last": {"$last": "$items"}}},
+            {
+                "$project": {
+                    "_id": "$_id",
+                    "token": ["$last.pool.token0.address", "$last.pool.token1.address"],
+                }
+            },
+            {"$unwind": "$token"},
+            {"$group": {"_id": "$token"}},
+        ]
+
+    @staticmethod
+    def query_operations_btwn_timestamps(
+        hypervisor_address: str,
+        timestamp_ini: int,
+        timestamp_end: int,
+    ) -> list[dict]:
+        """get operations between timestamps
+
+        Args:
+            timestamp_ini (datetime.timestamp): initial timestamp
+            timestamp_end (datetime.timestamp): end timestamp
+
+        Returns:
+            list[dict]:
+        """
+        return [
+            {
+                "$match": {
+                    "address": hypervisor_address,
+                    "timestamp": {"$gte": timestamp_ini, "$lte": timestamp_end},
+                }
+            },
+            {"$sort": {"blockNumber": -1, "logIndex": 1}},
+        ]
+
+    @staticmethod
+    def query_status_btwn_blocks(
+        hypervisor_address: str,
+        block_ini: datetime.timestamp,
+        block_end: datetime.timestamp,
+    ) -> list[dict]:
+        """get status between blocks"""
+        return [
+            {
+                "$match": {
+                    "address": hypervisor_address,
+                    "block": {"$gte": block_ini, "$lte": block_end},
+                }
+            },
+            {"$sort": {"block": -1}},
+        ]
+
+    @staticmethod
+    def query_status_mostUsed_token1(limit: int = 5) -> list[dict]:
+        """return the top most used token1 address of static database
+            ( may be used in status too)
+
+        Returns:
+            list[dict]: _description_
+        """
+        return [
+            {
+                "$group": {
+                    "_id": {"token1": "$pool.token1.address"},
+                    "symbol": {"$last": "$pool.token1.symbol"},
+                    "count": {"$sum": 1},
+                }
+            },
+            {"$sort": {"count": -1}},
+            {"$limit": limit},
+            {
+                "$project": {
+                    "token": "$_id.token1",
+                    "symbol": "$symbol",
+                }
+            },
+            {"$unset": ["_id"]},
+        ]
+
+    @staticmethod
+    def query_max(field: str) -> list[dict]:
+        return [
+            {
+                "$group": {
+                    "_id": "id",
+                    "max": {"$max": f"${field}"},
+                }
+            },
+            {"$unset": ["_id"]},
+        ]
+
+    @staticmethod
+    def query_status_feeReturn_data(
+        hypervisor_address: str,
+        timestamp_ini: int,
+        timestamp_end: int,
+    ) -> list[dict]:
+        """Get data to construct feeAPY APR using equal totalSupply values between blocks to identify APY period.
+            This is a prone to error method as totalSupply may sporadically coincide in diff periods ...
+
+        Args:
+            hypervisor_address (str):
+            timestamp_ini (int):
+            timestamp_end (int):
+
+        Returns:
+            list[dict]:
+                            "period_days" : 0.01653935185185185,
+                            "ini_block" : NumberInt(14937408),
+                            "end_block" : NumberInt(14937491),
+                            "ini_timestamp" : NumberInt(1654849152),
+                            "end_timestamp" : NumberInt(1654850581),
+                            "ini_supply" : NumberDecimal("91.89181431665138243"),
+                            "end_supply" : NumberDecimal("91.89181431665138243"),
+                            "ini_tvl0" : NumberDecimal("47083.654951511146650678"),
+                            "ini_tvl1" : NumberDecimal("69.395815272326034611"),
+                            "ini_fees_uncollected0" : NumberDecimal("6.523979236566497"),
+                            "ini_fees_uncollected1" : NumberDecimal("0.01195312935918579"),
+                            "ini_fees_owed0" : NumberDecimal("0.0000"),
+                            "ini_fees_owed1" : NumberDecimal("0.0000"),
+                            "end_tvl0" : NumberDecimal("47083.654951511146650678"),
+                            "end_tvl1" : NumberDecimal("69.395815272326034611"),
+                            "end_fees_uncollected0" : NumberDecimal("6.523979236566497"),
+                            "end_fees_uncollected1" : NumberDecimal("0.01195312935918579"),
+                            "end_fees_owed0" : NumberDecimal("0.0000"),
+                            "end_fees_owed1" : NumberDecimal("0.0000"),
+                            "error_ini" : NumberInt(0),
+                            "error_end" : NumberInt(0)
+        """
+        return [
+            {
+                "$match": {
+                    "address": hypervisor_address,
+                    "$and": [
+                        {"timestamp": {"$lte": timestamp_end}},
+                        {"timestamp": {"$gte": timestamp_ini}},
+                    ],
+                }
+            },
+            {"$sort": {"block": 1}},
+            {
+                "$group": {
+                    "_id": "$totalSupply",
+                    "items": {"$push": "$$ROOT"},
+                    "max_block": {"$max": "$block"},
+                    "min_block": {"$min": "$block"},
+                    "max_timestamp": {"$max": "$timestamp"},
+                    "min_timestamp": {"$min": "$timestamp"},
+                }
+            },
+            {
+                "$addFields": {
+                    "period_days": {
+                        "$divide": [
+                            {"$subtract": ["$max_timestamp", "$min_timestamp"]},
+                            60 * 60 * 24,
+                        ]
+                    }
+                }
+            },
+            {"$sort": {"min_block": 1}},
+            {
+                "$project": {
+                    "max_block": "$max_block",
+                    "min_block": "$min_block",
+                    "max_timestamp": "$max_timestamp",
+                    "min_timestamp": "$min_timestamp",
+                    "period_days": "$period_days",
+                    "ini_snapshot": {"$arrayElemAt": ["$items", 0]},
+                    "end_snapshot": {"$arrayElemAt": ["$items", -1]},
+                }
+            },
+            {
+                "$project": {
+                    "max_block": "$max_block",
+                    "min_block": "$min_block",
+                    "max_timestamp": "$max_timestamp",
+                    "min_timestamp": "$min_timestamp",
+                    "period_days": "$period_days",
+                    "ini_snapshot": "$ini_snapshot",
+                    "end_snapshot": "$end_snapshot",
+                    "error_ini": {"$subtract": ["$ini_snapshot.block", "$min_block"]},
+                    "error_end": {"$subtract": ["$end_snapshot.block", "$max_block"]},
+                }
+            },
+            {
+                "$project": {
+                    "period_days": "$period_days",
+                    "ini_block": "$ini_snapshot.block",
+                    "end_block": "$end_snapshot.block",
+                    "ini_timestamp": "$ini_snapshot.timestamp",
+                    "end_timestamp": "$end_snapshot.timestamp",
+                    "ini_supply": {
+                        "$divide": [
+                            {"$toDecimal": "$ini_snapshot.totalSupply"},
+                            {"$pow": [10, "$ini_snapshot.decimals"]},
+                        ]
+                    },
+                    "end_supply": {
+                        "$divide": [
+                            {"$toDecimal": "$end_snapshot.totalSupply"},
+                            {"$pow": [10, "$end_snapshot.decimals"]},
+                        ]
+                    },
+                    "ini_tvl0": {
+                        "$divide": [
+                            {"$toDecimal": "$ini_snapshot.totalAmounts.total0"},
+                            {"$pow": [10, "$ini_snapshot.pool.token0.decimals"]},
+                        ]
+                    },
+                    "ini_tvl1": {
+                        "$divide": [
+                            {"$toDecimal": "$ini_snapshot.totalAmounts.total1"},
+                            {"$pow": [10, "$ini_snapshot.pool.token1.decimals"]},
+                        ]
+                    },
+                    "ini_fees_uncollected0": {
+                        "$divide": [
+                            {
+                                "$toDecimal": "$ini_snapshot.fees_uncollected.qtty_token0"
+                            },
+                            {"$pow": [10, "$ini_snapshot.pool.token0.decimals"]},
+                        ]
+                    },
+                    "ini_fees_uncollected1": {
+                        "$divide": [
+                            {
+                                "$toDecimal": "$ini_snapshot.fees_uncollected.qtty_token1"
+                            },
+                            {"$pow": [10, "$ini_snapshot.pool.token1.decimals"]},
+                        ]
+                    },
+                    "ini_fees_owed0": {
+                        "$divide": [
+                            {"$toDecimal": "$ini_snapshot.tvl.fees_owed_token0"},
+                            {"$pow": [10, "$ini_snapshot.pool.token0.decimals"]},
+                        ]
+                    },
+                    "ini_fees_owed1": {
+                        "$divide": [
+                            {"$toDecimal": "$ini_snapshot.tvl.fees_owed_token1"},
+                            {"$pow": [10, "$ini_snapshot.pool.token1.decimals"]},
+                        ]
+                    },
+                    "end_tvl0": {
+                        "$divide": [
+                            {"$toDecimal": "$end_snapshot.totalAmounts.total0"},
+                            {"$pow": [10, "$end_snapshot.pool.token0.decimals"]},
+                        ]
+                    },
+                    "end_tvl1": {
+                        "$divide": [
+                            {"$toDecimal": "$end_snapshot.totalAmounts.total1"},
+                            {"$pow": [10, "$end_snapshot.pool.token1.decimals"]},
+                        ]
+                    },
+                    "end_fees_uncollected0": {
+                        "$divide": [
+                            {
+                                "$toDecimal": "$end_snapshot.fees_uncollected.qtty_token0"
+                            },
+                            {"$pow": [10, "$end_snapshot.pool.token0.decimals"]},
+                        ]
+                    },
+                    "end_fees_uncollected1": {
+                        "$divide": [
+                            {
+                                "$toDecimal": "$end_snapshot.fees_uncollected.qtty_token1"
+                            },
+                            {"$pow": [10, "$end_snapshot.pool.token1.decimals"]},
+                        ]
+                    },
+                    "end_fees_owed0": {
+                        "$divide": [
+                            {"$toDecimal": "$end_snapshot.tvl.fees_owed_token0"},
+                            {"$pow": [10, "$end_snapshot.pool.token0.decimals"]},
+                        ]
+                    },
+                    "end_fees_owed1": {
+                        "$divide": [
+                            {"$toDecimal": "$end_snapshot.tvl.fees_owed_token1"},
+                            {"$pow": [10, "$end_snapshot.pool.token1.decimals"]},
+                        ]
+                    },
+                    "error_ini": "$error_ini",
+                    "error_end": "$error_end",
+                }
+            },
+            {"$unset": ["_id"]},
+        ]
+
+    @staticmethod
+    def query_status_feeReturn_data_alternative(
+        hypervisor_address: str, timestamp_ini: int, timestamp_end: int
+    ) -> list[dict]:
+        """
+
+            old descript: return a list of status ordered by block matching deposit,withdraw,rebalance and zeroBurn operation blocks and those same blocks -1
+            Each status has a order field indicating if this is the initial period status with a "first" value
+            or this is the end of the perios status with the "last" value
+
+        Args:
+            hypervisor_address (str):
+            timestamp_ini (int):
+            timestamp_end (int):
+
+        Returns:
+            list[dict]:   Each status has an <order> field indicating if this is the initial period status with a "first" value
+            or this is the end of the perios status with the "last" value
+        """
+
+        return [
+            {
+                "$match": {
+                    "address": hypervisor_address,
+                    "$and": [
+                        {"timestamp": {"$lte": timestamp_end}},
+                        {"timestamp": {"$gte": timestamp_ini}},
+                    ],
+                }
+            },
+            {"$sort": {"block": 1}},
+            {
+                "$group": {
+                    "_id": "$totalSupply",
+                    "items": {"$push": "$$ROOT"},
+                    "max_block": {"$max": "$block"},
+                    "min_block": {"$min": "$block"},
+                    "max_timestamp": {"$max": "$timestamp"},
+                    "min_timestamp": {"$min": "$timestamp"},
+                }
+            },
+            {
+                "$addFields": {
+                    "period_days": {
+                        "$divide": [
+                            {"$subtract": ["$max_timestamp", "$min_timestamp"]},
+                            60 * 60 * 24,
+                        ]
+                    }
+                }
+            },
+            {"$sort": {"min_block": 1}},
+            {"$unwind": "$items"},
+            {"$replaceRoot": {"newRoot": "$items"}},
+            {"$unset": ["_id", "id"]},
+        ]
+
+    @staticmethod
+    def query_all_users(
+        user_address: str, timestamp_ini: int = None, timestamp_end: int = None
+    ) -> list[dict]:
+
+        _match = {
+            "$or": [
+                {"src": user_address},
+                {"dst": user_address},
+                {"from": user_address},
+                {"to": user_address},
+            ]
+        }
+
+        if timestamp_ini and timestamp_end:
+            _match["$and"] = [
+                {"timestamp": {"$lte": timestamp_end}},
+                {"timestamp": {"$gte": timestamp_ini}},
+            ]
+        elif timestamp_ini:
+            _match["timestamp"] = {"$gte": timestamp_ini}
+        elif timestamp_end:
+            _match["timestamp"] = {"$lte": timestamp_end}
+
+        return [{"$match": _match}, {"$sort": {"timestamp": 1}}]
+
+
+def convert_chain_name(chain: Chain) -> str:
+    if chain == Chain.MAINNET:
+        return "ethereum"
+    elif chain == Chain.BSC:
+        return "binance"
+    else:
+        return chain.value

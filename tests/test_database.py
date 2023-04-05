@@ -35,7 +35,7 @@ from database.collection_endpoint import (
 
 from v3data.common.analytics import get_hype_data
 
-from v3data.common import hypervisor
+from v3data.common import hypervisor, users
 from v3data.common.aggregate_stats import AggregateStats
 import database_feeder
 
@@ -252,8 +252,28 @@ async def test_analytics():
             for period in periods
         ]
 
+        _startime = dt.datetime.utcnow()
         # execute feed
         results = await asyncio.gather(*requests)
+        print(
+            "[{}]  took {} to complete aggregateStats call".format(
+                chain, get_timepassed_string(_startime)
+            )
+        )
+
+
+async def test_user_status(address: str, chains: list):
+
+    for chain in chains:
+        _startime = dt.datetime.utcnow()
+        user_status = await users.get_user_analytic_data(
+            chain=chain, address=address, response=None
+        )
+        print(
+            "[{}]  took {} to complete user_status call".format(
+                chain, get_timepassed_string(_startime)
+            )
+        )
 
 
 # TESTING
@@ -261,7 +281,7 @@ if __name__ == "__main__":
     # start time log
     _startime = dt.datetime.utcnow()
 
-    asyncio.run(test_get_data_from_Mongodb_v2())
+    asyncio.run(test_analytics())
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))
