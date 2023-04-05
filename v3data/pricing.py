@@ -263,8 +263,13 @@ async def token_prices(chain: Chain):
         dex_pricing_mainnet = DexPrice(Chain.MAINNET)
         await dex_pricing_mainnet.get_token_prices()
 
+        AXL_MAINNET = "0x467719ad09025fcc6cf6f8311755809d45a5e5f3"
+        AXL_POLYGON = "0x6e4e624106cb12e168e6533f8ec7c82263358940"
+
         for token, price in dex_pricing_mainnet.token_prices.items():
             if token not in prices:
+                if token == AXL_MAINNET:
+                    prices[AXL_POLYGON] = price
                 prices[token] = price
 
     llama_client = LlamaClient(Chain.MAINNET)
