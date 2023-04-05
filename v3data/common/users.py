@@ -17,7 +17,7 @@ async def account_data(protocol: Protocol, chain: Chain, address: str):
     return await account_info.output()
 
 
-async def get_user_data_db(
+async def get_user_analytic_data(
     chain: Chain,
     address: str,
     block_ini: int = 0,

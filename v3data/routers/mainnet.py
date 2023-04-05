@@ -252,6 +252,15 @@ async def user_data(address: str):
     return await v3data.common.users.user_data(PROTOCOL, CHAIN, address)
 
 
+@router.get("/user/{address}/analytics")
+async def account_data(
+    response: Response, address: str, block_init: int = 0, block_end: int = 0
+):
+    return await v3data.common.users.get_user_analytic_data(
+        chain=CHAIN, address=address.lower()
+    )
+
+
 @router.get("/vault/{address}")
 async def account_data(address: str):
     return await v3data.common.users.account_data(PROTOCOL, CHAIN, address)
