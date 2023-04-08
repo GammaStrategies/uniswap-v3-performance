@@ -53,7 +53,6 @@ class db_collection_manager(db_collections_common):
 
 class db_static_manager(db_collection_manager):
     def __init__(self, mongo_url: str):
-
         # Create a dictionary of collections
         self.db_collections = {"static": {"id": True}}  # no historical data}
         # Set the database name
@@ -492,7 +491,6 @@ class db_returns_manager(db_collection_manager):
         ini_date: datetime,
         end_date: datetime,
     ) -> list:
-
         return await self._get_data(
             query=self.query_return_imperm_rewards2_flat(
                 chain=chain,
@@ -511,7 +509,6 @@ class db_returns_manager(db_collection_manager):
         ini_date: datetime,
         end_date: datetime,
     ) -> list:
-
         result = []
         last_row = None
         for idx, row in enumerate(
@@ -1047,7 +1044,6 @@ class db_returns_manager(db_collection_manager):
         ini_date: datetime = None,
         end_date: datetime = None,
     ) -> list[dict]:
-
         # build first main match part of the query
         _match = {"chain": chain, "period": period}
         if hypervisor_address:
@@ -1240,7 +1236,18 @@ class db_returns_manager(db_collection_manager):
                         ]
                     },
                 }
+                ##### FILTER: exclude big differences btwen gamma and deposited ####
             },
+            {
+                "$addFields": {
+                    "exclude": {
+                        "$abs": {
+                            "$subtract": ["$gamma_vs_hodl", "$period_hodl_deposited"]
+                        }
+                    }
+                }
+            },
+            {"$match": {"exclude": {"$lte": 0.5}}},
             {"$unset": ["_id"]},
         ]
 
@@ -1248,7 +1255,6 @@ class db_returns_manager(db_collection_manager):
     def query_impermanentDivergence(
         chain: Chain, protocol: Protocol, period: int
     ) -> list[dict]:
-
         # set return match vars
         _returns_match = {"chain": chain, "period": period}
         # set protocol match vars
@@ -1699,7 +1705,6 @@ class database_global(db_collections_common):
         await self.save_item_to_database(data=data, collection_name="usd_prices")
 
     async def set_block(self, network: str, block: int, timestamp: datetime.timestamp):
-
         data = {
             "id": f"{network}_{block}",
             "network": network,
@@ -2201,38 +2206,13 @@ class database_local(db_collections_common):
         # convert decimal to bson compatible and save
         await self.replace_item_to_database(data=data, collection_name="user_status")
 
-    # async def get_user_status(
-    #     self, address: str, hypervisor_address:str
-    # ) -> list:
-
-    #     _main_match = {"address": address, "hypervisor_address": hypervisor_address}
-    #     query = [
-    #         {"$match": _main_match},
-    #         {"$sort": {"block": 1}},
-    #         {
-    #             "$group": {
-    #                 "_id": "$hypervisor_address",
-    #                 "hypervisor_address": {"$first": "$$ROOT.hypervisor_address"},
-    #                 "history": {"$push": "$$ROOT"},
-    #             }
-    #         },
-    #         {"$unset": ["_id"]},
-    #     ]
-
-    #     # debug query
-    #     debug_query = f"{query}"
-    #     return [
-    #         self.convert_d128_to_decimal(item=item)
-    #         for item in await self.query_items_from_database(
-    #             query=query, collection_name="user_status"
-    #         )
-    #     ]
-
     async def get_user_status(
         self, address: str, block_ini: int = 0, block_end: int = 0
     ) -> list:
-
-        _main_match = {"address": address, "topic": "report"}
+        _main_match = {
+            "address": address,
+            "topic": {"$in": ["report", "withdraw", "deposit", "transfer"]},
+        }
         if block_ini and block_end:
             _main_match["$and"] = [
                 {"block": {"$lte": block_end}},
@@ -2249,31 +2229,32 @@ class database_local(db_collections_common):
             {
                 "$group": {
                     "_id": "$hypervisor_address",
-                    "hypervisor_address": {"$first": "$$ROOT.hypervisor_address"},
+                    "hypervisor_address": {"$first": "$hypervisor_address"},
                     "history": {
                         "$push": {
-                            "hypervisor_address": "$$ROOT.hypervisor_address",
-                            "block": "$$ROOT.block",
-                            "timestamp": "$$ROOT.timestamp",
-                            "investment_qtty_token0": "$$ROOT.investment_qtty_token0",
-                            "investment_qtty_token1": "$$ROOT.investment_qtty_token1",
-                            "total_investment_qtty_in_usd": "$$ROOT.total_investment_qtty_in_usd",
-                            "total_investment_qtty_in_token0": "$$ROOT.total_investment_qtty_in_token0",
-                            "total_investment_qtty_in_token1": "$$ROOT.total_investment_qtty_in_token1",
-                            "underlying_token0": "$$ROOT.underlying_token0",
-                            "underlying_token1": "$$ROOT.underlying_token1",
-                            "fees_collected_token0": "$$ROOT.fees_collected_token0",
-                            "fees_collected_token1": "$$ROOT.fees_collected_token1",
-                            "fees_owed_token0": "$$ROOT.fees_owed_token0",
-                            "fees_owed_token1": "$$ROOT.fees_owed_token1",
-                            "fees_uncollected_token0": "$$ROOT.fees_uncollected_token0",
-                            "fees_uncollected_token1": "$$ROOT.fees_uncollected_token1",
-                            "usd_price_token0": "$$ROOT.usd_price_token0",
-                            "usd_price_token1": "$$ROOT.usd_price_token1",
-                            "divestment_base_qtty_token0": "$$ROOT.divestment_base_qtty_token0",
-                            "divestment_base_qtty_token1": "$$ROOT.divestment_base_qtty_token1",
-                            "divestment_fee_qtty_token0": "$$ROOT.divestment_fee_qtty_token0",
-                            "divestment_fee_qtty_token1": "$$ROOT.divestment_fee_qtty_token1",
+                            "hypervisor_address": "$hypervisor_address",
+                            "block": "$block",
+                            "timestamp": "$timestamp",
+                            "topic": "$topic",
+                            "investment_qtty_token0": "$investment_qtty_token0",
+                            "investment_qtty_token1": "$investment_qtty_token1",
+                            "total_investment_qtty_in_usd": "$total_investment_qtty_in_usd",
+                            "total_investment_qtty_in_token0": "$total_investment_qtty_in_token0",
+                            "total_investment_qtty_in_token1": "$total_investment_qtty_in_token1",
+                            "underlying_token0": "$underlying_token0",
+                            "underlying_token1": "$underlying_token1",
+                            "fees_collected_token0": "$fees_collected_token0",
+                            "fees_collected_token1": "$fees_collected_token1",
+                            "fees_owed_token0": "$fees_owed_token0",
+                            "fees_owed_token1": "$fees_owed_token1",
+                            "fees_uncollected_token0": "$fees_uncollected_token0",
+                            "fees_uncollected_token1": "$fees_uncollected_token1",
+                            "usd_price_token0": "$usd_price_token0",
+                            "usd_price_token1": "$usd_price_token1",
+                            "divestment_base_qtty_token0": "$divestment_base_qtty_token0",
+                            "divestment_base_qtty_token1": "$divestment_base_qtty_token1",
+                            "divestment_fee_qtty_token0": "$divestment_fee_qtty_token0",
+                            "divestment_fee_qtty_token1": "$divestment_fee_qtty_token1",
                         }
                     },
                 }
@@ -2281,7 +2262,7 @@ class database_local(db_collections_common):
             {"$unset": ["_id"]},
         ]
 
-        # debug_query = f"{query}"
+        debug_query = f"{query}"
         return [
             self.convert_decimal_to_float(item=self.convert_d128_to_decimal(item=item))
             for item in await self.query_items_from_database(
@@ -2710,7 +2691,6 @@ class database_local(db_collections_common):
     def query_all_users(
         user_address: str, timestamp_ini: int = None, timestamp_end: int = None
     ) -> list[dict]:
-
         _match = {
             "$or": [
                 {"src": user_address},
