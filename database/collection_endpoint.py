@@ -254,10 +254,6 @@ class db_returns_manager(db_collection_manager):
                     "end_block": v["end_block"],
                     "ini_timestamp": v["ini_timestamp"],
                     "end_timestamp": v["end_timestamp"],
-                    "ini_block": v["ini_block"],
-                    "end_block": v["end_block"],
-                    "ini_timestamp": v["ini_timestamp"],
-                    "end_timestamp": v["end_timestamp"],
                     "lping": v["lping"],
                     "hodl_deposited": v["hodl_deposited"],
                     "hodl_fifty": v["hodl_fifty"],
@@ -1122,10 +1118,16 @@ class db_returns_manager(db_collection_manager):
         elif end_date:
             _match["timestamp"] = {"$lte": int(end_date.timestamp())}
 
-        # debug_query = f"{_query}"
+        # allrewards2 subquery: pick the sum of each rewarder apr
+        year_allRewards2_subquery = {
+            "$ifNull": [
+                {"$sum": f"$allRewards2.obj_as_arr.v.pools.{hypervisor_address}.apr"},
+                0,
+            ]
+        }
 
         # return result
-        return [
+        _query = [
             {"$match": _match},
             {
                 "$lookup": {
@@ -1178,14 +1180,7 @@ class db_returns_manager(db_collection_manager):
                     "period": "$period",
                     "year_feeApr": "$fees.feeApr",
                     "year_feeApy": "$fees.feeApy",
-                    "year_allRewards2": {
-                        "$ifNull": [
-                            {
-                                "$first": f"$allRewards2.obj_as_arr.v.pools.{hypervisor_address}.apr"
-                            },
-                            0,
-                        ]
-                    },
+                    "year_allRewards2": year_allRewards2_subquery,
                     "period_feeApr": {
                         "$multiply": ["$period", {"$divide": ["$fees.feeApr", 365]}]
                     },
@@ -1194,14 +1189,7 @@ class db_returns_manager(db_collection_manager):
                             "$period",
                             {
                                 "$divide": [
-                                    {
-                                        "$ifNull": [
-                                            {
-                                                "$first": f"$allRewards2.obj_as_arr.v.pools.{hypervisor_address}.apr"
-                                            },
-                                            0,
-                                        ]
-                                    },
+                                    year_allRewards2_subquery,
                                     365,
                                 ]
                             },
@@ -1247,9 +1235,12 @@ class db_returns_manager(db_collection_manager):
                     }
                 }
             },
-            {"$match": {"exclude": {"$lte": 0.5}}},
-            {"$unset": ["_id"]},
+            {"$match": {"exclude": {"$lte": 0.2}}},
+            {"$unset": ["_id", "exclude"]},
         ]
+
+        # debug_query = f"{_query}"
+        return _query
 
     @staticmethod
     def query_impermanentDivergence(

@@ -28,11 +28,10 @@ logger = logging.getLogger(__name__)
 
 
 async def test_impermanent_divergence(
-    days, protocol: str = Protocol.UNISWAP, chain: Chain = Chain.MAINNET
+    days, protocol: str = Protocol.UNISWAP, chain: Chain = Chain.OPTIMISM
 ):
-
-    hypervisors = ["0x75cd1842b529ed87817b0453c00b471f5a1b381a"]
-    current_timestamp = 1679572799
+    hypervisors = ["0x8ba02c31565aace0328ea90a17fa86d4ba1ec4d8"]
+    current_timestamp = 1680069579 - 100
 
     data = await hypervisor.impermanent_divergence_all(
         protocol=protocol,
@@ -65,7 +64,6 @@ async def test_impermanent_divergence_all():
 
     for protocol, chain_data in DEX_HYPEPOOL_SUBGRAPH_URLS.items():
         for chain in chain_data:
-
             for day in days:
                 result = await test_impermanent_divergence(
                     days=day, protocol=protocol, chain=chain
@@ -73,7 +71,6 @@ async def test_impermanent_divergence_all():
 
 
 async def test_all_endpoints():
-
     _startime = dt.datetime.utcnow()
     await mainnet.impermanent_divergence_daily()
     print(
@@ -128,7 +125,7 @@ if __name__ == "__main__":
     # start time log
     _startime = dt.datetime.utcnow()
 
-    data = asyncio.run(test_impermanent_divergence_all())
+    data = asyncio.run(test_impermanent_divergence(days=14))
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))
