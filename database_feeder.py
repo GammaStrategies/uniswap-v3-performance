@@ -67,6 +67,7 @@ EXPR_ARGS = {
     }
 }
 
+
 # feed jobs
 async def feed_database_returns(
     periods: list, current_timestamp: int = None, max_retries: int = 1
@@ -240,7 +241,6 @@ async def feed_database_with_historic_data(from_datetime: datetime, periods=None
         # set utils now
         last_timestamp = last_time.timestamp()
         while last_timestamp > current_timestamp:
-
             txt_timestamp = "{:%Y-%m-%d  %H:%M:%S}".format(
                 datetime.utcfromtimestamp(current_timestamp)
             )
@@ -334,7 +334,6 @@ EXPR_FUNCS = {
 }
 
 if __name__ == "__main__":
-
     # convert command line arguments to dict variables
     cml_parameters = convert_commandline_arguments(sys.argv[1:])
 
@@ -356,7 +355,6 @@ if __name__ == "__main__":
         # start time log
         _startime = datetime.utcnow()
 
-        # TODO: add quickswap command line args
         asyncio.run(feed_database_with_historic_data(from_datetime=from_datetime))
 
         # end time log
@@ -384,7 +382,6 @@ if __name__ == "__main__":
     else:
         # actual feed
         logger.info(" Starting loop feed  ")
-        # maybe log cron jobs using https://github.com/bradymholt/cron-expression-descriptor ??
 
         # create event loop
         loop = asyncio.new_event_loop()
