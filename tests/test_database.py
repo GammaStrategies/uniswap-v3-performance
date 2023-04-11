@@ -43,7 +43,6 @@ logger = logging.getLogger(__name__)
 
 
 async def test_put_data_to_Mongodb_v1():
-
     # create a chain protocol list
     protocols = Protocol
     chains_protocols = [
@@ -93,7 +92,6 @@ async def test_put_data_to_Mongodb_v1():
 
 
 async def test_put_historicData_to_Mongodb():
-
     # force period
     periods = {
         "daily": [1],
@@ -111,7 +109,6 @@ async def test_put_historicData_to_Mongodb():
 async def test_put_historicData_to_Mongodb_vExpert(
     chain=Chain.POLYGON, periods=[1], process_quickswap=True
 ):
-
     returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
     requests = [
         returns_manager.feed_db(chain=chain, protocol=Protocol.UNISWAP, periods=periods)
@@ -130,7 +127,6 @@ async def test_put_historicData_to_Mongodb_vExpert(
 
 
 async def test_get_data_from_Mongodb_v1():
-
     protocols = Protocol
     chains_protocols = [
         (chain, protocol)
@@ -158,7 +154,6 @@ async def test_get_data_from_Mongodb_v1():
 
 
 async def test_get_data_from_Mongodb_v2():
-
     protocols = Protocol
     chains_protocols = [
         (chain, protocol)
@@ -262,8 +257,29 @@ async def test_analytics():
         )
 
 
-async def test_user_status(address: str, chains: list):
+async def test_analytics_hype():
+    periods = [1]
+    chain = Chain.OPTIMISM
+    hypervisor_list = ["0x34d4112d180e9faf06f77c8c550ba20c9f61ae31"]
+    static_manager = db_static_manager(mongo_url=MONGO_DB_URL)
 
+    requests = [
+        get_hype_data(chain=chain, hypervisor_address=hypervisor_address, period=period)
+        for hypervisor_address in hypervisor_list
+        for period in periods
+    ]
+
+    _startime = dt.datetime.utcnow()
+    # execute feed
+    results = await asyncio.gather(*requests)
+    print(
+        "[{}]  took {} to complete aggregateStats call".format(
+            chain, get_timepassed_string(_startime)
+        )
+    )
+
+
+async def test_user_status(address: str, chains: list):
     for chain in chains:
         _startime = dt.datetime.utcnow()
         user_status = await users.get_user_analytic_data(
@@ -281,7 +297,7 @@ if __name__ == "__main__":
     # start time log
     _startime = dt.datetime.utcnow()
 
-    asyncio.run(test_analytics())
+    asyncio.run(test_analytics_hype())
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))

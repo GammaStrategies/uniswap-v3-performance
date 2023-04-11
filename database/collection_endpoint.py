@@ -250,10 +250,10 @@ class db_returns_manager(db_collection_manager):
                 result[k]["symbol"] = v["symbol"]
                 # add impermanent
                 result[k]["impermanent"] = {
-                    "ini_block": v["ini_block"],
-                    "end_block": v["end_block"],
-                    "ini_timestamp": v["ini_timestamp"],
-                    "end_timestamp": v["end_timestamp"],
+                    # "ini_block": v["ini_block"],
+                    # "end_block": v["end_block"],
+                    # "ini_timestamp": v["ini_timestamp"],
+                    # "end_timestamp": v["end_timestamp"],
                     "lping": v["lping"],
                     "hodl_deposited": v["hodl_deposited"],
                     "hodl_fifty": v["hodl_fifty"],
@@ -1315,6 +1315,7 @@ class db_allData_manager(db_collection_manager):
             db_name=self.db_name,
             db_collections=self.db_collections,
         )
+        self.db_collection_name = "allData"
 
     async def create_data(self, chain: Chain, protocol: Protocol) -> dict:
         """Create a dictionary of hypervisor_allData database models
