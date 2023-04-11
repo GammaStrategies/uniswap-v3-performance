@@ -1315,6 +1315,7 @@ class db_allData_manager(db_collection_manager):
             db_name=self.db_name,
             db_collections=self.db_collections,
         )
+        self.db_collection_name = "allData"
 
     async def create_data(self, chain: Chain, protocol: Protocol) -> dict:
         """Create a dictionary of hypervisor_allData database models
