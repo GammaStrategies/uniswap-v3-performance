@@ -77,7 +77,6 @@ async def test_temporal():
         hypervisors=None,
         current_timestamp=None,
     )
-    return output
 
 
 # TESTING
