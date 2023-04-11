@@ -1118,16 +1118,13 @@ class db_returns_manager(db_collection_manager):
         elif end_date:
             _match["timestamp"] = {"$lte": int(end_date.timestamp())}
 
-
-        # allrewards2 subquery: pick the last rewarder found
+        # allrewards2 subquery: pick the sum of each rewarder apr
         year_allRewards2_subquery = {
-                        "$ifNull": [
-                            {
-                                "$last": f"$allRewards2.obj_as_arr.v.pools.{hypervisor_address}.apr"
-                            },
-                            0,
-                        ]
-                    }
+            "$ifNull": [
+                {"$sum": f"$allRewards2.obj_as_arr.v.pools.{hypervisor_address}.apr"},
+                0,
+            ]
+        }
 
         # return result
         _query = [
@@ -1242,7 +1239,7 @@ class db_returns_manager(db_collection_manager):
             {"$unset": ["_id", "exclude"]},
         ]
 
-        #debug_query = f"{_query}"
+        # debug_query = f"{_query}"
         return _query
 
     @staticmethod
