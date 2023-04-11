@@ -1235,7 +1235,7 @@ class db_returns_manager(db_collection_manager):
                     }
                 }
             },
-            {"$match": {"exclude": {"$lte": 0.5}}},
+            {"$match": {"exclude": {"$lte": 0.2}}},
             {"$unset": ["_id", "exclude"]},
         ]
 
