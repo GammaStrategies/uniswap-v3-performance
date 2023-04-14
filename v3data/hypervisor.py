@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import logging
 
 from v3data import GammaClient, UniswapV3Client
@@ -6,6 +7,8 @@ from v3data.constants import DAYS_IN_PERIOD
 from v3data.enums import Chain, Protocol
 from v3data.hype_fees.fees_yield import fee_returns_all
 from v3data.utils import filter_address_by_chain, timestamp_to_date
+
+from v3data.data import BlockRange
 
 
 logger = logging.getLogger(__name__)
@@ -64,7 +67,7 @@ class HypervisorData:
         variables = {"id": hypervisor_address.lower()}
         response = await self.gamma_client.query(query, variables)
 
-        # TODO: hardcoded hypervisor address matches more than one --> 
+        # TODO: hardcoded hypervisor address matches more than one -->
         #       MAINNET(xPSDN-ETH1) and OPTIMISM(xUSDC-DAI05)
         # TODO: specify chain on hardcoded overrides
         if hypervisor_address == "0x0ec4a47065bf52e1874d2491d4deeed3c638c75f":
@@ -122,7 +125,7 @@ class HypervisorData:
 
         basics_response = await self.gamma_client.query(query_basics)
 
-        # TODO: hardcoded hypervisor address matches more than one --> 
+        # TODO: hardcoded hypervisor address matches more than one -->
         #       MAINNET(xPSDN-ETH1) and OPTIMISM(xUSDC-DAI05)
         # TODO: specify chain on hardcoded overrides
         for hypervisor in basics_response["data"]["uniswapV3Hypervisors"]:
@@ -160,6 +163,164 @@ class HypervisorData:
 
         self.basics_data = basics
         self.pools_data = pools
+
+    async def _get_collected_fees(
+        self,
+        start_timestamp: int | None = None,
+        end_timestamp: int | None = None,
+        start_block: int | None = None,
+        end_block: int | None = None,
+    ) -> dict:
+        """Get collected fees for all hypervisors in a given month and year, from the subgraph.
+
+
+        Args:
+            start_timestamp (int): start timestamp of the time range
+            end_timestamp (int): end timestamp of the time range
+
+        Returns:
+            dict: dictionary with hypervisor address as key and collected fee related fields as value
+        """
+
+        if (
+            not start_timestamp
+            and not start_block
+            or not end_timestamp
+            and not end_block
+        ):
+            raise ValueError("timestamp or block must be provided")
+
+        time_range = BlockRange(chain=self.chain, subgraph_client=self.gamma_client)
+
+        if not start_block or not end_block:
+            # overwrite any provided block with timestamp related
+            await time_range.set_initial_with_timestamp(timestamp=start_timestamp)
+            await time_range.set_end(timestamp=end_timestamp)
+            start_block = time_range.initial.block
+            end_block = time_range.end.block
+            start_timestamp = time_range.initial.timestamp
+            end_timestamp = time_range.end.timestamp
+        else:
+            # set timestamp to zero when block is provided
+            start_timestamp = 0
+            end_timestamp = 0
+
+        # build queries
+        initial_query = """{{
+            uniswapV3Hypervisors(
+                block: {{number: {} }}
+            ) {{
+                grossFeesClaimed0
+                grossFeesClaimed1
+                grossFeesClaimedUSD
+                id
+                symbol
+                tvl1
+                tvl0
+                feesReinvested0
+                feesReinvested1
+            }}
+        }}
+        """.format(
+            start_block
+        )
+
+        end_query = """{{
+            uniswapV3Hypervisors(
+                block: {{number: {} }}
+            ) {{
+                grossFeesClaimed0
+                grossFeesClaimed1
+                grossFeesClaimedUSD
+                id
+                symbol
+                pool {{
+                token0 {{
+                    decimals
+                }}
+                token1 {{
+                    decimals
+                }}
+                }}
+            }}
+        }}
+        """.format(
+            end_block
+        )
+
+        # retrieve data
+        result = {}
+        try:
+            initial_hype_status = {
+                hype["id"]: hype
+                for hype in (await self.gamma_client.query(initial_query))["data"][
+                    "uniswapV3Hypervisors"
+                ]
+            }
+
+            for end_hype in (await self.gamma_client.query(end_query))["data"][
+                "uniswapV3Hypervisors"
+            ]:
+                # if hype id is not present at initial block, set initials to zero
+                if end_hype["id"] not in initial_hype_status:
+                    initial_hype_status[end_hype["id"]] = {
+                        "grossFeesClaimed0": 0,
+                        "grossFeesClaimed1": 0,
+                        "grossFeesClaimedUSD": 0,
+                    }
+
+                # define decimals
+                token0_conversion = 10 ** end_hype["pool"]["token0"]["decimals"]
+                token1_conversion = 10 ** end_hype["pool"]["token1"]["decimals"]
+
+                result[end_hype["id"]] = {
+                    "symbol": end_hype["symbol"],
+                    "id": end_hype["id"],
+                    "initial_block": start_block,
+                    "initial_timestamp": start_timestamp,
+                    "end_block": end_block,
+                    "end_timestamp": end_timestamp,
+                    "initial_grossFeesClaimed0": float(
+                        initial_hype_status[end_hype["id"]]["grossFeesClaimed0"]
+                    )
+                    / token0_conversion,
+                    "initial_grossFeesClaimed1": float(
+                        initial_hype_status[end_hype["id"]]["grossFeesClaimed1"]
+                    )
+                    / token1_conversion,
+                    "initial_grossFeesClaimedUSD": float(
+                        initial_hype_status[end_hype["id"]]["grossFeesClaimedUSD"]
+                    ),
+                    "end_grossFeesClaimed0": float(end_hype["grossFeesClaimed0"])
+                    / token0_conversion,
+                    "end_grossFeesClaimed1": float(end_hype["grossFeesClaimed1"])
+                    / token1_conversion,
+                    "end_grossFeesClaimedUSD": float(end_hype["grossFeesClaimedUSD"]),
+                    "period_grossFeesClaimed0": (
+                        float(end_hype["grossFeesClaimed0"])
+                        - float(
+                            initial_hype_status[end_hype["id"]]["grossFeesClaimed0"]
+                        )
+                    )
+                    / token0_conversion,
+                    "period_grossFeesClaimed1": (
+                        float(end_hype["grossFeesClaimed1"])
+                        - float(
+                            initial_hype_status[end_hype["id"]]["grossFeesClaimed1"]
+                        )
+                    )
+                    / token1_conversion,
+                    "period_grossFeesClaimedUSD": float(end_hype["grossFeesClaimedUSD"])
+                    - float(initial_hype_status[end_hype["id"]]["grossFeesClaimedUSD"]),
+                }
+
+        except Exception as e:
+            logger.debug(
+                f" Unable to retrieve collected fees data for hypervisors from subgraph: {e}"
+            )
+
+        # empty result
+        return result
 
 
 class HypervisorInfo(HypervisorData):

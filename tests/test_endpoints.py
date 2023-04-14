@@ -1,6 +1,6 @@
 import sys
 import os
-import datetime as dt
+from datetime import datetime, timedelta
 import logging
 import asyncio
 
@@ -50,8 +50,8 @@ async def account():
     popo = await account_info.output()
 
 
-def get_timepassed_string(start_time: dt.datetime) -> str:
-    _timelapse = dt.datetime.utcnow() - start_time
+def get_timepassed_string(start_time: datetime) -> str:
+    _timelapse = datetime.utcnow() - start_time
     _passed = _timelapse.total_seconds()
     if _passed < 60:
         _timelapse_unit = "seconds"
@@ -79,10 +79,55 @@ async def test_temporal():
     )
 
 
+async def test_hype_collectedFees(
+    protocol: Protocol,
+    chain: Chain,
+    start_timestamp: int | None = None,
+    end_timestamp: int | None = None,
+    start_block: int | None = None,
+    end_block: int | None = None,
+):
+    collected_fees = await v3data.common.hypervisor.collected_fees(
+        protocol=protocol,
+        chain=chain,
+        start_timestamp=start_timestamp,
+        end_timestamp=end_timestamp,
+        start_block=start_block,
+        end_block=end_block,
+    )
+
+    return collected_fees
+
+
+async def test_hype_collectedFees_multiMonth(
+    protocol: Protocol,
+    chain: Chain,
+    year: int = 2023,
+    start_month: int = 1,
+    end_month: int = 4,
+):
+    for month in range(start_month, end_month + 1):
+        start_date = datetime(year=year, month=month, day=1)
+        end_date = (start_date + timedelta(days=33)).replace(
+            day=1, hour=0, minute=0, second=0
+        )
+        start_timestamp = int(start_date.timestamp())
+        end_timestamp = int(end_date.timestamp())
+
+        month_hype_collected_fees = await test_hype_collectedFees(
+            protocol=protocol,
+            chain=chain,
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+        )
+
+        debug = f"{month_hype_collected_fees}"
+
+
 # TESTING
 if __name__ == "__main__":
     # start time log
-    _startime = dt.datetime.utcnow()
+    _startime = datetime.utcnow()
 
     # base range chart all
     # data = asyncio.run(
@@ -90,7 +135,14 @@ if __name__ == "__main__":
     # )
 
     # recent fees
-    data = asyncio.run(test_temporal())
+    data = asyncio.run(
+        test_hype_collectedFees(
+            protocol=Protocol.QUICKSWAP,
+            chain=Chain.POLYGON,
+            start_block=40195344,
+            end_block=41516908,
+        )
+    )
 
     # end time log
     print(" took {} to complete the script".format(get_timepassed_string(_startime)))
