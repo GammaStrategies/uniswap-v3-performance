@@ -183,6 +183,35 @@ async def uncollected_fees_all():
     return await v3data.common.hypervisor.uncollected_fees_all(PROTOCOL, CHAIN)
 
 
+@router.get("/hypervisors/collectedFees")
+async def collected_fees(
+    response: Response,
+    start_timestamp: int | None = None,
+    end_timestamp: int | None = None,
+    start_block: int | None = None,
+    end_block: int | None = None,
+):
+    """Retrieve collected fees for all hypervisors
+        When default values are used, the function will return the last month's fees collected
+    Args:
+        start_timestamp (int | None, optional): . Defaults to None.
+        end_timestamp (int | None, optional): . Defaults to None.
+        start_block (int | None, optional): . Defaults to None.
+        end_block (int | None, optional): . Defaults to None.
+
+    Returns:
+        dict: collected fees for all hypervisors
+    """
+    return await v3data.common.hypervisor.collected_fees(
+        protocol=PROTOCOL,
+        chain=CHAIN,
+        start_timestamp=start_timestamp,
+        end_timestamp=end_timestamp,
+        start_block=start_block,
+        end_block=end_block,
+    )
+
+
 @router.get("/hypervisors/feeReturns/daily")
 @cache(expire=APY_CACHE_TIMEOUT)
 async def fee_returns_daily(response: Response):

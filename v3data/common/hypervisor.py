@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timedelta
 import logging
 
 from fastapi import Response, status
@@ -13,7 +14,7 @@ from v3data.enums import Chain, Protocol
 from v3data.hype_fees.fees import fees_all
 from v3data.hype_fees.fees_yield import fee_returns_all
 from v3data.hype_fees.impermanent_divergence import impermanent_divergence_all
-from v3data.hypervisor import HypervisorInfo
+from v3data.hypervisor import HypervisorInfo, HypervisorData
 from v3data.toplevel import TopLevelData
 
 logger = logging.getLogger(__name__)
@@ -256,4 +257,38 @@ async def uncollected_fees_all(
 ):
     return await fees_all(
         protocol=protocol, chain=chain, current_timestamp=current_timestamp
+    )
+
+
+async def collected_fees(
+    protocol: Protocol,
+    chain: Chain,
+    start_timestamp: int | None = None,
+    end_timestamp: int | None = None,
+    start_block: int | None = None,
+    end_block: int | None = None,
+):
+    if (not start_timestamp and not start_block) or (
+        not end_timestamp and not end_block
+    ):
+        current_month_first_day: datetime = datetime.utcnow().replace(
+            day=1, hour=0, minute=0, second=0, microsecond=0
+        )
+        last_month_first_day: datetime = (
+            current_month_first_day - timedelta(days=current_month_first_day.day)
+        ).replace(day=1)
+
+        start_date = last_month_first_day
+        end_date = (start_date + timedelta(days=33)).replace(
+            day=1, hour=0, minute=0, second=0
+        )
+        start_timestamp = int(start_date.timestamp())
+        end_timestamp = int(end_date.timestamp())
+
+    hype = HypervisorData(protocol=protocol, chain=chain)
+    return await hype._get_collected_fees(
+        start_timestamp=start_timestamp,
+        end_timestamp=end_timestamp,
+        start_block=start_block,
+        end_block=end_block,
     )
