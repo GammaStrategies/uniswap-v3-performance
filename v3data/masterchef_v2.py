@@ -137,8 +137,12 @@ class MasterchefV2Info(MasterchefV2Data):
         for masterChef in self.data:
             pool_info = {}
             for pool in masterChef["pools"]:
+                pool_apr = 0
                 reward_per_second_usdc = 0
                 rewarder_info = {}
+                staked_lp_usdc = int(pool["totalStaked"]) * float(
+                    pool["hypervisor"]["pricePerShare"]
+                )
                 for rewarder_pool in pool["rewarders"]:
                     reward_token = rewarder_pool["rewarder"]["rewardToken"]["id"]
                     reward_token_symbol = rewarder_pool["rewarder"]["rewardToken"][
@@ -166,10 +170,21 @@ class MasterchefV2Info(MasterchefV2Data):
                     else:
                         weighted_reward_per_second = 0
 
+                    try:
+                        rewarder_apr = (
+                            weighted_reward_per_second
+                            * reward_token_price
+                            * YEAR_SECONDS
+                            / staked_lp_usdc
+                        )
+                    except ZeroDivisionError:
+                        rewarder_apr = 0
+
                     rewarder_info[rewarder_pool["rewarder"]["id"]] = {
                         "rewardToken": reward_token,
                         "rewardTokenSymbol": reward_token_symbol,
                         "rewardPerSecond": weighted_reward_per_second,
+                        "apr": rewarder_apr,
                         "allocPoint": rewarder_pool["allocPoint"],
                     }
 
@@ -178,21 +193,11 @@ class MasterchefV2Info(MasterchefV2Data):
                         weighted_reward_per_second * reward_token_price
                     )
 
-                try:
-                    apr = (
-                        reward_per_second_usdc
-                        * YEAR_SECONDS
-                        / (
-                            int(pool["totalStaked"])
-                            * float(pool["hypervisor"]["pricePerShare"])
-                        )
-                    )
-                except ZeroDivisionError:
-                    apr = 0
+                    pool_apr += rewarder_apr
 
                 pool_info[pool["hypervisor"]["id"]] = {
                     "stakeTokenSymbol": pool["stakeToken"]["symbol"],
-                    "apr": apr,
+                    "apr": pool_apr,
                     "lastRewardTimestamp": pool["lastRewardTimestamp"],
                     "rewarders": rewarder_info,
                 }
