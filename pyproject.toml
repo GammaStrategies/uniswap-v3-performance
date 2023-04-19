@@ -40,3 +40,6 @@ max-line-length = 88
 
 [tool.pylint.MASTER]
 extension-pkg-whitelist = "pydantic"
+
+[tool.poe.tasks]
+run = "uvicorn app:app --reload"
