@@ -1,25 +1,22 @@
+from fastapi import APIRouter, Response, status
+from fastapi_cache.decorator import cache
+
 import v3data.common
 import v3data.common.charts
 import v3data.common.hypervisor
 import v3data.common.users
-
-from fastapi import APIRouter, Response, status
-from fastapi_cache.decorator import cache
-
 from v3data.config import (
+    ALLDATA_CACHE_TIMEOUT,
     APY_CACHE_TIMEOUT,
     DASHBOARD_CACHE_TIMEOUT,
-    DEFAULT_TIMEZONE,
     DB_CACHE_TIMEOUT,
-    ALLDATA_CACHE_TIMEOUT,
+    DEFAULT_TIMEZONE,
     RUN_FIRST_QUERY_TYPE,
 )
 from v3data.dashboard import Dashboard
-from v3data.eth import EthDistribution
-
-from v3data.gamma import GammaDistribution, GammaInfo, GammaYield
 from v3data.enums import Chain, Protocol
-
+from v3data.eth import EthDistribution
+from v3data.gamma import GammaDistribution, GammaInfo, GammaYield
 
 PROTOCOL = Protocol.UNISWAP
 CHAIN = Chain.MAINNET
@@ -282,7 +279,7 @@ async def user_data(address: str):
 
 
 @router.get("/user/{address}/analytics")
-async def account_data(
+async def user_analytics(
     response: Response, address: str, block_init: int = 0, block_end: int = 0
 ):
     return await v3data.common.users.get_user_analytic_data(

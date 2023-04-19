@@ -1,19 +1,18 @@
+from fastapi import APIRouter, Response
+from fastapi_cache.decorator import cache
+
 import v3data.common
 import v3data.common.charts
 import v3data.common.hypervisor
-import v3data.common.users
 import v3data.common.masterchef
-
-from fastapi import APIRouter, Response
-from fastapi_cache.decorator import cache
+import v3data.common.users
 from v3data.config import (
-    APY_CACHE_TIMEOUT,
     ALLDATA_CACHE_TIMEOUT,
+    APY_CACHE_TIMEOUT,
     DB_CACHE_TIMEOUT,
     RUN_FIRST_QUERY_TYPE,
 )
 from v3data.enums import Chain, Protocol
-
 
 PROTOCOL = Protocol.UNISWAP
 CHAIN = Chain.CELO
