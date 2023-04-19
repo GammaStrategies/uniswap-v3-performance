@@ -1,16 +1,16 @@
-import v3data.common
-import v3data.common.charts
-import v3data.common.hypervisor
-import v3data.common.users
-import v3data.common.masterchef
-import v3data.common.masterchef_v2
-import v3data.common.analytics
-
 from fastapi import APIRouter, Response
 from fastapi_cache.decorator import cache
+
+import v3data.common
+import v3data.common.analytics
+import v3data.common.charts
+import v3data.common.hypervisor
+import v3data.common.masterchef
+import v3data.common.masterchef_v2
+import v3data.common.users
 from v3data.config import (
-    APY_CACHE_TIMEOUT,
     ALLDATA_CACHE_TIMEOUT,
+    APY_CACHE_TIMEOUT,
     DB_CACHE_TIMEOUT,
     RUN_FIRST_QUERY_TYPE,
 )
