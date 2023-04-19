@@ -1,14 +1,14 @@
+from fastapi import APIRouter, Response
+from fastapi_cache.decorator import cache
+
 import v3data.common
 import v3data.common.charts
 import v3data.common.hypervisor
-import v3data.common.users
 import v3data.common.masterchef
-
-from fastapi import APIRouter, Response
-from fastapi_cache.decorator import cache
+import v3data.common.users
 from v3data.config import (
-    APY_CACHE_TIMEOUT,
     ALLDATA_CACHE_TIMEOUT,
+    APY_CACHE_TIMEOUT,
     DB_CACHE_TIMEOUT,
     RUN_FIRST_QUERY_TYPE,
 )
@@ -280,7 +280,7 @@ async def user_data(address: str):
 
 
 @router.get("/user/{address}/analytics")
-async def account_data(
+async def user_analytics(
     response: Response, address: str, block_init: int = 0, block_end: int = 0
 ):
     return await v3data.common.users.get_user_analytic_data(
