@@ -137,10 +137,10 @@ if __name__ == "__main__":
     # recent fees
     data = asyncio.run(
         test_hype_collectedFees(
-            protocol=Protocol.QUICKSWAP,
-            chain=Chain.POLYGON,
-            start_block=40195344,
-            end_block=41516908,
+            protocol=Protocol.THENA,
+            chain=Chain.BSC,
+            start_timestamp=1676851200,
+            end_timestamp=1681982181,
         )
     )
 
