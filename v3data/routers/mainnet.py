@@ -199,14 +199,17 @@ async def collected_fees(
     Returns:
         dict: collected fees for all hypervisors
     """
-    return await v3data.common.hypervisor.collected_fees(
-        protocol=PROTOCOL,
-        chain=CHAIN,
-        start_timestamp=start_timestamp,
-        end_timestamp=end_timestamp,
-        start_block=start_block,
-        end_block=end_block,
-    )
+    try:
+        return await v3data.common.hypervisor.collected_fees(
+            protocol=PROTOCOL,
+            chain=CHAIN,
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            start_block=start_block,
+            end_block=end_block,
+        )
+    except ValueError as e:
+        return e
 
 
 @router.get("/hypervisors/feeReturns/daily")
