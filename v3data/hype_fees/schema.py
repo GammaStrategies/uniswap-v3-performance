@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field, InitVar
 
 from v3data.constants import X128
+from v3data.schema import ValueWithDecimal
 
 
 @dataclass
@@ -11,18 +12,6 @@ class Time:
     def __post_init__(self):
         self.block = int(self.block)
         self.timestamp = int(self.timestamp)
-
-
-@dataclass
-class ValueWithDecimal:
-    raw: int
-    adjusted: float = field(init=False)
-    decimals: int
-
-    def __post_init__(self):
-        self.raw = int(self.raw)
-        self.decimals = int(self.decimals)
-        self.adjusted = self.raw / 10**self.decimals
 
 
 @dataclass
