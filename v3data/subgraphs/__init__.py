@@ -1,5 +1,7 @@
 import logging
+from abc import ABC, abstractmethod
 from functools import wraps
+from typing import Any
 
 from gql import Client as GqlClient
 from gql.dsl import DSLFragment, DSLQuery, DSLSchema, dsl_gql
@@ -68,3 +70,41 @@ class SubgraphClient:
         frag.on(ds._Meta_)
         frag.select(ds._Meta_.block.select(ds._Block_.number, ds._Block_.timestamp))
         return frag
+
+
+class SubgraphData(ABC):
+    """Abstract base class for subgraph data."""
+    def __init__(self):
+        self.data: Any
+        self.query_response: dict
+
+    def load_query_response(self, query_response: dict) -> None:
+        """Load data from external source to skip querying.
+
+        Args:
+            query_response: dict with data from subgraph query
+        """
+        self.query_response = query_response
+
+    async def get_data(self, run_query: bool = True) -> None:
+        """Get data, transforms it and stores it in self.data.
+
+        Args:
+            run_query: Defaults to True, set to False if data is already loaded
+        """
+        if run_query:
+            await self._query_data()
+
+        self.data = self._transform_data()
+
+    @abstractmethod
+    async def _query_data(self) -> dict:
+        """Query subgraph and sets self.query_response."""
+        # query = ""
+        # response = await self.client.execute(query)
+        # self.query_response = response
+
+    @abstractmethod
+    def _transform_data(self) -> Any:
+        """Transformations for self.query_response into self.data"""
+        self.data = self.query_response

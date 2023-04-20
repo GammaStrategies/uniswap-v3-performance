@@ -7,9 +7,9 @@ from v3data.constants import DAYS_IN_PERIOD, GAMMA_ADDRESS, XGAMMA_ADDRESS
 from v3data.enums import Chain, Protocol
 from v3data.gamma import GammaCalculations, ProtocolFeesCalculations
 from v3data.pricing import gamma_price
-from v3data.rewardshypervisor import RewardsHypervisorInfo
 from v3data.toplevel import TopLevelData
 from v3data.utils import timestamp_ago
+from v3data.xgamma import XGammaData
 
 
 class Dashboard:
@@ -174,11 +174,11 @@ class Dashboard:
 
         daily_yield = gamma_yield[self.period]["yield"] / DAYS_IN_PERIOD[self.period]
 
-        rewards = RewardsHypervisorInfo()
-        rewards.data = self.rewards_hypervisor_data
-        rewards_info = await rewards.output(get_data=False)
+        rewards = XGammaData()
+        rewards.load_query_response(self.rewards_hypervisor_data)
+        await rewards.get_data(run_query=False)
 
-        gamma_staked_usd = rewards_info["gamma_staked"] * gamma_price_usd
+        gamma_staked_usd = rewards.data.gamma_staked.adjusted * gamma_price_usd
 
         # Use fees for gamma yield
         fees_per_day = collected_fees["weekly"]["collected_usd"]
@@ -187,7 +187,7 @@ class Dashboard:
 
         dashboard_stats = {
             "stakedUsdAmount": gamma_staked_usd,
-            "stakedAmount": rewards_info["gamma_staked"],
+            "stakedAmount": rewards.data.gamma_staked.adjusted,
             "feeStatsFeeAccural": collected_fees["daily"]["collected_usd"],
             "feeStatsAmountGamma": collected_fees["daily"]["collected_gamma"],
             "feeStatsStakingApr": gamma_fees_apr,  # gamma_yield[self.period]["apr"],
@@ -210,7 +210,7 @@ class Dashboard:
             "uniswapFeesGenerated": top_level_data["fees_claimed"],
             "uniswapFeesBasedApr": f"{top_level_returns['feeApr']:.0%}",
             "gammaPrice": gamma_price_usd,
-            "gammaPerXgamma": rewards_info["gamma_per_xgamma"],
+            "gammaPerXgamma": rewards.data.gamma_per_xgamma,
             "id": 2,
         }
 
