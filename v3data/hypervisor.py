@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 import logging
 
@@ -194,8 +195,13 @@ class HypervisorData:
 
         if not start_block or not end_block:
             # overwrite any provided block with timestamp related
-            await time_range.set_initial_with_timestamp(timestamp=start_timestamp)
-            await time_range.set_end(timestamp=end_timestamp)
+            # await time_range.set_initial_with_timestamp(timestamp=start_timestamp)
+            # await time_range.set_end(timestamp=end_timestamp)
+            await asyncio.gather(
+                time_range.set_initial_with_timestamp(timestamp=start_timestamp),
+                time_range.set_end(timestamp=end_timestamp),
+            )
+
             start_block = time_range.initial.block
             end_block = time_range.end.block
             start_timestamp = time_range.initial.timestamp
@@ -251,16 +257,17 @@ class HypervisorData:
         # retrieve data
         result = {}
         try:
+            initial_hype_status, end_hype_status = await asyncio.gather(
+                self.gamma_client.query(initial_query),
+                self.gamma_client.query(end_query),
+            )
+
             initial_hype_status = {
                 hype["id"]: hype
-                for hype in (await self.gamma_client.query(initial_query))["data"][
-                    "uniswapV3Hypervisors"
-                ]
+                for hype in initial_hype_status["data"]["uniswapV3Hypervisors"]
             }
 
-            for end_hype in (await self.gamma_client.query(end_query))["data"][
-                "uniswapV3Hypervisors"
-            ]:
+            for end_hype in end_hype_status["data"]["uniswapV3Hypervisors"]:
                 # if hype id is not present at initial block, set initials to zero
                 if end_hype["id"] not in initial_hype_status:
                     initial_hype_status[end_hype["id"]] = {
@@ -315,6 +322,13 @@ class HypervisorData:
                 }
 
         except Exception as e:
+            # check if block is available at subgraph
+
+            if "error" in initial_hype_status:
+                raise ValueError(f"{initial_hype_status['error']}")
+            if "error" in end_hype_status:
+                raise ValueError(f"{end_hype_status['error']}")
+
             logger.debug(
                 f" Unable to retrieve collected fees data for hypervisors from subgraph: {e}"
             )
