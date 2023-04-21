@@ -94,6 +94,7 @@ async def test_hype_collectedFees(
         end_timestamp=end_timestamp,
         start_block=start_block,
         end_block=end_block,
+        usd_total_only=True,
     )
 
     return collected_fees
@@ -139,8 +140,8 @@ if __name__ == "__main__":
         test_hype_collectedFees(
             protocol=Protocol.THENA,
             chain=Chain.BSC,
-            start_timestamp=1676851200,
-            end_timestamp=1681982181,
+            start_timestamp=1680355404,
+            end_timestamp=1682083431,
         )
     )
 
