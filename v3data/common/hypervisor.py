@@ -267,7 +267,22 @@ async def collected_fees(
     end_timestamp: int | None = None,
     start_block: int | None = None,
     end_block: int | None = None,
-):
+    usd_total_only: bool = False,
+) -> dict:
+    """Collected fees
+
+    Args:
+        protocol (Protocol):
+        chain (Chain):
+        start_timestamp (int | None, optional): . Defaults to None.
+        end_timestamp (int | None, optional): . Defaults to None.
+        start_block (int | None, optional): . Defaults to None.
+        end_block (int | None, optional): . Defaults to None.
+        usd_total_only (bool, optional): return the sum of all period_grossFeesClaimed in usd. Defaults to False.
+
+    Returns:
+        dict:
+    """
     if (not start_timestamp and not start_block) or (
         not end_timestamp and not end_block
     ):
@@ -286,9 +301,36 @@ async def collected_fees(
         end_timestamp = int(end_date.timestamp())
 
     hype = HypervisorData(protocol=protocol, chain=chain)
-    return await hype._get_collected_fees(
+    collected_fees = await hype._get_collected_fees(
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
         start_block=start_block,
         end_block=end_block,
     )
+    if usd_total_only and collected_fees:
+        first_key = next(iter(collected_fees))
+        initial_grossFeesClaimedUSD = 0
+        end_grossFeesClaimedUSD = 0
+        period_grossFeesClaimedUSD = 0
+        for k, x in collected_fees.items():
+            initial_grossFeesClaimedUSD += x["initial_grossFeesClaimedUSD"]
+            end_grossFeesClaimedUSD += x["end_grossFeesClaimedUSD"]
+            period_grossFeesClaimedUSD += x["period_grossFeesClaimedUSD"]
+
+        return {
+            "initial_block": collected_fees[first_key]["initial_block"],
+            "initial_timestamp": collected_fees[first_key]["initial_timestamp"],
+            "initial_datetime": datetime.fromtimestamp(
+                collected_fees[first_key]["initial_timestamp"]
+            ),
+            "end_block": collected_fees[first_key]["end_block"],
+            "end_timestamp": collected_fees[first_key]["end_timestamp"],
+            "end_datetime": datetime.fromtimestamp(
+                collected_fees[first_key]["end_timestamp"]
+            ),
+            "initial_grossFeesClaimedUSD": initial_grossFeesClaimedUSD,
+            "end_grossFeesClaimedUSD": end_grossFeesClaimedUSD,
+            "period_grossFeesClaimedUSD": period_grossFeesClaimedUSD,
+        }
+    else:
+        return collected_fees

@@ -187,17 +187,10 @@ async def collected_fees(
     end_timestamp: int | None = None,
     start_block: int | None = None,
     end_block: int | None = None,
+    usd_total_only: bool = False,
 ):
     """Retrieve collected fees for all hypervisors
-        When default values are used, the function will return the last month's fees collected
-    Args:
-        start_timestamp (int | None, optional): . Defaults to None.
-        end_timestamp (int | None, optional): . Defaults to None.
-        start_block (int | None, optional): . Defaults to None.
-        end_block (int | None, optional): . Defaults to None.
-
-    Returns:
-        dict: collected fees for all hypervisors
+    When default values are used, the function will return the last month's fees collected
     """
     try:
         return await v3data.common.hypervisor.collected_fees(
@@ -207,6 +200,7 @@ async def collected_fees(
             end_timestamp=end_timestamp,
             start_block=start_block,
             end_block=end_block,
+            usd_total_only=usd_total_only,
         )
     except ValueError as e:
         return e
