@@ -84,48 +84,48 @@ class HypervisorsReturnsAllPeriods(ExecutionOrderWrapper):
             chain=self.chain, protocol=self.protocol
         )
         if len(av_result) < 0:
-            raise Exception
+            raise ValueError(" No returns")
 
-            results_na = {"feeApr": 0, "feeApy": 0, "status": "unavailable on database"}
+        results_na = {"feeApr": 0, "feeApy": 0, "status": "unavailable on database"}
 
-            result = dict()
-            # CONVERT result so is equal to original
-            for hypervisor in av_result:
-                result[hypervisor["_id"]] = dict()
-                try:
-                    result[hypervisor["_id"]]["daily"] = {
-                        "feeApr": hypervisor["returns"]["1"]["av_feeApr"],
-                        "feeApy": hypervisor["returns"]["1"]["av_feeApy"],
-                        "status": "database",
-                    }
-                except Exception:
-                    result[hypervisor["_id"]]["daily"] = results_na
-                try:
-                    result[hypervisor["_id"]]["weekly"] = {
-                        "feeApr": hypervisor["returns"]["7"]["av_feeApr"],
-                        "feeApy": hypervisor["returns"]["7"]["av_feeApy"],
-                        "status": "database",
-                    }
-                except Exception:
-                    result[hypervisor["_id"]]["weekly"] = results_na
-                try:
-                    result[hypervisor["_id"]]["monthly"] = {
-                        "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
-                        "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
-                        "status": "database",
-                    }
-                except Exception:
-                    result[hypervisor["_id"]]["monthly"] = results_na
-                try:
-                    result[hypervisor["_id"]]["allTime"] = {
-                        "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
-                        "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
-                        "status": "database",
-                    }
-                except Exception:
-                    result[hypervisor["_id"]]["allTime"] = results_na
+        result = {}
+        # CONVERT result so is equal to original
+        for hypervisor in av_result:
+            result[hypervisor["_id"]] = {}
+            try:
+                result[hypervisor["_id"]]["daily"] = {
+                    "feeApr": hypervisor["returns"]["1"]["av_feeApr"],
+                    "feeApy": hypervisor["returns"]["1"]["av_feeApy"],
+                    "status": "database",
+                }
+            except Exception:
+                result[hypervisor["_id"]]["daily"] = results_na
+            try:
+                result[hypervisor["_id"]]["weekly"] = {
+                    "feeApr": hypervisor["returns"]["7"]["av_feeApr"],
+                    "feeApy": hypervisor["returns"]["7"]["av_feeApy"],
+                    "status": "database",
+                }
+            except Exception:
+                result[hypervisor["_id"]]["weekly"] = results_na
+            try:
+                result[hypervisor["_id"]]["monthly"] = {
+                    "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
+                    "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
+                    "status": "database",
+                }
+            except Exception:
+                result[hypervisor["_id"]]["monthly"] = results_na
+            try:
+                result[hypervisor["_id"]]["allTime"] = {
+                    "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
+                    "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
+                    "status": "database",
+                }
+            except Exception:
+                result[hypervisor["_id"]]["allTime"] = results_na
 
-            return result
+        return result
 
     async def _subgraph(self):
         daily, weekly, monthly = await asyncio.gather(
