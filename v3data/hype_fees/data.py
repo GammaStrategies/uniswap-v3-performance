@@ -19,12 +19,12 @@ class FeeGrowthDataABC(ABC):
         self._static_data = {}
 
     @abstractmethod
-    def init_time(self, *args, **kwargs) -> None:
+    async def init_time(self, *args, **kwargs) -> None:
         # Required to initialise initial and end times
         pass
 
     @abstractmethod
-    def get_data(self) -> None:
+    async def get_data(self) -> None:
         pass
 
     def _init_fees_data(
@@ -44,7 +44,8 @@ class FeeGrowthDataABC(ABC):
             timestamp=timestamp,
             hypervisor=hypervisor_id,
             symbol=self._static_data[hypervisor_id].symbol,
-            currentTick=current_tick,
+            current_tick=current_tick,
+            fee=hypervisor.get("fee", 10),
             price0=price_0,
             price1=price_1,
             decimals0=self._static_data[hypervisor_id].decimals.value0,

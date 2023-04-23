@@ -10,6 +10,8 @@ class HypePoolClient(SubgraphClient):
     """Client for accessing Hype Pool Subgraphs for different deployments"""
 
     def __init__(self, protocol: Protocol, chain: Chain) -> None:
+        self.protocol = protocol
+        self.chain = chain
         super().__init__(
             url=DEX_HYPEPOOL_SUBGRAPH_URLS[protocol][chain],
             schema_path="v3data/subgraphs/hype_pool/schema.graphql",
@@ -70,6 +72,10 @@ class HypePoolClient(SubgraphClient):
             ds_hypervisor.basePosition.select(position_fields_fragment),
             ds_hypervisor.limitPosition.select(position_fields_fragment),
         )
+
+        if self.protocol == Protocol.THENA and self.chain == Chain.BSC:
+            frag.select(ds_hypervisor.fee)
+
         return frag
 
     @fragment
@@ -126,4 +132,8 @@ class HypePoolClient(SubgraphClient):
                 position_snapshot_fields_fragment
             ),
         )
+
+        if self.protocol == Protocol.THENA and self.chain == Chain.BSC:
+            frag.select(ds_fee_collection_snapshot.fee)
+
         return frag
