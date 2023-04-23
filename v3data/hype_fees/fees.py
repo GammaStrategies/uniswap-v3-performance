@@ -59,7 +59,7 @@ class Fees:
         elif position_type == PositionType.LIMIT:
             position = self.data.limit_position
 
-        if self.data.currentTick >= position.tick_lower.tick_index:
+        if self.data.current_tick >= position.tick_lower.tick_index:
             fee_growth_below_pos_0 = position.tick_lower.fee_growth_outside.value0
             fee_growth_below_pos_1 = position.tick_lower.fee_growth_outside.value1
         else:
@@ -72,7 +72,7 @@ class Fees:
                 position.tick_lower.fee_growth_outside.value1,
             )
 
-        if self.data.currentTick >= position.tick_upper.tick_index:
+        if self.data.current_tick >= position.tick_upper.tick_index:
             fee_growth_above_pos_0 = sub_in_256(
                 self.data.fee_growth_global.value0,
                 position.tick_upper.fee_growth_outside.value0,

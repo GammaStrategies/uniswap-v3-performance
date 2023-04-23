@@ -98,6 +98,7 @@ class FeesYield:
         return FeesSnapshot(
             block=fees_data.block,
             timestamp=fees_data.timestamp,
+            fee=fees_data.fee,
             tvl_usd=fees_data.tvl_usd,
             total_fees_0=fee_amounts.total.amount.value0,
             total_fees_1=fee_amounts.total.amount.value1,
