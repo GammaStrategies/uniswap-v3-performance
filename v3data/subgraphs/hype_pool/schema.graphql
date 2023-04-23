@@ -37,6 +37,9 @@ type FeeCollectionSnapshot {
   """Parent feeSnapshot entity ID"""
   feeSnapshot: FeeSnapshot!
 
+  """Protocol Fee"""
+  fee: Int!
+
   """Pool tick"""
   tick: Int!
 
@@ -125,6 +128,14 @@ input FeeCollectionSnapshot_filter {
   feeSnapshot_not_ends_with: String
   feeSnapshot_not_ends_with_nocase: String
   feeSnapshot_: FeeSnapshot_filter
+  fee: Int
+  fee_not: Int
+  fee_gt: Int
+  fee_lt: Int
+  fee_gte: Int
+  fee_lte: Int
+  fee_in: [Int!]
+  fee_not_in: [Int!]
   tick: Int
   tick_not: Int
   tick_gt: Int
@@ -257,6 +268,7 @@ enum FeeCollectionSnapshot_orderBy {
   feeSnapshot__id
   feeSnapshot__blockNumber
   feeSnapshot__timestamp
+  fee
   tick
   price0
   price1
@@ -407,6 +419,7 @@ enum FeeSnapshot_orderBy {
   hypervisor
   hypervisor__id
   hypervisor__symbol
+  hypervisor__fee
   hypervisor__totalSupply
   hypervisor__tvl0
   hypervisor__tvl1
@@ -421,6 +434,7 @@ enum FeeSnapshot_orderBy {
   previousBlock
   previousBlock__id
   previousBlock__type
+  previousBlock__fee
   previousBlock__tick
   previousBlock__price0
   previousBlock__price1
@@ -434,6 +448,7 @@ enum FeeSnapshot_orderBy {
   currentBlock
   currentBlock__id
   currentBlock__type
+  currentBlock__fee
   currentBlock__tick
   currentBlock__price0
   currentBlock__price1
@@ -455,6 +470,9 @@ type Hypervisor {
 
   """Address of underlying pool"""
   pool: Pool!
+
+  """Protocol Fee"""
+  fee: Int!
 
   """Total supply of vault tokens"""
   totalSupply: BigInt!
@@ -694,6 +712,7 @@ enum HypervisorPosition_orderBy {
   hypervisor
   hypervisor__id
   hypervisor__symbol
+  hypervisor__fee
   hypervisor__totalSupply
   hypervisor__tvl0
   hypervisor__tvl1
@@ -783,6 +802,14 @@ input Hypervisor_filter {
   pool_not_ends_with: String
   pool_not_ends_with_nocase: String
   pool_: Pool_filter
+  fee: Int
+  fee_not: Int
+  fee_gt: Int
+  fee_lt: Int
+  fee_gte: Int
+  fee_lte: Int
+  fee_in: [Int!]
+  fee_not_in: [Int!]
   totalSupply: BigInt
   totalSupply_not: BigInt
   totalSupply_gt: BigInt
@@ -921,6 +948,7 @@ enum Hypervisor_orderBy {
   pool___previousFeeGrowthGlobal0X128
   pool___previousFeeGrowthGlobal1X128
   pool___protocol
+  fee
   totalSupply
   tvl0
   tvl1
@@ -959,6 +987,8 @@ enum Network {
   celo
   matic
   optimism
+  bsc
+  pzke
 }
 
 """Defines the order direction, either ascending or descending"""
@@ -1422,6 +1452,7 @@ enum PositionSnapshot_orderBy {
   feeCollectionSnapshot
   feeCollectionSnapshot__id
   feeCollectionSnapshot__type
+  feeCollectionSnapshot__fee
   feeCollectionSnapshot__tick
   feeCollectionSnapshot__price0
   feeCollectionSnapshot__price1
