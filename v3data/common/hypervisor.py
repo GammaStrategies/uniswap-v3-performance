@@ -84,48 +84,48 @@ class HypervisorsReturnsAllPeriods(ExecutionOrderWrapper):
             chain=self.chain, protocol=self.protocol
         )
         if len(av_result) < 0:
-            raise Exception
+            raise ValueError(" No returns")
 
-            results_na = {"feeApr": 0, "feeApy": 0, "status": "unavailable on database"}
+        results_na = {"feeApr": 0, "feeApy": 0, "status": "unavailable on database"}
 
-            result = dict()
-            # CONVERT result so is equal to original
-            for hypervisor in av_result:
-                result[hypervisor["_id"]] = dict()
-                try:
-                    result[hypervisor["_id"]]["daily"] = {
-                        "feeApr": hypervisor["returns"]["1"]["av_feeApr"],
-                        "feeApy": hypervisor["returns"]["1"]["av_feeApy"],
-                        "status": "database",
-                    }
-                except Exception:
-                    result[hypervisor["_id"]]["daily"] = results_na
-                try:
-                    result[hypervisor["_id"]]["weekly"] = {
-                        "feeApr": hypervisor["returns"]["7"]["av_feeApr"],
-                        "feeApy": hypervisor["returns"]["7"]["av_feeApy"],
-                        "status": "database",
-                    }
-                except Exception:
-                    result[hypervisor["_id"]]["weekly"] = results_na
-                try:
-                    result[hypervisor["_id"]]["monthly"] = {
-                        "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
-                        "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
-                        "status": "database",
-                    }
-                except Exception:
-                    result[hypervisor["_id"]]["monthly"] = results_na
-                try:
-                    result[hypervisor["_id"]]["allTime"] = {
-                        "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
-                        "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
-                        "status": "database",
-                    }
-                except Exception:
-                    result[hypervisor["_id"]]["allTime"] = results_na
+        result = {}
+        # CONVERT result so is equal to original
+        for hypervisor in av_result:
+            result[hypervisor["_id"]] = {}
+            try:
+                result[hypervisor["_id"]]["daily"] = {
+                    "feeApr": hypervisor["returns"]["1"]["av_feeApr"],
+                    "feeApy": hypervisor["returns"]["1"]["av_feeApy"],
+                    "status": "database",
+                }
+            except Exception:
+                result[hypervisor["_id"]]["daily"] = results_na
+            try:
+                result[hypervisor["_id"]]["weekly"] = {
+                    "feeApr": hypervisor["returns"]["7"]["av_feeApr"],
+                    "feeApy": hypervisor["returns"]["7"]["av_feeApy"],
+                    "status": "database",
+                }
+            except Exception:
+                result[hypervisor["_id"]]["weekly"] = results_na
+            try:
+                result[hypervisor["_id"]]["monthly"] = {
+                    "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
+                    "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
+                    "status": "database",
+                }
+            except Exception:
+                result[hypervisor["_id"]]["monthly"] = results_na
+            try:
+                result[hypervisor["_id"]]["allTime"] = {
+                    "feeApr": hypervisor["returns"]["30"]["av_feeApr"],
+                    "feeApy": hypervisor["returns"]["30"]["av_feeApy"],
+                    "status": "database",
+                }
+            except Exception:
+                result[hypervisor["_id"]]["allTime"] = results_na
 
-            return result
+        return result
 
     async def _subgraph(self):
         daily, weekly, monthly = await asyncio.gather(
@@ -313,24 +313,24 @@ async def collected_fees(
         end_grossFeesClaimedUSD = 0
         period_grossFeesClaimedUSD = 0
         for k, x in collected_fees.items():
-            initial_grossFeesClaimedUSD += x["initial_grossFeesClaimedUSD"]
-            end_grossFeesClaimedUSD += x["end_grossFeesClaimedUSD"]
-            period_grossFeesClaimedUSD += x["period_grossFeesClaimedUSD"]
+            initial_grossFeesClaimedUSD += x["initialGrossFeesClaimedUsd"]
+            end_grossFeesClaimedUSD += x["endGrossFeesClaimedUsd"]
+            period_grossFeesClaimedUSD += x["periodGrossFeesClaimedUsd"]
 
         return {
-            "initial_block": collected_fees[first_key]["initial_block"],
-            "initial_timestamp": collected_fees[first_key]["initial_timestamp"],
-            "initial_datetime": datetime.fromtimestamp(
-                collected_fees[first_key]["initial_timestamp"]
+            "initialBlock": collected_fees[first_key]["initialBlock"],
+            "initialTimestamp": collected_fees[first_key]["initialTimestamp"],
+            "initialDatetime": datetime.fromtimestamp(
+                collected_fees[first_key]["initialTimestamp"]
             ),
-            "end_block": collected_fees[first_key]["end_block"],
-            "end_timestamp": collected_fees[first_key]["end_timestamp"],
-            "end_datetime": datetime.fromtimestamp(
-                collected_fees[first_key]["end_timestamp"]
+            "endBlock": collected_fees[first_key]["endBlock"],
+            "endTimestamp": collected_fees[first_key]["endTimestamp"],
+            "endDatetime": datetime.fromtimestamp(
+                collected_fees[first_key]["endTimestamp"]
             ),
-            "initial_grossFeesClaimedUSD": initial_grossFeesClaimedUSD,
-            "end_grossFeesClaimedUSD": end_grossFeesClaimedUSD,
-            "period_grossFeesClaimedUSD": period_grossFeesClaimedUSD,
+            "initialGrossFeesClaimedUSD": initial_grossFeesClaimedUSD,
+            "endGrossFeesClaimedUSD": end_grossFeesClaimedUSD,
+            "periodGrossFeesClaimedUSD": period_grossFeesClaimedUSD,
         }
     else:
         return collected_fees

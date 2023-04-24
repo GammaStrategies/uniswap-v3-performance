@@ -283,41 +283,41 @@ class HypervisorData:
                 result[end_hype["id"]] = {
                     "symbol": end_hype["symbol"],
                     "id": end_hype["id"],
-                    "initial_block": start_block,
-                    "initial_timestamp": start_timestamp,
-                    "end_block": end_block,
-                    "end_timestamp": end_timestamp,
-                    "initial_grossFeesClaimed0": float(
+                    "initialBlock": start_block,
+                    "initialTimestamp": start_timestamp,
+                    "endBlock": end_block,
+                    "endTimestamp": end_timestamp,
+                    "initialGrossFeesClaimed0": float(
                         initial_hype_status[end_hype["id"]]["grossFeesClaimed0"]
                     )
                     / token0_conversion,
-                    "initial_grossFeesClaimed1": float(
+                    "initialGrossFeesClaimed1": float(
                         initial_hype_status[end_hype["id"]]["grossFeesClaimed1"]
                     )
                     / token1_conversion,
-                    "initial_grossFeesClaimedUSD": float(
+                    "initialGrossFeesClaimedUsd": float(
                         initial_hype_status[end_hype["id"]]["grossFeesClaimedUSD"]
                     ),
-                    "end_grossFeesClaimed0": float(end_hype["grossFeesClaimed0"])
+                    "endGrossFeesClaimed0": float(end_hype["grossFeesClaimed0"])
                     / token0_conversion,
-                    "end_grossFeesClaimed1": float(end_hype["grossFeesClaimed1"])
+                    "endGrossFeesClaimed1": float(end_hype["grossFeesClaimed1"])
                     / token1_conversion,
-                    "end_grossFeesClaimedUSD": float(end_hype["grossFeesClaimedUSD"]),
-                    "period_grossFeesClaimed0": (
+                    "endGrossFeesClaimedUsd": float(end_hype["grossFeesClaimedUSD"]),
+                    "periodGrossFeesClaimed0": (
                         float(end_hype["grossFeesClaimed0"])
                         - float(
                             initial_hype_status[end_hype["id"]]["grossFeesClaimed0"]
                         )
                     )
                     / token0_conversion,
-                    "period_grossFeesClaimed1": (
+                    "periodGrossFeesClaimed1": (
                         float(end_hype["grossFeesClaimed1"])
                         - float(
                             initial_hype_status[end_hype["id"]]["grossFeesClaimed1"]
                         )
                     )
                     / token1_conversion,
-                    "period_grossFeesClaimedUSD": float(end_hype["grossFeesClaimedUSD"])
+                    "periodGrossFeesClaimedUsd": float(end_hype["grossFeesClaimedUSD"])
                     - float(initial_hype_status[end_hype["id"]]["grossFeesClaimedUSD"]),
                 }
 

@@ -24,6 +24,12 @@ from v3data.accounts import AccountInfo
 from v3data.common import hypervisor
 from v3data.enums import Chain, Protocol
 from v3data.hype_fees.fees_yield import fee_returns_all
+from v3data.config import (
+    ALLDATA_CACHE_TIMEOUT,
+    APY_CACHE_TIMEOUT,
+    DB_CACHE_TIMEOUT,
+    RUN_FIRST_QUERY_TYPE,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -125,6 +131,15 @@ async def test_hype_collectedFees_multiMonth(
         debug = f"{month_hype_collected_fees}"
 
 
+async def test_returns():
+    PROTOCOL = Protocol.UNISWAP
+    CHAIN = Chain.MAINNET
+    hypervisor_returns = v3data.common.hypervisor.HypervisorsReturnsAllPeriods(
+        protocol=PROTOCOL, chain=CHAIN, hypervisors=None, response=None
+    )
+    result = await hypervisor_returns.run("database")
+
+
 # TESTING
 if __name__ == "__main__":
     # start time log
@@ -135,6 +150,7 @@ if __name__ == "__main__":
     #    base_range_chart_all(protocol=Protocol.UNISWAP, chain=Chain.MAINNET, days=20)
     # )
 
+    asyncio.run(test_returns())
     # recent fees
     data = asyncio.run(
         test_hype_collectedFees(
