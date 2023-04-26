@@ -251,16 +251,16 @@ async def test_analytics():
         # execute feed
         results = await asyncio.gather(*requests)
         print(
-            "[{}]  took {} to complete aggregateStats call".format(
+            "[{}]  took {} to complete  call".format(
                 chain, get_timepassed_string(_startime)
             )
         )
 
 
 async def test_analytics_hype():
-    periods = [1]
+    periods = [14]
     chain = Chain.OPTIMISM
-    hypervisor_list = ["0x34d4112d180e9faf06f77c8c550ba20c9f61ae31"]
+    hypervisor_list = ["0x431f6E577A431D9EE87a535fDE2dB830E352e33c".lower()]
     static_manager = db_static_manager(mongo_url=MONGO_DB_URL)
 
     requests = [
