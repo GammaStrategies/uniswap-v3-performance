@@ -152,3 +152,5 @@ GQL_CLIENT_TIMEOUT = int(get_config("GQL_CLIENT_TIMEOUT"))
 
 # What to run first, subgraph or database
 RUN_FIRST_QUERY_TYPE = QueryType(get_config("RUN_FIRST_QUERY_TYPE"))
+
+MASTERCHEF_ADDRESSES = get_config("MASTERCHEF_ADDRESSES")
