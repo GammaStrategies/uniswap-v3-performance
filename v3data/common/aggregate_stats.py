@@ -33,9 +33,9 @@ class AggregateStats(ExecutionOrderWrapper):
         result = await _mngr.get_data(chain=self.chain, protocol=self.protocol)
         self.database_datetime = result.pop("datetime", "")
         return AggregateStatsOutput(
-            totalValueLockedUSD=result["tvl"],
-            pairCount=result["hypervisor_count"],
-            totalFeesClaimedUSD=result["fees_claimed"],
+            totalValueLockedUSD=result["totalValueLockedUSD"],
+            pairCount=result["pairCount"],
+            totalFeesClaimedUSD=result["totalFeesClaimedUSD"],
         )
 
     async def _subgraph(self):
