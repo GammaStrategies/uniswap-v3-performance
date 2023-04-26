@@ -1,5 +1,4 @@
 import asyncio
-from datetime import datetime, timedelta
 import logging
 
 from v3data import GammaClient, UniswapV3Client
