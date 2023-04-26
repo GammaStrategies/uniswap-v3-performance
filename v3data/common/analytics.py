@@ -9,7 +9,7 @@ from v3data.config import MONGO_DB_URL
 class HypervisorAnalytics:
     def __init__(self, chain: Chain, hypervisor_address: str):
         self.chain = chain
-        self.address = hypervisor_address
+        self.address = hypervisor_address.lower()
 
         self.returns_manager = db_returns_manager(mongo_url=MONGO_DB_URL)
         self.allrewards2_manager = db_allRewards2_manager(mongo_url=MONGO_DB_URL)
@@ -18,7 +18,6 @@ class HypervisorAnalytics:
         self,
         period: int = 30,
     ):
-
         end_date = datetime.now()
         ini_date = end_date - timedelta(days=period)
 
@@ -48,7 +47,6 @@ class HypervisorAnalytics:
 async def get_hype_data(
     chain: Chain, hypervisor_address: str, period: int, response: Response = None
 ):
-
     if response:
         # this is a database query only
         response.headers["X-Database"] = "true"

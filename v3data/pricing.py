@@ -21,8 +21,8 @@ POOLS = {
         },
         "AXL_USDC": {
             "protocol": Protocol.UNISWAP,
-            "address": "0x5b0d2536f0c970b8d9cbf3959460fb97ce808ade"
-        }
+            "address": "0x5b0d2536f0c970b8d9cbf3959460fb97ce808ade",
+        },
     },
     Chain.OPTIMISM: {
         "WETH_USDC": {
@@ -90,7 +90,7 @@ POOL_PATHS = {
         # AXL
         "0x467719ad09025fcc6cf6f8311755809d45a5e5f3": [
             (POOLS[Chain.MAINNET]["AXL_USDC"], 1)
-        ]
+        ],
     },
     Chain.OPTIMISM: {
         # OP
@@ -154,7 +154,7 @@ POOL_PATHS = {
 class DexPriceData:
     """Base class for dex prices"""
 
-    def __init__(self, protocol: Protocol, chain: Chain, pools: [str]) -> None:
+    def __init__(self, protocol: Protocol, chain: Chain, pools: list[str]) -> None:
         self.protocol = protocol
         self.chain = chain
         self.uniswap_client = UniswapV3Client(protocol, chain)
