@@ -31,6 +31,21 @@ QUICKSWAP_POLYGON_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t
 ZYBERSWAP_ARBITRUM_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-zyberswap-arbitrum
 THENA_BSC_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-thena-bsc
 
+# Masterchef addresses
+MASTERCHEF_ADDRESSES: {
+  "ethereum":{},
+  "polygon": {
+    "uniswap":["0x570d60a60baa356d47fda3017a190a48537fcd7d"],
+  },
+  "arbitrum":{},
+  "optimism":{
+    "uniswap":["0xc7846d1bc4d8bcf7c45a7c998b77ce9b3c904365"], 
+    "quickswap":["0x20ec0d06f447d550fc6edee42121bc8c1817b97d","0x68678Cf174695fc2D27bd312DF67A3984364FFDd"]}, 
+  "celo":{},
+  "bsc":{},
+}
+
+
 # Timezone for daily data
 TIMEZONE: UTC-5
 
