@@ -10,7 +10,7 @@ from v3data.hype_fees.impermanent_divergence import impermanent_divergence_all
 from v3data.toplevel import TopLevelData
 from v3data.enums import Chain, Protocol
 
-from v3data.config import GQL_CLIENT_TIMEOUT
+from v3data.config import GQL_CLIENT_TIMEOUT, MASTERCHEF_ADDRESSES
 
 from database.common.collections_common import db_collections_common
 
@@ -1105,6 +1105,7 @@ class db_returns_manager(db_collection_manager):
         Returns:
             list[dict]: query
         """
+
         # build first main match part of the query
         _match = {"chain": chain, "period": period, "address": hypervisor_address}
 
@@ -1117,6 +1118,25 @@ class db_returns_manager(db_collection_manager):
             _match["timestamp"] = {"$gte": int(ini_date.timestamp())}
         elif end_date:
             _match["timestamp"] = {"$lte": int(end_date.timestamp())}
+
+        # construct the allRewards2 match part of the query ( filter masterchefs addresses)
+        _allrewards2_match = {}
+        valid_masterchefs = [
+            {"obj_as_arr.k": address.lower()}
+            for dex, address_list in MASTERCHEF_ADDRESSES.get(chain, {}).items()
+            for address in address_list
+        ]
+        if valid_masterchefs:
+            _allrewards2_match = {
+                "$and": [
+                    {"$or": valid_masterchefs},
+                    {f"obj_as_arr.v.pools.{hypervisor_address}": {"$exists": 1}},
+                ]
+            }
+        else:
+            _allrewards2_match = {
+                f"obj_as_arr.v.pools.{hypervisor_address}": {"$exists": 1}
+            }
 
         # allrewards2 subquery: pick the sum of each rewarder apr
         year_allRewards2_subquery = {
@@ -1158,13 +1178,7 @@ class db_returns_manager(db_collection_manager):
                         {"$limit": 1},
                         {"$addFields": {"obj_as_arr": {"$objectToArray": "$$ROOT"}}},
                         {"$unwind": "$obj_as_arr"},
-                        {
-                            "$match": {
-                                f"obj_as_arr.v.pools.{hypervisor_address}": {
-                                    "$exists": 1
-                                }
-                            }
-                        },
+                        {"$match": _allrewards2_match},
                     ],
                     "as": "allRewards2",
                 }
