@@ -36,6 +36,7 @@ DEPLOYMENTS = [
     (Protocol.QUICKSWAP, Chain.POLYGON),
     (Protocol.ZYBERSWAP, Chain.ARBITRUM),
     (Protocol.THENA, Chain.BSC),
+    (Protocol.QUICKSWAP, Chain.POLYGON_ZKEVM),
 ]
 
 THEGRAPH_INDEX_NODE_URL = "https://api.thegraph.com/index-node/graphql"
@@ -56,6 +57,7 @@ DEX_SUBGRAPH_URLS = {
     },
     Protocol.QUICKSWAP: {
         Chain.POLYGON: get_config("QUICKSWAP_POLYGON_SUBGRAPH_URL"),
+        Chain.POLYGON_ZKEVM: get_config("QUICKSWAP_POLYGON_ZKEVM_SUBGRAPH_URL"),
     },
     Protocol.ZYBERSWAP: {
         Chain.ARBITRUM: get_config("ZYBERSWAP_ARBITRUM_SUBGRAPH_URL"),
@@ -76,6 +78,7 @@ DEX_HYPEPOOL_SUBGRAPH_URLS = {
     },
     Protocol.QUICKSWAP: {
         Chain.POLYGON: get_config("QUICKSWAP_POLYGON_HP_SUBGRAPH_URL"),
+        Chain.POLYGON_ZKEVM: get_config("QUICKSWAP_POLYGON_ZKEVM_HP_SUBGRAPH_URL"),
     },
     Protocol.ZYBERSWAP: {
         Chain.ARBITRUM: get_config("ZYBERSWAP_ARBITRUM_HP_SUBGRAPH_URL"),
@@ -96,6 +99,7 @@ GAMMA_SUBGRAPH_URLS = {
     },
     Protocol.QUICKSWAP: {
         Chain.POLYGON: get_config("QUICKSWAP_POLYGON_GAMMA_SUBGRAPH_URL"),
+        Chain.POLYGON_ZKEVM: get_config("QUICKSWAP_POLYGON_ZKEVM_GAMMA_SUBGRAPH_URL"),
     },
     Protocol.ZYBERSWAP: {
         Chain.ARBITRUM: get_config("ZYBERSWAP_ARBITRUM_GAMMA_SUBGRAPH_URL"),

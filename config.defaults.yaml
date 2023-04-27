@@ -6,6 +6,7 @@ UNISWAP_OPTIMISM_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gam
 UNISWAP_CELO_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/celo
 UNISWAP_BSC_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/uniswap-bsc
 QUICKSWAP_POLYGON_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/algebra-polygon
+QUICKSWAP_POLYGON_ZKEVM_GAMMA_SUBGRAPH_URL: https://api.studio.thegraph.com/query/44730/gamma-quickswap-pzke/v0.0.3
 ZYBERSWAP_ARBITRUM_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/zyberswap-arbitrum
 THENA_BSC_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/thena
 
@@ -17,6 +18,7 @@ UNISWAP_OPTIMISM_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/ianlapham
 UNISWAP_CELO_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/jesse-sawa/uniswap-celo
 UNISWAP_BSC_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/ianlapham/uniswap-v3-bsc
 QUICKSWAP_POLYGON_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/sameepsi/quickswap-v3
+QUICKSWAP_POLYGON_ZKEVM_SUBGRAPH_URL: https://api.studio.thegraph.com/query/44554/quickswap-v3-02/0.0.7
 ZYBERSWAP_ARBITRUM_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/iliaazhel/zyberswap-info
 THENA_BSC_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/iliaazhel/thena-info
 
@@ -28,6 +30,7 @@ UNISWAP_OPTIMISM_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0
 UNISWAP_CELO_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-celo
 UNISWAP_BSC_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-bsc
 QUICKSWAP_POLYGON_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-quickswap-polygon
+QUICKSWAP_POLYGON_ZKEVM_HP_SUBGRAPH_URL: https://api.studio.thegraph.com/query/44730/gamma-hp-quickswap-pzke/v0.0.3
 ZYBERSWAP_ARBITRUM_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-zyberswap-arbitrum
 THENA_BSC_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-thena-bsc
 

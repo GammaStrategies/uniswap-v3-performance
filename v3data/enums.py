@@ -8,6 +8,7 @@ class Chain(str, Enum):
     OPTIMISM = "optimism"
     POLYGON = "polygon"
     BSC = "bsc"
+    POLYGON_ZKEVM = "polygon_zkevm"
 
 
 class PositionType(str, Enum):
