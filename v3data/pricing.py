@@ -1,3 +1,4 @@
+"""Token pricing"""
 import asyncio
 from collections import defaultdict
 
@@ -70,6 +71,10 @@ POOLS = {
         "WMATIC_LCD": {
             "protocol": Protocol.QUICKSWAP,
             "address": "0xd9c2c978915b907df04972cb3f577126fe55143c",
+        },
+        "WOMBAT_USDC": {
+            "protocol": Protocol.QUICKSWAP,
+            "address": "0xaf835698673655e9910de8398df6c5238f5d3aeb",
         },
     },
 }
@@ -146,6 +151,10 @@ POOL_PATHS = {
         "0xc2a45fe7d40bcac8369371b08419ddafd3131b4a": [
             (POOLS[Chain.POLYGON]["WMATIC_LCD"], 0),
             (POOLS[Chain.POLYGON]["WMATIC_USDC"], 1),
+        ],
+        # LCD
+        "0x0c9c7712c83b3c70e7c5e11100d33d9401bdf9dd": [
+            (POOLS[Chain.POLYGON]["WOMBAT_USDC"], 1),
         ],
     },
 }
