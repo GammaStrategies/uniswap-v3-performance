@@ -16,9 +16,13 @@ from v3data.routers import (
     mainnet,
     optimism,
     polygon,
-    simulator,
 )
-from v3data.routers.quickswap import polygon as quickswap_polygon
+from v3data.subapps.simulator import app_simulator
+from v3data.subapps.internal import app_internal
+from v3data.routers.quickswap import (
+    polygon as quickswap_polygon,
+    polygon_zkevm as quickswap_polygon_zkevm,
+)
 from v3data.routers.thena import bsc as thena_bsc
 from v3data.routers.zyberswap import arbitrum as zyberswap_arbitrum
 
@@ -38,15 +42,17 @@ app.include_router(optimism.router, tags=["Optimism"])
 app.include_router(celo.router, tags=["Celo"])
 app.include_router(bsc.router, tags=["BSC"])
 app.include_router(quickswap_polygon.router, tags=["Quickswap - Polygon"])
+app.include_router(quickswap_polygon_zkevm.router, tags=["Quickswap - Polygon zkEVM"])
 app.include_router(zyberswap_arbitrum.router, tags=["Zyberswap - Arbitrum"])
 app.include_router(thena_bsc.router, tags=["Thena - BSC"])
-app.include_router(simulator.router, tags=["Simulator"])
 
 # Allow CORS
 app.add_middleware(
     CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
 
+app.mount("/simulator", app_simulator)
+app.mount("/internal", app_internal)
 
 @app.get("/charts/dailyTvl")
 @cache(expire=CHARTS_CACHE_TIMEOUT)

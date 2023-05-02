@@ -4,12 +4,10 @@ import logging
 from v3data import GammaClient, UniswapV3Client
 from v3data.config import EXCLUDED_HYPERVISORS
 from v3data.constants import DAYS_IN_PERIOD
+from v3data.data import BlockRange
 from v3data.enums import Chain, Protocol
 from v3data.hype_fees.fees_yield import fee_returns_all
 from v3data.utils import filter_address_by_chain, timestamp_to_date
-
-from v3data.data import BlockRange
-
 
 logger = logging.getLogger(__name__)
 
@@ -357,13 +355,15 @@ class HypervisorInfo(HypervisorData):
         basics = self.basics_data
         pools = self.pools_data
 
-        fee_yield_output = await fee_returns_all(
-            protocol=self.protocol,
-            chain=self.chain,
-            days=1,
-            hypervisors=None,
-            current_timestamp=None,
-        )
+        fee_yield_output = (
+            await fee_returns_all(
+                protocol=self.protocol,
+                chain=self.chain,
+                days=1,
+                hypervisors=None,
+                current_timestamp=None,
+            )
+        )["lp"]
 
         returns = {
             hypervisor: {

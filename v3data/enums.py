@@ -8,6 +8,7 @@ class Chain(str, Enum):
     OPTIMISM = "optimism"
     POLYGON = "polygon"
     BSC = "bsc"
+    POLYGON_ZKEVM = "polygon_zkevm"
 
 
 class PositionType(str, Enum):
@@ -25,3 +26,8 @@ class Protocol(str, Enum):
 class QueryType(str, Enum):
     DATABASE = "database"
     SUBGRAPH = "subgraph"
+
+
+class YieldType(str, Enum):
+    TOTAL = "total"
+    LP = "lp"

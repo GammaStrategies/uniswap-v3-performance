@@ -1,20 +1,17 @@
 import asyncio
-from datetime import datetime, timedelta
 import logging
+from datetime import datetime, timedelta
 
 from fastapi import Response, status
 
-from database.collection_endpoint import (
-    db_allData_manager,
-    db_returns_manager,
-)
+from database.collection_endpoint import db_allData_manager, db_returns_manager
 from v3data.common import ExecutionOrderWrapper
 from v3data.config import MONGO_DB_URL
 from v3data.enums import Chain, Protocol
 from v3data.hype_fees.fees import fees_all
 from v3data.hype_fees.fees_yield import fee_returns_all
 from v3data.hype_fees.impermanent_divergence import impermanent_divergence_all
-from v3data.hypervisor import HypervisorInfo, HypervisorData
+from v3data.hypervisor import HypervisorData, HypervisorInfo
 from v3data.toplevel import TopLevelData
 
 logger = logging.getLogger(__name__)
@@ -59,7 +56,7 @@ class FeeReturns(ExecutionOrderWrapper):
             chain=self.chain,
             days=self.days,
             current_timestamp=self.current_timestamp,
-        )
+        )["lp"]
 
 
 class HypervisorsReturnsAllPeriods(ExecutionOrderWrapper):
@@ -142,9 +139,9 @@ class HypervisorsReturnsAllPeriods(ExecutionOrderWrapper):
 
         results = {}
         for hypervisor_id in daily.keys():
-            hypervisor_daily = daily.get(hypervisor_id)
-            hypervisor_weekly = weekly.get(hypervisor_id)
-            hypervisor_monthly = monthly.get(hypervisor_id)
+            hypervisor_daily = daily["lp"].get(hypervisor_id)
+            hypervisor_weekly = weekly["lp"].get(hypervisor_id)
+            hypervisor_monthly = monthly["lp"].get(hypervisor_id)
 
             symbol = hypervisor_daily.pop("symbol")
             hypervisor_weekly.pop("symbol")

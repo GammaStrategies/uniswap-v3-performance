@@ -1,9 +1,8 @@
-import sys
-import os
-from datetime import datetime, timedelta
-import logging
 import asyncio
-
+import logging
+import os
+import sys
+from datetime import datetime, timedelta
 
 logging.basicConfig(
     format="[%(asctime)s:%(levelname)s:%(name)s]:%(message)s",
@@ -17,19 +16,18 @@ PARENT_FOLDER = os.path.dirname(CURRENT_FOLDER)
 sys.path.append(PARENT_FOLDER)
 
 import v3data.common.analytics
-
-from v3data.charts.base_range import BaseLimit
-from v3data.toplevel import TopLevelData
 from v3data.accounts import AccountInfo
+from v3data.charts.base_range import BaseLimit
 from v3data.common import hypervisor
-from v3data.enums import Chain, Protocol
-from v3data.hype_fees.fees_yield import fee_returns_all
 from v3data.config import (
     ALLDATA_CACHE_TIMEOUT,
     APY_CACHE_TIMEOUT,
     DB_CACHE_TIMEOUT,
     RUN_FIRST_QUERY_TYPE,
 )
+from v3data.enums import Chain, Protocol
+from v3data.hype_fees.fees_yield import fee_returns_all
+from v3data.toplevel import TopLevelData
 
 logger = logging.getLogger(__name__)
 
@@ -76,13 +74,15 @@ async def test_temporal():
         chain=Chain.POLYGON, hypervisor_address=hypervisor_address, period=1
     )
 
-    fees_yield = await fee_returns_all(
-        protocol=Protocol.QUICKSWAP,
-        chain=Chain.POLYGON,
-        days=1,
-        hypervisors=None,
-        current_timestamp=None,
-    )
+    fees_yield = (
+        await fee_returns_all(
+            protocol=Protocol.QUICKSWAP,
+            chain=Chain.POLYGON,
+            days=1,
+            hypervisors=None,
+            current_timestamp=None,
+        )
+    )["lp"]
 
 
 async def test_hype_collectedFees(
