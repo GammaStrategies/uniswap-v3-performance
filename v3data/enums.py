@@ -26,3 +26,8 @@ class Protocol(str, Enum):
 class QueryType(str, Enum):
     DATABASE = "database"
     SUBGRAPH = "subgraph"
+
+
+class YieldType(str, Enum):
+    TOTAL = "total"
+    LP = "lp"

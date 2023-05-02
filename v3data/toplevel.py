@@ -195,10 +195,10 @@ class TopLevelData:
                 tvl_share = 0
 
             returns["feeApr"] += (
-                all_returns.get(hypervisor["id"], {}).get("feeApr", 0) * tvl_share
+                all_returns["lp"].get(hypervisor["id"], {}).get("feeApr", 0) * tvl_share
             )
             returns["feeApy"] += (
-                all_returns.get(hypervisor["id"], {}).get("feeApy", 0) * tvl_share
+                all_returns["lp"].get(hypervisor["id"], {}).get("feeApy", 0) * tvl_share
             )
 
         return returns
