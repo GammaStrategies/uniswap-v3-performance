@@ -22,4 +22,5 @@ BLOCK_TIME_SECONDS = {
     Chain.ARBITRUM: 1,
     Chain.CELO: 5,
     Chain.BSC: 3,
+    Chain.POLYGON_ZKEVM: 10
 }

@@ -77,6 +77,20 @@ POOLS = {
             "address": "0xaf835698673655e9910de8398df6c5238f5d3aeb",
         },
     },
+    Chain.POLYGON_ZKEVM: {
+        "WETH_USDC": {
+            "protocol": Protocol.QUICKSWAP,
+            "address": "0xc44ad482f24fd750caeba387d2726d8653f8c4bb",
+        },
+        "QUICK_USDC": {
+            "protocol": Protocol.QUICKSWAP,
+            "address": "0x1247b70c4b41890e8c1836e88dd0c8e3b23dd60e",
+        },
+        "WETH_MATIC": {
+            "protocol": Protocol.QUICKSWAP,
+            "address": "0xb73abfb5a2c89f4038baa476ff3a7942a021c196",
+        },
+    },
 }
 
 
@@ -155,6 +169,17 @@ POOL_PATHS = {
         # LCD
         "0x0c9c7712c83b3c70e7c5e11100d33d9401bdf9dd": [
             (POOLS[Chain.POLYGON]["WOMBAT_USDC"], 1),
+        ],
+    },
+    Chain.POLYGON_ZKEVM: {
+        # WMATIC
+        "0x0d500b1d8e8ef31e21c99d1db9a6444d3adf1270": [
+            (POOLS[Chain.POLYGON_ZKEVM]["WETH_MATIC"], 0),
+            (POOLS[Chain.POLYGON_ZKEVM]["WETH_USDC"], 1),
+        ],
+        # QUICK
+        "0xb5c064f955d8e7f38fe0460c556a72987494ee17": [
+            (POOLS[Chain.POLYGON_ZKEVM]["QUICK_USDC"], 1),
         ],
     },
 }
