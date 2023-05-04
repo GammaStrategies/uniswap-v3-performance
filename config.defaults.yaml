@@ -6,7 +6,7 @@ UNISWAP_OPTIMISM_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gam
 UNISWAP_CELO_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/celo
 UNISWAP_BSC_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/uniswap-bsc
 QUICKSWAP_POLYGON_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/algebra-polygon
-QUICKSWAP_POLYGON_ZKEVM_GAMMA_SUBGRAPH_URL: https://api.studio.thegraph.com/query/44730/gamma-quickswap-pzke/v0.0.3
+QUICKSWAP_POLYGON_ZKEVM_GAMMA_SUBGRAPH_URL: https://api.studio.thegraph.com/query/44730/gamma-quickswap-pzke/v0.0.4
 ZYBERSWAP_ARBITRUM_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/zyberswap-arbitrum
 THENA_BSC_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/thena
 
