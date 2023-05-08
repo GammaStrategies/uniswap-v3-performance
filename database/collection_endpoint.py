@@ -1584,6 +1584,113 @@ class db_allRewards2_manager(db_collection_manager):
         ]
 
 
+class db_allRewards2_external_manager(db_allRewards2_manager):
+    async def create_data(self, chain: Chain, protocol: Protocol) -> dict:
+        """Create the data ready to be saved to database
+
+        Args:
+            chain (str):
+            protocol (str):
+
+        Returns:
+            dict:
+        """
+        # define result var
+        data = {}
+        pools = {}
+        try:
+            # create local database helper
+            db_name = f"{convert_chain_name(chain)}_gamma"
+            local_db_helper = database_local(
+                mongo_url=self._db_mongo_url, db_name=db_name
+            )
+            # get data from local database rewards_status ( web3 database)
+            rewards_status = await local_db_helper.query_items_from_database(
+                query=self.query_rewards(), collection_name="rewards_status"
+            )
+
+            block = rewards_status[0]["block"]
+            timestamp = rewards_status[0]["timestamp"]
+
+            # format rewards status so that equals allRewards2 database format
+            # create pools content
+
+            for reward in rewards_status:
+                # check rewarder address in result
+                if not reward["hypervisor_address"] in pools:
+                    pools[reward["hypervisor_address"]] = {
+                        "stakeTokenSymbol": reward["hypervisor_symbol"],
+                        "apr": 0,
+                        "lastRewardTimestamp": 0,
+                        "rewarders": {},
+                    }
+
+                # check hypervisor address in result's rewarder
+                if (
+                    not reward["rewarder_address"]
+                    in pools[reward["hypervisor_address"]]["rewarders"]
+                ):
+                    pools[reward["hypervisor_address"]]["rewarders"][
+                        reward["rewarder_address"]
+                    ] = {
+                        "rewardToken": reward["rewardToken"],
+                        "rewardTokenSymbol": reward["rewardToken_symbol"],
+                        "rewardPerSecond": int(reward["rewards_perSecond"])
+                        / (10 ** reward["rewardToken_decimals"]),
+                        "allocPoint": 0,
+                        "apr": reward["apr"],
+                    }
+                    # add apr to root pool
+                    pools[reward["hypervisor_address"]]["apr"] += reward["apr"]
+
+                elif (
+                    pools[reward["hypervisor_address"]]["rewarders"][
+                        reward["rewarder_address"]
+                    ]["rewardToken"]
+                    != reward["rewardToken"]
+                ):
+                    # add apr to root pool but log error
+                    pools[reward["hypervisor_address"]]["apr"] += reward["apr"]
+                    logger.error(
+                        f" {chain}'s {protocol} has same rewarder address with different reward token "
+                    )
+                else:
+                    logger.error(
+                        f" {chain}'s {protocol} has same rewarder address with same reward token "
+                    )
+
+        except Exception as e:
+            raise ValueError(
+                f" {chain}'s {protocol} has no external rewards implemented "
+            ) from e
+
+        # complete data
+        data = {
+            "id": f"{timestamp}_{chain}_{protocol}",
+            "chain": chain,
+            "datetime": datetime.fromtimestamp(timestamp, timezone.utc),
+            "protocol": protocol,
+            "block": block,
+            "0x0000000000000000000000000000000000000000": {"pools": pools},
+        }
+        # return
+        return data
+
+    @staticmethod
+    def query_rewards() -> list[dict]:
+        return [
+            {"$sort": {"block": -1}},
+            {
+                "$group": {
+                    "_id": "$hypervisor_address",
+                    "reward_data": {"$first": "$$ROOT"},
+                }
+            },
+            {"$replaceRoot": {"newRoot": "$reward_data"}},
+            {"$unset": ["_id"]},
+        ]
+
+
 class db_aggregateStats_manager(db_collection_manager):
     def __init__(self, mongo_url: str):
         # Create a dictionary of collections

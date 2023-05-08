@@ -13,14 +13,20 @@ from datetime import datetime, timezone
 
 from v3data import utils
 
-from v3data.enums import Protocol
-from v3data.config import MONGO_DB_URL, GAMMA_SUBGRAPH_URLS, EXCLUDED_HYPERVISORS
+from v3data.enums import Chain, Protocol
+from v3data.config import (
+    MONGO_DB_URL,
+    GAMMA_SUBGRAPH_URLS,
+    EXCLUDED_HYPERVISORS,
+    DEPLOYMENTS,
+)
 
 from database.collection_endpoint import (
     db_returns_manager,
     db_static_manager,
     db_allData_manager,
     db_allRewards2_manager,
+    db_allRewards2_external_manager,
     db_aggregateStats_manager,
 )
 
@@ -39,6 +45,7 @@ CHAINS_PROTOCOLS = [
     for protocol in Protocol
     for chain in GAMMA_SUBGRAPH_URLS[protocol].keys()
 ]
+
 
 # set cron vars
 EXPR_FORMATS = {
@@ -144,6 +151,11 @@ async def feed_database_allData():
     logger.info(f" took {get_timepassed_string(_startime)} to complete the {name} feed")
 
 
+async def feed_all_allRewards2():
+    await feed_database_allRewards2()
+    await feed_database_allRewards2_externals()
+
+
 async def feed_database_allRewards2():
     name = "allRewards2"
     logger.info(f" Starting database feeding process for {name} data")
@@ -157,6 +169,29 @@ async def feed_database_allRewards2():
             protocol=protocol,
         )
         for chain, protocol in CHAINS_PROTOCOLS
+    ]
+
+    # execute feed
+    await asyncio.gather(*requests)
+
+    # end time log
+    logger.info(f" took {get_timepassed_string(_startime)} to complete the {name} feed")
+
+
+async def feed_database_allRewards2_externals():
+    name = "allRewards2 external"
+    logger.info(f" Starting database feeding process for {name} data")
+    # start time log
+    _startime = datetime.utcnow()
+
+    _manager = db_allRewards2_external_manager(mongo_url=MONGO_DB_URL)
+    requests = [
+        _manager.feed_db(
+            chain=chain,
+            protocol=protocol,
+        )
+        for chain, protocol in CHAINS_PROTOCOLS
+        if protocol in [Protocol.ZYBERSWAP, Protocol.THENA]
     ]
 
     # execute feed
@@ -209,7 +244,7 @@ async def feed_database_inSecuence():
 async def feed_all():
     await feed_database_static()
     await feed_database_allData()
-    await feed_database_allRewards2()
+    await feed_all_allRewards2()
     await feed_database_aggregateStats()
 
 
@@ -230,6 +265,10 @@ async def feed_database_with_historic_data(from_datetime: datetime, periods=None
     # define periods when empty
     if not periods:
         periods = list(EXPR_ARGS["returns"].keys())
+
+    logger.info(
+        f" Feeding database with historic data  periods:{periods} chains/protocols:{CHAINS_PROTOCOLS}"
+    )
 
     for period in periods:
         cron_ex_format = EXPR_FORMATS["returns"][period]
@@ -328,7 +367,7 @@ EXPR_FUNCS = {
     "returns": feed_database_returns,
     "static": feed_database_static,
     "allData": feed_database_allData,
-    "allRewards2": feed_database_allRewards2,
+    "allRewards2": feed_all_allRewards2,
     "aggregateStats": feed_database_aggregateStats,
     "inSecuence": feed_database_inSecuence,
 }
