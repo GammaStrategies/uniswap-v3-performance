@@ -76,6 +76,10 @@ POOLS = {
             "protocol": Protocol.QUICKSWAP,
             "address": "0xaf835698673655e9910de8398df6c5238f5d3aeb",
         },
+        "USDC_FIS": {
+            "protocol": Protocol.QUICKSWAP,
+            "address": "0x2877703a3ba3e712d684d22bd6d60cc0031d84e8"
+        }
     },
     Chain.POLYGON_ZKEVM: {
         "WETH_USDC": {
@@ -169,6 +173,10 @@ POOL_PATHS = {
         # LCD
         "0x0c9c7712c83b3c70e7c5e11100d33d9401bdf9dd": [
             (POOLS[Chain.POLYGON]["WOMBAT_USDC"], 1),
+        ],
+        # FIS
+        "0x7a7b94f18ef6ad056cda648588181cda84800f94": [
+            (POOLS[Chain.POLYGON]["USDC_FIS"], 0),
         ],
     },
     Chain.POLYGON_ZKEVM: {
