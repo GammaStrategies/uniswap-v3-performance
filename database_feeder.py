@@ -178,7 +178,7 @@ async def feed_database_allRewards2():
     logger.info(f" took {get_timepassed_string(_startime)} to complete the {name} feed")
 
 
-async def feed_database_allRewards2_externals():
+async def feed_database_allRewards2_externals(current_timestamp: int | None = None):
     name = "allRewards2 external"
     logger.info(f" Starting database feeding process for {name} data")
     # start time log
@@ -189,6 +189,7 @@ async def feed_database_allRewards2_externals():
         _manager.feed_db(
             chain=chain,
             protocol=protocol,
+            current_timestamp=current_timestamp,
         )
         for chain, protocol in CHAINS_PROTOCOLS
         if protocol in [Protocol.ZYBERSWAP, Protocol.THENA]
@@ -287,10 +288,15 @@ async def feed_database_with_historic_data(from_datetime: datetime, periods=None
             logger.info(" Feeding {} database at  {}".format(period, txt_timestamp))
 
             # database feed
-            await feed_database_returns(
-                periods=EXPR_ARGS["returns"][period][0],
-                current_timestamp=int(current_timestamp),
-                max_retries=0,
+            await asyncio.gather(
+                feed_database_returns(
+                    periods=EXPR_ARGS["returns"][period][0],
+                    current_timestamp=int(current_timestamp),
+                    max_retries=0,
+                ),
+                feed_database_allRewards2_externals(
+                    current_timestamp=int(current_timestamp)
+                ),
             )
 
             # set next timestamp
