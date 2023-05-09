@@ -1585,7 +1585,28 @@ class db_allRewards2_manager(db_collection_manager):
 
 
 class db_allRewards2_external_manager(db_allRewards2_manager):
-    async def create_data(self, chain: Chain, protocol: Protocol) -> dict:
+    async def feed_db(
+        self, chain: Chain, protocol: Protocol, current_timestamp: int = None
+    ):
+        try:
+            # save as 1 item ( not separated)
+            if data := await self.create_data(
+                chain=chain, protocol=protocol, current_timestamp=current_timestamp
+            ):
+                await self.save_item_to_database(
+                    data=data,
+                    collection_name=self.db_collection_name,
+                )
+        except ValueError:
+            pass
+        except Exception:
+            logger.warning(
+                f" Unexpected error feeding  {chain}'s {protocol} allRewards2 to db   err:{sys.exc_info()[0]}"
+            )
+
+    async def create_data(
+        self, chain: Chain, protocol: Protocol, current_timestamp: int = None
+    ) -> dict:
         """Create the data ready to be saved to database
 
         Args:
@@ -1606,7 +1627,8 @@ class db_allRewards2_external_manager(db_allRewards2_manager):
             )
             # get data from local database rewards_status ( web3 database)
             rewards_status = await local_db_helper.query_items_from_database(
-                query=self.query_rewards(), collection_name="rewards_status"
+                query=self.query_rewards(timestamp_end=current_timestamp),
+                collection_name="rewards_status",
             )
 
             block = rewards_status[0]["block"]
@@ -1665,20 +1687,21 @@ class db_allRewards2_external_manager(db_allRewards2_manager):
             ) from e
 
         # complete data
-        data = {
-            "id": f"{timestamp}_{chain}_{protocol}",
-            "chain": chain,
-            "datetime": datetime.fromtimestamp(timestamp, timezone.utc),
-            "protocol": protocol,
-            "block": block,
-            "0x0000000000000000000000000000000000000000": {"pools": pools},
-        }
+        if pools:
+            data = {
+                "id": f"{timestamp}_{chain}_{protocol}",
+                "chain": chain,
+                "datetime": datetime.fromtimestamp(timestamp, timezone.utc),
+                "protocol": protocol,
+                "block": block,
+                "0x0000000000000000000000000000000000000000": {"pools": pools},
+            }
         # return
         return data
 
     @staticmethod
-    def query_rewards() -> list[dict]:
-        return [
+    def query_rewards(timestamp_end: int | None = None) -> list[dict]:
+        result = [
             {"$sort": {"block": -1}},
             {
                 "$group": {
@@ -1689,6 +1712,11 @@ class db_allRewards2_external_manager(db_allRewards2_manager):
             {"$replaceRoot": {"newRoot": "$reward_data"}},
             {"$unset": ["_id"]},
         ]
+
+        if timestamp_end:
+            result.insert(0, {"$match": {"timestamp": {"$lte": timestamp_end}}})
+
+        return result
 
 
 class db_aggregateStats_manager(db_collection_manager):
