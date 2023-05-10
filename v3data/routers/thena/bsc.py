@@ -245,6 +245,15 @@ async def impermanent_divergence_monthly():
     )
 
 
+@router.get("/allRewards2")
+@cache(expire=DB_CACHE_TIMEOUT)
+async def all_rewards_2(response: Response):
+    masterchef_v2_info = v3data.common.masterchef_v2.AllRewards2(
+        PROTOCOL, CHAIN, response
+    )
+    return await masterchef_v2_info.run(RUN_FIRST)
+
+
 @router.get("/user/{address}")
 async def user_data(address: str):
     return await v3data.common.users.user_data(PROTOCOL, CHAIN, address)
