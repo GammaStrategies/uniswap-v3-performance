@@ -1599,9 +1599,9 @@ class db_allRewards2_external_manager(db_allRewards2_manager):
                 )
         except ValueError:
             pass
-        except Exception:
+        except Exception as e:
             logger.warning(
-                f" Unexpected error feeding  {chain}'s {protocol} allRewards2 to db   err:{sys.exc_info()[0]}"
+                f" Unexpected error feeding  {chain}'s {protocol} allRewards2 to db   err:{e}"
             )
 
     async def create_data(
@@ -1616,9 +1616,7 @@ class db_allRewards2_external_manager(db_allRewards2_manager):
         Returns:
             dict:
         """
-        # define result var
-        data = {}
-        pools = {}
+
         try:
             # create local database helper
             db_name = f"{convert_chain_name(chain)}_gamma"
@@ -1634,45 +1632,90 @@ class db_allRewards2_external_manager(db_allRewards2_manager):
             block = rewards_status[0]["block"]
             timestamp = rewards_status[0]["timestamp"]
 
+            # define result var
+            data = {
+                "id": f"{timestamp}_{chain}_{protocol}",
+                "chain": chain,
+                "datetime": datetime.fromtimestamp(timestamp, timezone.utc),
+                "protocol": protocol,
+                "block": block,
+            }
+
             # format rewards status so that equals allRewards2 database format
+
             # create pools content
 
             for reward in rewards_status:
-                # check rewarder address in result
-                if not reward["hypervisor_address"] in pools:
-                    pools[reward["hypervisor_address"]] = {
-                        "stakeTokenSymbol": reward["hypervisor_symbol"],
+                # create masterchef level in data if not exists
+                if not reward["rewarder_registry"] in data:
+                    data[reward["rewarder_registry"]] = {"pools": {}}
+
+                # create hypervisor level in data/registry if not exists
+                if (
+                    not reward["hypervisor_address"]
+                    in data[reward["rewarder_registry"]]["pools"]
+                ):
+                    data[reward["rewarder_registry"]]["pools"][
+                        reward["hypervisor_address"]
+                    ] = {
+                        "stakeTokenSymbol": reward["rewardToken_symbol"],
+                        "stakedAmount": 0,
+                        "stakedAmountUSD": 0,
                         "apr": 0,
                         "lastRewardTimestamp": 0,
                         "rewarders": {},
                     }
 
-                # check hypervisor address in result's rewarder
+                # add hypervisor data
+                data[reward["rewarder_registry"]]["pools"][
+                    reward["hypervisor_address"]
+                ]["stakedAmount"] += int(reward["total_hypervisorToken_qtty"]) / (
+                    10**18
+                )
+                data[reward["rewarder_registry"]]["pools"][
+                    reward["hypervisor_address"]
+                ]["stakedAmountUSD"] = (
+                    data[reward["rewarder_registry"]]["pools"][
+                        reward["hypervisor_address"]
+                    ]["stakedAmount"]
+                    * reward["hypervisor_share_price_usd"]
+                )
+
+                #
+                # create rewarder level in data/registry/hypervisor if not exists
+                # should not exist ... but just in case
                 if (
                     not reward["rewarder_address"]
-                    in pools[reward["hypervisor_address"]]["rewarders"]
+                    in data[reward["rewarder_registry"]]["pools"][
+                        reward["hypervisor_address"]
+                    ]["rewarders"]
                 ):
-                    pools[reward["hypervisor_address"]]["rewarders"][
-                        reward["rewarder_address"]
-                    ] = {
+                    data[reward["rewarder_registry"]]["pools"][
+                        reward["hypervisor_address"]
+                    ]["rewarders"][reward["rewarder_address"]] = {
                         "rewardToken": reward["rewardToken"],
+                        "rewardTokenDecimals": reward["rewardToken_decimals"],
                         "rewardTokenSymbol": reward["rewardToken_symbol"],
                         "rewardPerSecond": int(reward["rewards_perSecond"])
                         / (10 ** reward["rewardToken_decimals"]),
                         "allocPoint": 0,
                         "apr": reward["apr"],
                     }
-                    # add apr to root pool
-                    pools[reward["hypervisor_address"]]["apr"] += reward["apr"]
+                    # add apr to hypervisor level
+                    data[reward["rewarder_registry"]]["pools"][
+                        reward["hypervisor_address"]
+                    ]["apr"] += reward["apr"]
 
                 elif (
-                    pools[reward["hypervisor_address"]]["rewarders"][
-                        reward["rewarder_address"]
-                    ]["rewardToken"]
+                    data[reward["rewarder_registry"]]["pools"][
+                        reward["hypervisor_address"]
+                    ]["rewarders"][reward["rewarder_address"]]["rewardToken"]
                     != reward["rewardToken"]
                 ):
                     # add apr to root pool but log error
-                    pools[reward["hypervisor_address"]]["apr"] += reward["apr"]
+                    data[reward["rewarder_registry"]]["pools"][
+                        reward["hypervisor_address"]
+                    ]["apr"] += reward["apr"]
                     logger.error(
                         f" {chain}'s {protocol} has same rewarder address with different reward token "
                     )
@@ -1680,22 +1723,19 @@ class db_allRewards2_external_manager(db_allRewards2_manager):
                     logger.error(
                         f" {chain}'s {protocol} has same rewarder address with same reward token "
                     )
-
+        except IndexError as e:
+            raise IndexError(
+                " {}'s {} has no rewards data in database {}".format(
+                    chain,
+                    protocol,
+                    f"for {current_timestamp} timestamp" if current_timestamp else "",
+                )
+            ) from e
         except Exception as e:
             raise ValueError(
                 f" {chain}'s {protocol} has no external rewards implemented "
             ) from e
 
-        # complete data
-        if pools:
-            data = {
-                "id": f"{timestamp}_{chain}_{protocol}",
-                "chain": chain,
-                "datetime": datetime.fromtimestamp(timestamp, timezone.utc),
-                "protocol": protocol,
-                "block": block,
-                "0x0000000000000000000000000000000000000000": {"pools": pools},
-            }
         # return
         return data
 
