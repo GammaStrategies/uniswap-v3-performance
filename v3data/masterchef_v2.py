@@ -183,6 +183,9 @@ class MasterchefV2Info(MasterchefV2Data):
 
                     rewarder_info[rewarder_pool["rewarder"]["id"]] = {
                         "rewardToken": reward_token,
+                        "rewardTokenDecimals": rewarder_pool["rewarder"]["rewardToken"][
+                            "decimals"
+                        ],
                         "rewardTokenSymbol": reward_token_symbol,
                         "rewardPerSecond": weighted_reward_per_second,
                         "apr": rewarder_apr,
