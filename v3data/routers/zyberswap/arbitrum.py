@@ -254,7 +254,7 @@ async def all_rewards_2(response: Response):
     masterchef_v2_info = v3data.common.masterchef_v2.AllRewards2(
         PROTOCOL, CHAIN, response
     )
-    return await masterchef_v2_info.run(RUN_FIRST)
+    return await masterchef_v2_info.run("database")
 
 
 @router.get("/user/{address}")

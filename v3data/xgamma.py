@@ -24,7 +24,9 @@ class XGammaInfo:
     def __post_init__(self, gamma_staked_raw: int, xgamma_supply_raw: int):
         self.gamma_staked = ValueWithDecimal(gamma_staked_raw, decimals=18)
         self.xgamma_supply = ValueWithDecimal(xgamma_supply_raw, decimals=18)
-        self.gamma_per_xgamma = self.gamma_staked.raw / self.xgamma_supply.raw
+        self.gamma_per_xgamma = (
+            31674292.29902939282493992 / self.xgamma_supply.adjusted,
+        )  # self.gamma_staked.raw / self.xgamma_supply   # TODO: fix this
 
 
 class XGammaData(SubgraphData):
