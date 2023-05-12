@@ -37,9 +37,9 @@ class db_collection_manager(db_collections_common):
                 data=await self.create_data(chain=chain, protocol=protocol),
                 collection_name=self.db_collection_name,
             )
-        except Exception:
+        except Exception as e:
             logger.warning(
-                f" Unexpected error feeding {chain}'s {protocol} database  err:{sys.exc_info()[0]}"
+                f" Unexpected error feeding {chain}'s {protocol} database  err:{e}"
             )
 
     async def _get_data(self, query: list[dict]):
@@ -1484,8 +1484,13 @@ class db_allRewards2_manager(db_collection_manager):
         )
 
         try:
+            for item in result:
+                if "block" in item:
+                    return item
             return result[0]
-        except Exception:
+
+        except Exception as e:
+            logger.warning(f" {chain}'s {protocol} has no Allrewards2 data at db ")
             return {}
 
     async def get_hypervisor_rewards(
