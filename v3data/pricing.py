@@ -95,6 +95,9 @@ POOLS = {
             "address": "0xb73abfb5a2c89f4038baa476ff3a7942a021c196",
         },
     },
+    Chain.BSC: {},
+    Chain.AVALANCHE: {},
+    Chain.ARBITRUM: {},
 }
 
 
@@ -190,6 +193,9 @@ POOL_PATHS = {
             (POOLS[Chain.POLYGON_ZKEVM]["QUICK_USDC"], 1),
         ],
     },
+    Chain.BSC: {},
+    Chain.AVALANCHE: {},
+    Chain.ARBITRUM: {},
 }
 
 
