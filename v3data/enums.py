@@ -9,6 +9,7 @@ class Chain(str, Enum):
     POLYGON = "polygon"
     BSC = "bsc"
     POLYGON_ZKEVM = "polygon_zkevm"
+    AVALANCHE = "avalanche"
 
 
 class PositionType(str, Enum):
@@ -21,6 +22,9 @@ class Protocol(str, Enum):
     UNISWAP = "uniswap"
     ZYBERSWAP = "zyberswap"
     THENA = "thena"
+    CAMELOT = "camelot"
+    GLACIER = "glacier"
+    RETRO = "retro"
 
 
 class QueryType(str, Enum):

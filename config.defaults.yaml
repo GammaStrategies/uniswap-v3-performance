@@ -9,6 +9,9 @@ QUICKSWAP_POLYGON_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/ga
 QUICKSWAP_POLYGON_ZKEVM_GAMMA_SUBGRAPH_URL: https://api.studio.thegraph.com/query/44730/gamma-quickswap-pzke/v0.0.4
 ZYBERSWAP_ARBITRUM_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/zyberswap-arbitrum
 THENA_BSC_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/gammastrategies/thena
+CAMELOT_ARBITRUM_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-camelot-arbitrum
+GLACIER_AVALANCHE_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-glacier-avalanche
+RETRO_POLYGON_GAMMA_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/gamma-retro-polygon
 
 # DEX Subgraph URL
 UNISWAP_MAINNET_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/uniswap/uniswap-v3
@@ -21,6 +24,9 @@ QUICKSWAP_POLYGON_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/sameepsi
 QUICKSWAP_POLYGON_ZKEVM_SUBGRAPH_URL: https://api.studio.thegraph.com/query/44554/quickswap-v3-02/0.0.7
 ZYBERSWAP_ARBITRUM_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/iliaazhel/zyberswap-info
 THENA_BSC_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/iliaazhel/thena-info
+CAMELOT_ARBITRUM_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/iliaazhel/camelot-info
+GLACIER_AVALANCHE_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/iliaazhel/glacier-info
+RETRO_POLYGON_SUBGRAPH_URL: ""
 
 # HypePool Subgraph URL
 UNISWAP_MAINNET_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-uniswap-mainnet
@@ -33,6 +39,9 @@ QUICKSWAP_POLYGON_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t
 QUICKSWAP_POLYGON_ZKEVM_HP_SUBGRAPH_URL: https://api.studio.thegraph.com/query/44730/gamma-hp-quickswap-pzke/v0.0.3
 ZYBERSWAP_ARBITRUM_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-zyberswap-arbitrum
 THENA_BSC_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-thena-bsc
+CAMELOT_ARBITRUM_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-camelot-arbitrum
+GLACIER_AVALANCHE_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-glacier-avalanche
+RETRO_POLYGON_HP_SUBGRAPH_URL: https://api.thegraph.com/subgraphs/name/l0c4t0r/hype-pool-retro-polygon
 
 # Masterchef addresses
 MASTERCHEF_ADDRESSES: {
