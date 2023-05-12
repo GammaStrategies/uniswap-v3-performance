@@ -37,6 +37,9 @@ DEPLOYMENTS = [
     (Protocol.ZYBERSWAP, Chain.ARBITRUM),
     (Protocol.THENA, Chain.BSC),
     (Protocol.QUICKSWAP, Chain.POLYGON_ZKEVM),
+    (Protocol.CAMELOT, Chain.ARBITRUM),
+    (Protocol.GLACIER, Chain.AVALANCHE),
+    (Protocol.RETRO, Chain.POLYGON),
 ]
 
 THEGRAPH_INDEX_NODE_URL = "https://api.thegraph.com/index-node/graphql"
@@ -65,6 +68,15 @@ DEX_SUBGRAPH_URLS = {
     Protocol.THENA: {
         Chain.BSC: get_config("THENA_BSC_SUBGRAPH_URL"),
     },
+    Protocol.CAMELOT: {
+        Chain.ARBITRUM: get_config("CAMELOT_ARBITRUM_SUBGRAPH_URL"),
+    },
+    Protocol.GLACIER: {
+        Chain.AVALANCHE: get_config("GLACIER_AVALANCHE_SUBGRAPH_URL"),
+    },
+    Protocol.RETRO: {
+        Chain.POLYGON: get_config("RETRO_POLYGON_SUBGRAPH_URL"),
+    },
 }
 
 DEX_HYPEPOOL_SUBGRAPH_URLS = {
@@ -86,6 +98,15 @@ DEX_HYPEPOOL_SUBGRAPH_URLS = {
     Protocol.THENA: {
         Chain.BSC: get_config("THENA_BSC_HP_SUBGRAPH_URL"),
     },
+    Protocol.CAMELOT: {
+        Chain.ARBITRUM: get_config("CAMELOT_ARBITRUM_HP_SUBGRAPH_URL"),
+    },
+    Protocol.GLACIER: {
+        Chain.AVALANCHE: get_config("GLACIER_AVALANCHE_HP_SUBGRAPH_URL"),
+    },
+    Protocol.RETRO: {
+        Chain.POLYGON: get_config("RETRO_POLYGON_HP_SUBGRAPH_URL"),
+    },
 }
 
 GAMMA_SUBGRAPH_URLS = {
@@ -106,6 +127,15 @@ GAMMA_SUBGRAPH_URLS = {
     },
     Protocol.THENA: {
         Chain.BSC: get_config("THENA_BSC_GAMMA_SUBGRAPH_URL"),
+    },
+    Protocol.CAMELOT: {
+        Chain.ARBITRUM: get_config("CAMELOT_ARBITRUM_GAMMA_SUBGRAPH_URL"),
+    },
+    Protocol.GLACIER: {
+        Chain.AVALANCHE: get_config("GLACIER_AVALANCHE_GAMMA_SUBGRAPH_URL"),
+    },
+    Protocol.RETRO: {
+        Chain.POLYGON: get_config("RETRO_POLYGON_GAMMA_SUBGRAPH_URL"),
     },
 }
 

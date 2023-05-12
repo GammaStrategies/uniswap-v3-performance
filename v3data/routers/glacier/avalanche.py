@@ -15,16 +15,16 @@ from v3data.config import (
 )
 from v3data.enums import Chain, Protocol
 
-PROTOCOL = Protocol.THENA
-CHAIN = Chain.BSC
+PROTOCOL = Protocol.GLACIER
+CHAIN = Chain.AVALANCHE
 RUN_FIRST = RUN_FIRST_QUERY_TYPE
 
-router = APIRouter(prefix="/thena/bsc")
+router = APIRouter(prefix="/glacier/avalanche")
 
 
 @router.get("/")
 def root():
-    return "Gamma Strategies - Thena - BSC"
+    return "Gamma Strategies - Glacier - Avalanche"
 
 
 @router.get("/status/subgraph")
@@ -254,7 +254,7 @@ async def all_rewards_2(response: Response):
     masterchef_v2_info = v3data.common.masterchef_v2.AllRewards2(
         PROTOCOL, CHAIN, response
     )
-    return await masterchef_v2_info.run("database")
+    return await masterchef_v2_info.run(RUN_FIRST)
 
 
 @router.get("/userRewards2/{user_address}")
