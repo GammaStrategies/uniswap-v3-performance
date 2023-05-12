@@ -169,6 +169,7 @@ async def feed_database_allRewards2():
             protocol=protocol,
         )
         for chain, protocol in CHAINS_PROTOCOLS
+        if not protocol in [Protocol.ZYBERSWAP, Protocol.THENA]
     ]
 
     # execute feed
