@@ -189,7 +189,7 @@ POOL_PATHS = {
             (POOLS[Chain.POLYGON_ZKEVM]["WETH_USDC"], 1),
         ],
         # QUICK
-        "0xb5c064f955d8e7f38fe0460c556a72987494ee17": [
+        "0x68286607a1d43602d880d349187c3c48c0fd05e6": [
             (POOLS[Chain.POLYGON_ZKEVM]["QUICK_USDC"], 1),
         ],
     },
