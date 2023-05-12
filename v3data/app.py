@@ -17,14 +17,14 @@ from v3data.routers import (
     optimism,
     polygon,
 )
-from v3data.subapps.simulator import app_simulator
-from v3data.subapps.internal import app_internal
-from v3data.routers.quickswap import (
-    polygon as quickswap_polygon,
-    polygon_zkevm as quickswap_polygon_zkevm,
-)
+from v3data.routers.camelot import arbitrum as camelot_arbitrum
+from v3data.routers.glacier import avalanche as glacier_avalanche
+from v3data.routers.quickswap import polygon as quickswap_polygon
+from v3data.routers.quickswap import polygon_zkevm as quickswap_polygon_zkevm
 from v3data.routers.thena import bsc as thena_bsc
 from v3data.routers.zyberswap import arbitrum as zyberswap_arbitrum
+from v3data.subapps.internal import app_internal
+from v3data.subapps.simulator import app_simulator
 
 logging.basicConfig(
     format="[%(asctime)s:%(levelname)s:%(name)s]:%(message)s",
@@ -45,6 +45,8 @@ app.include_router(quickswap_polygon.router, tags=["Quickswap - Polygon"])
 app.include_router(quickswap_polygon_zkevm.router, tags=["Quickswap - Polygon zkEVM"])
 app.include_router(zyberswap_arbitrum.router, tags=["Zyberswap - Arbitrum"])
 app.include_router(thena_bsc.router, tags=["Thena - BSC"])
+app.include_router(camelot_arbitrum.router, tags=["Camelot - Arbitrum"])
+app.include_router(glacier_avalanche.router, tags=["Glacier - Avalanche"])
 
 # Allow CORS
 app.add_middleware(

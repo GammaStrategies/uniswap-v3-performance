@@ -15,16 +15,16 @@ from v3data.config import (
 )
 from v3data.enums import Chain, Protocol
 
-PROTOCOL = Protocol.THENA
-CHAIN = Chain.BSC
+PROTOCOL = Protocol.GLACIER
+CHAIN = Chain.AVALANCHE
 RUN_FIRST = RUN_FIRST_QUERY_TYPE
 
-router = APIRouter(prefix="/thena/bsc")
+router = APIRouter(prefix="/glacier/avalanche")
 
 
 @router.get("/")
 def root():
-    return "Gamma Strategies - Thena - BSC"
+    return "Gamma Strategies - Glacier - Avalanche"
 
 
 @router.get("/status/subgraph")
