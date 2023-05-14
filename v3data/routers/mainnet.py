@@ -265,9 +265,23 @@ async def all_rewards():
     return await v3data.common.masterchef.info(PROTOCOL, CHAIN)
 
 
+@router.get("/allRewards2")
+@cache(expire=DB_CACHE_TIMEOUT)
+async def all_rewards_2(response: Response):
+    masterchef_v2_info = v3data.common.masterchef_v2.AllRewards2(
+        PROTOCOL, CHAIN, response
+    )
+    return await masterchef_v2_info.run(RUN_FIRST)
+
+
 @router.get("/userRewards/{user_address}")
 async def user_rewards(user_address):
     return await v3data.common.masterchef.user_rewards(PROTOCOL, CHAIN, user_address)
+
+
+@router.get("/userRewards2/{user_address}")
+async def user_rewards_2(user_address):
+    return await v3data.common.masterchef_v2.user_rewards(PROTOCOL, CHAIN, user_address)
 
 
 @router.get("/user/{address}")
