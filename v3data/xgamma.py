@@ -25,8 +25,8 @@ class XGammaInfo:
         self.gamma_staked = ValueWithDecimal(gamma_staked_raw, decimals=18)
         self.xgamma_supply = ValueWithDecimal(xgamma_supply_raw, decimals=18)
         self.gamma_per_xgamma = (
-            31674292.29902939282493992 / self.xgamma_supply.adjusted,
-        )  # self.gamma_staked.raw / self.xgamma_supply   # TODO: fix this
+            self.gamma_staked.raw / self.xgamma_supply.raw
+        )
 
 
 class XGammaData(SubgraphData):
