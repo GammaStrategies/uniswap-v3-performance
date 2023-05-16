@@ -10,6 +10,8 @@ class Chain(str, Enum):
     BSC = "bsc"
     POLYGON_ZKEVM = "polygon_zkevm"
     AVALANCHE = "avalanche"
+    FANTOM = "fantom"
+    MOONBEAM = "moonbeam"
 
 
 class PositionType(str, Enum):
