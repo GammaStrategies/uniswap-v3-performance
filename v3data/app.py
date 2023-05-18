@@ -22,6 +22,7 @@ from v3data.routers.glacier import avalanche as glacier_avalanche
 from v3data.routers.quickswap import polygon as quickswap_polygon
 from v3data.routers.quickswap import polygon_zkevm as quickswap_polygon_zkevm
 from v3data.routers.retro import polygon as retro_polygon
+from v3data.routers.stellaswap import moonbeam as stellaswap_moonbeam
 from v3data.routers.thena import bsc as thena_bsc
 from v3data.routers.zyberswap import arbitrum as zyberswap_arbitrum
 from v3data.subapps.internal import app_internal
@@ -49,6 +50,8 @@ app.include_router(thena_bsc.router, tags=["Thena - BSC"])
 app.include_router(camelot_arbitrum.router, tags=["Camelot - Arbitrum"])
 app.include_router(glacier_avalanche.router, tags=["Glacier - Avalanche"])
 app.include_router(retro_polygon.router, tags=["Retro - Polygon"])
+app.include_router(stellaswap_moonbeam.router, tags=["StellaSwap - Moonbeam"])
+
 
 # Allow CORS
 app.add_middleware(
