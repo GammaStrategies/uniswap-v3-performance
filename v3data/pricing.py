@@ -102,6 +102,7 @@ POOLS = {
     Chain.BSC: {},
     Chain.AVALANCHE: {},
     Chain.ARBITRUM: {},
+    Chain.MOONBEAM: {},
 }
 
 
@@ -204,6 +205,7 @@ POOL_PATHS = {
     Chain.BSC: {},
     Chain.AVALANCHE: {},
     Chain.ARBITRUM: {},
+    Chain.MOONBEAM: {},
 }
 
 
