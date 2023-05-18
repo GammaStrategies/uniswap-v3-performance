@@ -77,6 +77,9 @@ DEX_SUBGRAPH_URLS = {
     Protocol.RETRO: {
         Chain.POLYGON: get_config("RETRO_POLYGON_SUBGRAPH_URL"),
     },
+    Protocol.STELLASWAP: {
+        Chain.MOONBEAM: get_config("STELLASWAP_MOONBEAM_SUBGRAPH_URL"),
+    },
 }
 
 DEX_HYPEPOOL_SUBGRAPH_URLS = {
@@ -107,6 +110,9 @@ DEX_HYPEPOOL_SUBGRAPH_URLS = {
     Protocol.RETRO: {
         Chain.POLYGON: get_config("RETRO_POLYGON_HP_SUBGRAPH_URL"),
     },
+    Protocol.STELLASWAP: {
+        Chain.MOONBEAM: get_config("STELLASWAP_MOONBEAM_HP_SUBGRAPH_URL"),
+    },
 }
 
 GAMMA_SUBGRAPH_URLS = {
@@ -136,6 +142,9 @@ GAMMA_SUBGRAPH_URLS = {
     },
     Protocol.RETRO: {
         Chain.POLYGON: get_config("RETRO_POLYGON_GAMMA_SUBGRAPH_URL"),
+    },
+    Protocol.STELLASWAP: {
+        Chain.MOONBEAM: get_config("STELLASWAP_MOONBEAM_GAMMA_SUBGRAPH_URL"),
     },
 }
 

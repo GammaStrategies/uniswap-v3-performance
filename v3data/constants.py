@@ -22,5 +22,6 @@ BLOCK_TIME_SECONDS = {
     Chain.BSC: 3,
     Chain.POLYGON_ZKEVM: 10,
     Chain.AVALANCHE: 3,
-    Chain.FANTOM: 1
+    Chain.FANTOM: 1,
+    CHAIN.MOONBEAM: 12
 }
